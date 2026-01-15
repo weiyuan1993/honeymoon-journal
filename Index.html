@@ -257,7 +257,7 @@
     );
 
     // --- 可編輯的行程卡片 (維持上一版功能) ---
-    const ItineraryCard = ({ item, id, onUpdate, navigationData, attractionDetails }) => {
+    const ItineraryCard = ({ item, id, onUpdate, navigationData, attractionDetails, canEdit }) => {
       const [isEditing, setIsEditing] = useState(false);
       const [formData, setFormData] = useState({ ...item });
       const [saving, setSaving] = useState(false);
@@ -310,7 +310,7 @@
       return (
         <div id={id} className="scroll-target relative bg-white border border-subtle p-5 mb-5 shadow-sm rounded-sm transition-all duration-500 target:border-gold target:shadow-md target:bg-orange-50/30 group">
           <div className="absolute inset-1 border border-subtle pointer-events-none opacity-50"></div>
-          <button onClick={() => setIsEditing(true)} className="absolute top-2 right-2 z-20 text-gray-300 hover:text-gold transition-colors p-2"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button>
+          {canEdit && <button onClick={() => setIsEditing(true)} className="absolute top-2 right-2 z-20 text-gray-300 hover:text-gold transition-colors p-2"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button>}
           <div className="relative z-10">
             <div className="flex flex-wrap justify-between items-baseline border-b border-gold pb-2 mb-3 mr-6">
               <div className="flex items-baseline gap-2">
@@ -406,7 +406,7 @@
     };
 
     // --- 記帳項目 (維持上一版功能) ---
-    const ExpenseItem = ({ data, onUpdate, onDelete }) => {
+    const ExpenseItem = ({ data, onUpdate, onDelete, canEdit }) => {
       const [isEditing, setIsEditing] = useState(false);
       const [editForm, setEditForm] = useState({ ...data });
       const [saving, setSaving] = useState(false);
@@ -431,13 +431,13 @@
       return (
         <div className="bg-white border border-subtle p-4 mb-3 shadow-sm rounded-sm flex justify-between items-center">
           <div className="flex-1"><div className="text-xs text-gray-400 font-serif mb-1">{dateStr} <span className="ml-2 bg-gray-100 px-1 rounded text-gray-500">{data.category}</span></div><div className="font-bold text-ink text-lg">{data.item}</div></div>
-          <div className="text-right"><div className="font-display font-bold text-gold text-lg">{data.currency === 'EUR' ? '€' : data.currency === 'GBP' ? '£' : data.currency === 'TWD' ? 'NT$' : 'CHF'} {data.amount}</div><div className="mt-1 flex gap-2 justify-end"><button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-blue-600 transition-colors p-1.5" title="編輯"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button onClick={handleDelete} className="text-gray-400 hover:text-red-600 transition-colors p-1.5" title="刪除"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div>
+          <div className="text-right"><div className="font-display font-bold text-gold text-lg">{data.currency === 'EUR' ? '€' : data.currency === 'GBP' ? '£' : data.currency === 'TWD' ? 'NT$' : 'CHF'} {data.amount}</div>{canEdit && <div className="mt-1 flex gap-2 justify-end"><button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-blue-600 transition-colors p-1.5" title="編輯"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button onClick={handleDelete} className="text-gray-400 hover:text-red-600 transition-colors p-1.5" title="刪除"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div>}</div>
         </div>
       );
     };
 
     // --- 記帳頁面 (改進版) ---
-    const ExpensePage = () => {
+    const ExpensePage = ({ canEdit }) => {
       const [formData, setFormData] = useState({ item: '', amount: '', currency: 'EUR', category: 'Food' });
       const [list, setList] = useState([]);
       const [status, setStatus] = useState('idle');
@@ -507,15 +507,17 @@
 
       return (
         <div className="space-y-6">
-          <div className="bg-white p-5 border-4 border-double border-subtle shadow-md">
-            <h2 className="font-display text-lg text-center mb-4 text-ink border-b pb-2 border-gold">新增花費</h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <input type="text" value={formData.item} onChange={(e) => setFormData({ ...formData, item: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm" placeholder="項目" required />
-              <div className="grid grid-cols-2 gap-3"><input type="number" step="0.01" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm" placeholder="金額" required /><select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"><option value="EUR">€ 歐元</option><option value="CHF">CHF 瑞法</option><option value="GBP">£ 英鎊</option><option value="TWD">NT$ 台幣</option></select></div>
-              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"><option value="Food">餐飲</option><option value="Transport">交通</option><option value="Shopping">購物</option><option value="Ticket">門票</option><option value="Toilet">廁所</option><option value="Other">其他</option></select>
-              <button type="submit" disabled={status === 'submitting'} className={`w-full py-3 mt-2 font-display font-bold text-white transition-colors ${status === 'submitting' ? 'bg-gray-400' : 'bg-wax'} ${status === 'success' ? '!bg-forest' : ''}`}>{status === 'submitting' ? '...' : status === 'success' ? '✔' : '紀錄'}</button>
-            </form>
-          </div>
+          {canEdit && (
+            <div className="bg-white p-5 border-4 border-double border-subtle shadow-md">
+              <h2 className="font-display text-lg text-center mb-4 text-ink border-b pb-2 border-gold">新增花費</h2>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <input type="text" value={formData.item} onChange={(e) => setFormData({ ...formData, item: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm" placeholder="項目" required />
+                <div className="grid grid-cols-2 gap-3"><input type="number" step="0.01" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm" placeholder="金額" required /><select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"><option value="EUR">€ 歐元</option><option value="CHF">CHF 瑞法</option><option value="GBP">£ 英鎊</option><option value="TWD">NT$ 台幣</option></select></div>
+                <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"><option value="Food">餐飲</option><option value="Transport">交通</option><option value="Shopping">購物</option><option value="Ticket">門票</option><option value="Toilet">廁所</option><option value="Other">其他</option></select>
+                <button type="submit" disabled={status === 'submitting'} className={`w-full py-3 mt-2 font-display font-bold text-white transition-colors ${status === 'submitting' ? 'bg-gray-400' : 'bg-wax'} ${status === 'success' ? '!bg-forest' : ''}`}>{status === 'submitting' ? '...' : status === 'success' ? '✔' : '紀錄'}</button>
+              </form>
+            </div>
+          )}
 
           {/* 統計摘要 */}
           {list.length > 0 && (
@@ -573,7 +575,7 @@
                       <h3 className="font-display text-sm text-ink">{dateKey}</h3>
                     </div>
                     <div className="divide-y divide-gray-100">
-                      {groupedByDate[dateKey].map(item => <ExpenseItem key={item.rowNumber} data={item} onUpdate={fetchList} onDelete={handleItemDelete} />)}
+                      {groupedByDate[dateKey].map(item => <ExpenseItem key={item.rowNumber} data={item} onUpdate={fetchList} onDelete={handleItemDelete} canEdit={canEdit} />)}
                     </div>
                   </div>
                 ))}
@@ -596,12 +598,14 @@
       const [loadingItin, setLoadingItin] = useState(false);
       const [navigationData, setNavigationData] = useState({});
       const [attractionDetails, setAttractionDetails] = useState({});
+      const [userPermission, setUserPermission] = useState({ email: null, canEdit: false });
 
       const fetchItinerary = () => { setLoadingItin(true); google.script.run.withSuccessHandler((data) => { setItinerary(data); setLoadingItin(false); }).getItineraryData(); };
       const fetchNavigationData = () => { google.script.run.withSuccessHandler((data) => { setNavigationData(data || {}); }).getNavigationData(); };
       const fetchAttractionDetails = () => { google.script.run.withSuccessHandler((data) => { setAttractionDetails(data || {}); }).getAttractionDetails(); };
+      const fetchUserPermission = () => { google.script.run.withSuccessHandler((data) => { setUserPermission(data || { email: null, canEdit: false }); }).getUserPermission(); };
       useEffect(() => { if (tab === 'itinerary' && itinerary.length === 0) fetchItinerary(); }, [tab]);
-      useEffect(() => { fetchNavigationData(); fetchAttractionDetails(); }, []);
+      useEffect(() => { fetchNavigationData(); fetchAttractionDetails(); fetchUserPermission(); }, []);
 
       const cityList = useMemo(() => {
         const cities = []; const seen = new Set();
@@ -642,10 +646,10 @@
           <main className="max-w-xl mx-auto p-4 mt-2">
             {tab === 'itinerary' && (
               <div className="animate-fade-in-up">
-                {loadingItin ? <Loading /> : itinerary.length === 0 ? <div className="text-center mt-10 p-6 border border-dashed border-gray-300"><p className="text-gray-500 font-serif">暫無行程資料</p></div> : itinerary.map((item, idx) => <ItineraryCard key={idx} item={item} id={`day-${item.day}`} onUpdate={fetchItinerary} navigationData={navigationData} attractionDetails={attractionDetails} />)}
+                {loadingItin ? <Loading /> : itinerary.length === 0 ? <div className="text-center mt-10 p-6 border border-dashed border-gray-300"><p className="text-gray-500 font-serif">暫無行程資料</p></div> : itinerary.map((item, idx) => <ItineraryCard key={idx} item={item} id={`day-${item.day}`} onUpdate={fetchItinerary} navigationData={navigationData} attractionDetails={attractionDetails} canEdit={userPermission.canEdit} />)}
               </div>
             )}
-            {tab === 'expense' && (<div className="animate-fade-in-up"><ExpensePage /></div>)}
+            {tab === 'expense' && (<div className="animate-fade-in-up"><ExpensePage canEdit={userPermission.canEdit} /></div>)}
           </main>
 
           {/* 底部固定的 Tab 切換按鈕 */}

@@ -1,5 +1,38 @@
 // Code.gs
 
+// === 權限控制設定 ===
+var AUTHORIZED_EDITORS = [
+  'ab889721@gmail.com',      // Vic
+  'tingyyyung@gmail.com'     // 老婆
+];
+
+// 檢查目前使用者是否有編輯權限
+function isAuthorizedEditor() {
+  try {
+    var email = Session.getActiveUser().getEmail();
+    return AUTHORIZED_EDITORS.indexOf(email) !== -1;
+  } catch (e) {
+    return false;
+  }
+}
+
+// 給前端呼叫：取得目前使用者的權限狀態
+function getUserPermission() {
+  try {
+    var email = Session.getActiveUser().getEmail();
+    var canEdit = AUTHORIZED_EDITORS.indexOf(email) !== -1;
+    return {
+      email: email,
+      canEdit: canEdit
+    };
+  } catch (e) {
+    return {
+      email: null,
+      canEdit: false
+    };
+  }
+}
+
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
@@ -74,6 +107,11 @@ function getItineraryData() {
 // 修改行程 (新增的功能)
 function editItinerary(form) {
   try {
+    // 權限檢查
+    if (!isAuthorizedEditor()) {
+      return { success: false, message: "您沒有編輯權限" };
+    }
+
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('行程');
     var row = form.rowNumber;
     
@@ -135,6 +173,11 @@ function getExpenseData() {
 // 儲存記帳
 function saveExpense(formData) {
   try {
+    // 權限檢查
+    if (!isAuthorizedEditor()) {
+      return { success: false, message: "您沒有編輯權限" };
+    }
+
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('記帳');
     var timestamp = new Date();
     sheet.appendRow([
@@ -153,6 +196,11 @@ function saveExpense(formData) {
 // 刪除記帳
 function deleteExpense(rowNumber) {
   try {
+    // 權限檢查
+    if (!isAuthorizedEditor()) {
+      return { success: false, message: "您沒有編輯權限" };
+    }
+
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('記帳');
     if (rowNumber < 2) throw new Error("無效的行號");
     sheet.deleteRow(rowNumber);
@@ -165,6 +213,11 @@ function deleteExpense(rowNumber) {
 // 修改記帳
 function editExpense(data) {
   try {
+    // 權限檢查
+    if (!isAuthorizedEditor()) {
+      return { success: false, message: "您沒有編輯權限" };
+    }
+
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('記帳');
     var row = data.rowNumber;
     if (row < 2) throw new Error("無效的行號");
