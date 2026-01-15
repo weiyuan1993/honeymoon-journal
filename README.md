@@ -119,16 +119,8 @@ Push 到 `main` 分支會自動觸發 GitHub Actions 執行建置與部署。
 | Day | Name | Latitude | Longitude |
 |-----|------|----------|-----------|
 
-## 權限控制
-
-編輯權限限於以下帳號（定義於 `gas/Code.js`）：
-- ab889721@gmail.com
-- tingyyyung@gmail.com
-
-其他使用者僅能瀏覽，無法編輯。
-
 ## 相關連結
 
-- [Web App](https://script.google.com/macros/s/AKfycbwXXX.../exec)
-- [Google Sheet](https://docs.google.com/spreadsheets/d/XXX)
+- [Web App](https://script.google.com/macros/s/AKfycbyJY8XcWcWuHQBks2AN9miyp1z2QZNoyt7GgXoIU-W15Di8twr1QAxNpxhB_vBr0Zro/exec)
+- [Short URL](https://weiyuan1993.github.io/honeymoon-journal) (GitHub Pages 轉址)
 - [GitHub Repository](https://github.com/weiyuan1993/honeymoon-journal)
