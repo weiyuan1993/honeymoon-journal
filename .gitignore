@@ -4,6 +4,9 @@
 # Node
 node_modules/
 
+# Build output
+dist/
+
 # CSV data files (maintained in Google Sheets)
 *.csv
 

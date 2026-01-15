@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* Custom theme configuration for Tailwind v4 */
+@theme {
+  /* Colors */
+  --color-paper: #fdfbf7;
+  --color-ink: #2c241b;
+  --color-gold: #c5a059;
+  --color-gold-light: #e6d5b8;
+  --color-wax: #8a3324;
+  --color-subtle: #dcd6ce;
+  --color-forest: #2d4f3c;
+
+  /* Font families */
+  --font-serif: 'Lora', serif;
+  --font-display: 'Cinzel', serif;
+}
+
+/* Base styles */
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scroll target offset for sticky header */
+.scroll-target {
+  scroll-margin-top: 80px;
+}
+
+/* Textarea sizing */
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f5f0e6;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a88942;
+}
+
+/* Animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out;
+}
