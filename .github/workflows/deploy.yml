@@ -33,3 +33,6 @@ jobs:
 
       - name: Push to Apps Script
         run: clasp push --force
+
+      - name: Deploy new version
+        run: clasp deploy -i ${{ secrets.DEPLOYMENT_ID }} -d "Auto deploy - ${{ github.event.head_commit.message }}"
