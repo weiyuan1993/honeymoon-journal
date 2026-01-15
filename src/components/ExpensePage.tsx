@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { ExpenseItem as ExpenseItemType, ExpenseFormData } from '@/types';
+import { tripConfig, getCurrencySymbol } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
 import ExpenseItem from './ExpenseItem';
 import Loading from './Loading';
@@ -8,25 +9,12 @@ interface ExpensePageProps {
   canEdit: boolean;
 }
 
-const currencySymbol = (currency: string): string => {
-  switch (currency) {
-    case 'EUR':
-      return '€';
-    case 'GBP':
-      return '£';
-    case 'TWD':
-      return 'NT$';
-    default:
-      return 'CHF';
-  }
-};
-
 export default function ExpensePage({ canEdit }: ExpensePageProps) {
   const [formData, setFormData] = useState<ExpenseFormData>({
     item: '',
     amount: '',
-    currency: 'EUR',
-    category: 'Food',
+    currency: tripConfig.defaultCurrency,
+    category: tripConfig.categories[0].code,
   });
   const [list, setList] = useState<ExpenseItemType[]>([]);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>(
@@ -187,10 +175,11 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 }
                 className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"
               >
-                <option value="EUR">€ 歐元</option>
-                <option value="CHF">CHF 瑞法</option>
-                <option value="GBP">£ 英鎊</option>
-                <option value="TWD">NT$ 台幣</option>
+                {tripConfig.currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.symbol} {c.label}
+                  </option>
+                ))}
               </select>
             </div>
             <select
@@ -203,12 +192,11 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
               }
               className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"
             >
-              <option value="Food">餐飲</option>
-              <option value="Transport">交通</option>
-              <option value="Shopping">購物</option>
-              <option value="Ticket">門票</option>
-              <option value="Toilet">廁所</option>
-              <option value="Other">其他</option>
+              {tripConfig.categories.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
             </select>
             <button
               type="submit"
@@ -240,10 +228,10 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 className="bg-gray-50 p-2 rounded border border-gray-100"
               >
                 <div className="text-xs text-gray-500 font-serif">
-                  {currencySymbol(currency)} 總計
+                  {getCurrencySymbol(currency)} 總計
                 </div>
                 <div className="font-display font-bold text-gold text-lg">
-                  {currencySymbol(currency)} {total.toFixed(2)}
+                  {getCurrencySymbol(currency)} {total.toFixed(2)}
                 </div>
               </div>
             ))}
@@ -269,12 +257,11 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 className="flex-1 border border-subtle p-2 font-serif text-sm rounded-sm bg-paper"
               >
                 <option value="all">所有類別</option>
-                <option value="Food">餐飲</option>
-                <option value="Transport">交通</option>
-                <option value="Shopping">購物</option>
-                <option value="Ticket">門票</option>
-                <option value="Toilet">廁所</option>
-                <option value="Other">其他</option>
+                {tripConfig.categories.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
               <select
                 value={filterCurrency}
@@ -282,10 +269,11 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 className="flex-1 border border-subtle p-2 font-serif text-sm rounded-sm bg-paper"
               >
                 <option value="all">所有貨幣</option>
-                <option value="EUR">€ 歐元</option>
-                <option value="CHF">CHF 瑞法</option>
-                <option value="GBP">£ 英鎊</option>
-                <option value="TWD">NT$ 台幣</option>
+                {tripConfig.currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.symbol} {c.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

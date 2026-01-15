@@ -2,6 +2,8 @@
 
 歐洲蜜月旅行日誌 Web App，使用 Google Apps Script 部署，資料儲存於 Google Sheets。
 
+> **Template 專案**：此專案可作為 template 重複使用，建立其他旅遊日誌。詳見 [SETUP.md](SETUP.md)。
+
 ## 功能
 
 - **行程瀏覽**：依天數瀏覽詳細行程，支援城市快速跳轉
@@ -24,7 +26,9 @@
 
 ```
 ├── src/
-│   ├── components/       # React 元件
+│   ├── config/
+│   │   └── trip.config.ts # 旅遊設定 (標題、幣別、類別)
+│   ├── components/        # React 元件
 │   │   ├── App.tsx
 │   │   ├── ItineraryCard.tsx
 │   │   ├── ExpensePage.tsx
@@ -33,23 +37,24 @@
 │   │   ├── MapModal.tsx
 │   │   └── Loading.tsx
 │   ├── utils/
-│   │   └── gasClient.ts  # GAS API 封裝 + 本機 mock
+│   │   └── gasClient.ts   # GAS API 封裝 + 本機 mock
 │   ├── types/
-│   │   └── index.ts      # TypeScript 型別定義
+│   │   └── index.ts       # TypeScript 型別定義
 │   ├── styles/
-│   │   └── index.css     # Tailwind 設定 + 自訂樣式
-│   ├── main.tsx          # 進入點
-│   └── index.html        # HTML 模板
+│   │   └── index.css      # Tailwind 設定 + 自訂樣式
+│   ├── main.tsx           # 進入點
+│   └── index.html         # HTML 模板
 ├── gas/
-│   ├── Code.js           # GAS 後端程式碼
-│   └── appsscript.json   # GAS 專案設定
+│   ├── Code.js            # GAS 後端程式碼 (含 CONFIG 設定)
+│   └── appsscript.json    # GAS 專案設定
 ├── scripts/
-│   └── build-gas.js      # 建置後處理腳本
-├── dist/                 # 建置輸出 (git ignored)
+│   └── build-gas.js       # 建置後處理腳本
+├── dist/                  # 建置輸出 (git ignored)
 ├── vite.config.ts
 ├── tsconfig.json
 ├── package.json
-└── .clasp.json           # clasp 設定 (指向 dist/)
+├── SETUP.md               # 建立新旅遊的說明
+└── .clasp.json            # clasp 設定 (指向 dist/)
 ```
 
 ## 開發流程
@@ -118,6 +123,17 @@ Push 到 `main` 分支會自動觸發 GitHub Actions 執行建置與部署。
 ### 導航 (Navigation)
 | Day | Name | Latitude | Longitude |
 |-----|------|----------|-----------|
+
+## 建立新旅遊
+
+此專案設計為可重用的 template。建立新旅遊只需修改兩個設定檔：
+
+| 檔案 | 設定內容 |
+|------|----------|
+| `src/config/trip.config.ts` | 前端設定（App 標題、幣別、支出類別） |
+| `gas/Code.js` 的 `CONFIG` | 後端設定（頁面標題、授權帳號、Sheet 名稱） |
+
+詳細步驟請參考 [SETUP.md](SETUP.md)。
 
 ## 相關連結
 

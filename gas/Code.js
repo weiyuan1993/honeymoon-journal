@@ -1,10 +1,28 @@
 // Code.gs
 
-// === 權限控制設定 ===
-var AUTHORIZED_EDITORS = [
-  'ab889721@gmail.com',      // Vic
-  'tingyyyung@gmail.com'     // 老婆
-];
+// === Trip Configuration ===
+// Edit this section to customize for your trip
+var CONFIG = {
+  // App title displayed in browser tab
+  pageTitle: 'Honeymoon Journey',
+
+  // Users who can edit (add expenses, modify itinerary)
+  authorizedEditors: [
+    'ab889721@gmail.com',
+    'tingyyyung@gmail.com'
+  ],
+
+  // Google Sheet tab names (must match your spreadsheet)
+  sheetNames: {
+    itinerary: '行程',
+    expenses: '記帳',
+    attractions: '景點介紹',
+    navigation: '導航'
+  }
+};
+
+// Legacy alias for backward compatibility
+var AUTHORIZED_EDITORS = CONFIG.authorizedEditors;
 
 // 檢查目前使用者是否有編輯權限
 function isAuthorizedEditor() {
@@ -36,7 +54,7 @@ function getUserPermission() {
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
-    .setTitle('Honeymoon Journey')
+    .setTitle(CONFIG.pageTitle)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -75,7 +93,7 @@ function convertRichTextToHtml(richTextValue) {
 // 取得行程資料
 function getItineraryData() {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('行程');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.itinerary);
     if (!sheet) return [];
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return [];
@@ -112,7 +130,7 @@ function editItinerary(form) {
       return { success: false, message: "您沒有編輯權限" };
     }
 
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('行程');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.itinerary);
     var row = form.rowNumber;
     
     // 安全檢查：確保行號有效
@@ -138,7 +156,7 @@ function editItinerary(form) {
 // 取得記帳資料
 function getExpenseData() {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('記帳');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.expenses);
     if (!sheet) return [];
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return [];
@@ -178,7 +196,7 @@ function saveExpense(formData) {
       return { success: false, message: "您沒有編輯權限" };
     }
 
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('記帳');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.expenses);
     var timestamp = new Date();
     sheet.appendRow([
       timestamp,
@@ -201,7 +219,7 @@ function deleteExpense(rowNumber) {
       return { success: false, message: "您沒有編輯權限" };
     }
 
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('記帳');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.expenses);
     if (rowNumber < 2) throw new Error("無效的行號");
     sheet.deleteRow(rowNumber);
     return { success: true, message: "已刪除" };
@@ -218,7 +236,7 @@ function editExpense(data) {
       return { success: false, message: "您沒有編輯權限" };
     }
 
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('記帳');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.expenses);
     var row = data.rowNumber;
     if (row < 2) throw new Error("無效的行號");
 
@@ -237,7 +255,7 @@ function editExpense(data) {
 // 取得景點介紹資料
 function getAttractionDetails() {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('景點介紹');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.attractions);
     if (!sheet) return {};
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return {};
@@ -270,7 +288,7 @@ function getAttractionDetails() {
 // 取得導航資料 (景點座標)
 function getNavigationData() {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('導航');
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.navigation);
     if (!sheet) return {};
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return {};

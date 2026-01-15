@@ -1,3 +1,5 @@
+import type { Currency, Category } from '@/config/trip.config';
+
 // Itinerary types
 export interface ItineraryItem {
   rowNumber: number;
@@ -21,21 +23,21 @@ export interface ItineraryFormData {
   link: string;
 }
 
-// Expense types
+// Expense types - using config-derived types
 export interface ExpenseItem {
   rowNumber: number;
   timestamp: string;
   item: string;
   amount: number;
-  currency: 'EUR' | 'CHF' | 'GBP' | 'TWD';
-  category: 'Food' | 'Transport' | 'Shopping' | 'Ticket' | 'Toilet' | 'Other';
+  currency: Currency;
+  category: Category;
 }
 
 export interface ExpenseFormData {
   item: string;
   amount: string;
-  currency: 'EUR' | 'CHF' | 'GBP' | 'TWD';
-  category: 'Food' | 'Transport' | 'Shopping' | 'Ticket' | 'Toilet' | 'Other';
+  currency: Currency;
+  category: Category;
 }
 
 // Navigation types

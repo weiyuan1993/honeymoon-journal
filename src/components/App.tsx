@@ -5,6 +5,7 @@ import type {
   AttractionDetails,
   UserPermission,
 } from '@/types';
+import { tripConfig } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
 import ItineraryCard from './ItineraryCard';
 import ExpensePage from './ExpensePage';
@@ -105,7 +106,7 @@ export default function App() {
       <header className="sticky top-0 z-50 bg-[#f4f0e6]/95 backdrop-blur-sm shadow-md py-1 border-b-0">
         <div className="text-center">
           <h1 className="font-display text-ink uppercase text-sm mb-0.5 tracking-wider">
-            LY's Honeymoon Journal
+            {tripConfig.tripName}
           </h1>
         </div>
 
