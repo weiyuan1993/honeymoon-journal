@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LY's Honeymoon Journal</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
+    rel="stylesheet">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper: '#fdfbf7',
+            ink: '#2c241b',
+            gold: '#c5a059',
+            'gold-light': '#e6d5b8',
+            wax: '#8a3324',
+            subtle: '#dcd6ce',
+            forest: '#2d4f3c',
+          },
+          fontFamily: {
+            serif: ['Lora', 'serif'],
+            display: ['Cinzel', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #fdfbf7;
+      color: #2c241b;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Header 固定高度，設定適當的安全距離 */
+    .scroll-target {
+      scroll-margin-top: 80px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    /* 優雅的捲軸樣式 */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f5f0e6;
+      border-radius: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c5a059;
+      border-radius: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #a88942;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- 景點詳細介紹資料已移至 Google Sheet「景點介紹」工作表 ---
+
+    // --- 景點詳細介紹 Modal 元件 ---
+    const DetailModal = ({ isOpen, onClose, dayKey, city, detail }) => {
+      if (!isOpen || !detail) return null;
+
+      return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+          {/* 背景遮罩 */}
+          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
+
+          {/* Modal 內容 */}
+          <div
+            className="relative bg-paper border-2 border-gold shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden rounded-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 裝飾邊框 */}
+            <div className="absolute inset-2 border border-gold-light pointer-events-none"></div>
+
+            {/* 頂部裝飾 */}
+            <div className="bg-gradient-to-b from-gold-light/30 to-transparent p-6 pb-4 border-b border-gold">
+              <div className="text-center">
+                <div className="inline-block px-4 py-1 bg-gold/10 border border-gold rounded-full mb-2">
+                  <span className="font-display text-xs text-gold tracking-widest">{dayKey}</span>
+                </div>
+                <h2 className="font-display text-xl text-ink tracking-wide">{detail.title}</h2>
+                <p className="font-serif text-sm text-gray-500 mt-1 italic">{city}</p>
+              </div>
+            </div>
+
+            {/* 內容區域 */}
+            <div className="p-6 overflow-y-auto max-h-[50vh] custom-scrollbar">
+              <div className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line">
+                {detail.content}
+              </div>
+            </div>
+
+            {/* 底部 */}
+            <div className="p-4 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
+              <button
+                onClick={onClose}
+                className="w-full py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-sm"
+              >
+                CLOSE
+              </button>
+            </div>
+
+            {/* 關閉按鈕 */}
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-ink transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // --- 地圖 Modal 元件 (Google Maps Embed 版本) ---
+    const MapModal = ({ isOpen, onClose, dayKey, city, coordData }) => {
+      const [selectedIndex, setSelectedIndex] = useState(0);
+
+      // 當 modal 開啟時重置選擇
+      useEffect(() => {
+        if (isOpen) setSelectedIndex(0);
+      }, [isOpen, dayKey]);
+
+      if (!isOpen || !coordData) return null;
+
+      const selectedAttr = coordData.attractions[selectedIndex];
+      const mapEmbedUrl = `https://maps.google.com/maps?q=${selectedAttr.lat},${selectedAttr.lng}&z=16&output=embed`;
+
+      return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+          {/* 背景遮罩 */}
+          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
+
+          {/* Modal 內容 */}
+          <div
+            className="relative bg-paper border-2 border-gold shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-sm flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 頂部標題 - 精簡版 */}
+            <div className="bg-gold/10 px-4 h-10 border-b border-gold flex items-center justify-between">
+              <div className="w-8"></div>
+              <div className="flex items-center gap-3">
+                <span className="font-display text-xs text-gold tracking-wider">{dayKey}</span>
+                <span className="text-gold">·</span>
+                <span className="font-display text-sm text-ink">{city} 景點地圖</span>
+                <span className="text-gold">·</span>
+                <span className="font-serif text-xs text-gray-500">{coordData.attractions.length} 處</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-ink transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Google Maps Embed 區域 */}
+            <div className="flex-1 relative" style={{ minHeight: '340px' }}>
+              <iframe
+                src={mapEmbedUrl}
+                className="absolute inset-0 w-full h-full border-0"
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
+
+            {/* 景點列表 - 可點擊切換 */}
+            <div className="px-4 py-3 bg-white border-t border-subtle overflow-x-auto no-scrollbar">
+              <div className="flex gap-2.5 whitespace-nowrap pb-1">
+                {coordData.attractions.map((attr, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedIndex(index)}
+                    className={`inline-flex items-center gap-2 px-3 py-2 border rounded-full text-sm font-serif transition-colors ${selectedIndex === index
+                        ? 'bg-gold text-white border-gold shadow-sm'
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-ink'
+                      }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold shrink-0 ${selectedIndex === index ? 'bg-white text-gold' : 'bg-gold text-white'
+                      }`}>
+                      {index + 1}
+                    </span>
+                    <span>{attr.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 底部導航按鈕 */}
+            <div className="px-3 py-2 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAttr.lat},${selectedAttr.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2 bg-forest text-white font-display text-sm tracking-wider hover:bg-green-800 transition-colors rounded-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                </svg>
+                導航至 {selectedAttr.name}
+              </a>
+            </div>
+
+          </div>
+        </div>
+      );
+    };
+
+    const Loading = () => (
+      <div className="flex justify-center items-center py-10 text-gold animate-pulse font-display">
+        讀取中...
+      </div>
+    );
+
+    // --- 可編輯的行程卡片 (維持上一版功能) ---
+    const ItineraryCard = ({ item, id, onUpdate, navigationData, attractionDetails }) => {
+      const [isEditing, setIsEditing] = useState(false);
+      const [formData, setFormData] = useState({ ...item });
+      const [saving, setSaving] = useState(false);
+      const [showDetail, setShowDetail] = useState(false);
+      const [showMap, setShowMap] = useState(false);
+
+      // 檢查是否有該天的詳細介紹 (從 attractionDetails 動態讀取)
+      const detailData = attractionDetails && attractionDetails[item.day];
+      const hasDetail = !!detailData;
+      // 檢查是否有該天的座標資料 (從 navigationData 動態讀取)
+      const coordData = navigationData && navigationData[item.day];
+      const hasCoordinates = !!coordData;
+
+      useEffect(() => { setFormData({ ...item }); }, [item]);
+      const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+      const handleSave = () => {
+        setSaving(true);
+        google.script.run.withSuccessHandler((res) => {
+          setSaving(false);
+          if (res.success) { setIsEditing(false); onUpdate(); } else { alert(res.message); }
+        }).editItinerary(formData);
+      };
+
+      const handleCancel = () => { setFormData({ ...item }); setIsEditing(false); };
+
+      if (isEditing) {
+        return (
+          <div id={id} className="scroll-target relative bg-white border-2 border-gold p-5 mb-5 shadow-md rounded-sm">
+            <div className="flex items-baseline gap-2 border-b border-subtle pb-2 mb-3">
+              <span className="font-display font-bold text-gray-400 text-xl">{item.day}</span>
+              <span className="font-serif text-sm text-gray-400">{item.date} ({item.weekday})</span>
+              <span className="ml-auto text-xs text-gold font-bold">EDITING...</span>
+            </div>
+            <div className="space-y-3">
+              <div><label className="text-xs font-bold text-gray-500 uppercase">City</label><input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full border p-2 font-serif bg-paper" /></div>
+              <div><label className="text-xs font-bold text-gray-500 uppercase">Content</label><textarea name="content" value={formData.content} onChange={handleChange} className="w-full border p-2 font-serif bg-paper leading-relaxed"></textarea></div>
+              <div><label className="text-xs font-bold text-gray-500 uppercase">Transport Note</label><input type="text" name="transport" value={formData.transport} onChange={handleChange} className="w-full border p-2 font-serif bg-paper" placeholder="交通備註 (選填)" /></div>
+              <div><label className="text-xs font-bold text-gray-500 uppercase">Ticket Info</label><input type="text" name="ticket" value={formData.ticket} onChange={handleChange} className="w-full border p-2 font-serif bg-paper" placeholder="票務資訊 (選填)" /></div>
+              <div><label className="text-xs font-bold text-gray-500 uppercase">Link URL</label><input type="text" name="link" value={formData.link} onChange={handleChange} className="w-full border p-2 font-serif bg-paper text-sm" placeholder="購票連結 (選填)" /></div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={handleSave} disabled={saving} className="flex-1 bg-forest text-white py-2 font-display text-sm hover:bg-green-800 transition">{saving ? 'SAVING...' : 'SAVE CHANGES'}</button>
+              <button onClick={handleCancel} disabled={saving} className="flex-1 bg-gray-200 text-gray-600 py-2 font-display text-sm hover:bg-gray-300 transition">CANCEL</button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div id={id} className="scroll-target relative bg-white border border-subtle p-5 mb-5 shadow-sm rounded-sm transition-all duration-500 target:border-gold target:shadow-md target:bg-orange-50/30 group">
+          <div className="absolute inset-1 border border-subtle pointer-events-none opacity-50"></div>
+          <button onClick={() => setIsEditing(true)} className="absolute top-2 right-2 z-20 text-gray-300 hover:text-gold transition-colors p-2"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button>
+          <div className="relative z-10">
+            <div className="flex flex-wrap justify-between items-baseline border-b border-gold pb-2 mb-3 mr-6">
+              <div className="flex items-baseline gap-2">
+                <span className="font-display font-bold text-gold text-xl">{item.day}</span>
+                <span className="font-serif text-sm text-gray-500">{item.date} ({item.weekday})</span>
+              </div>
+              <div className="font-display font-bold text-forest text-sm bg-gray-100 px-2 py-1 rounded">{item.city}</div>
+            </div>
+            {/* 使用 dangerouslySetInnerHTML 解析 HTML */}
+            <div className="mb-4">
+              <h3
+                className="text-lg font-semibold leading-relaxed text-ink font-serif"
+                dangerouslySetInnerHTML={{ __html: item.content }}
+              />
+            </div>
+
+            <div className="space-y-2 text-sm">
+              {item.transport && (
+                <div className="flex gap-2 items-start text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                  <span className="shrink-0">🚌</span>
+                  {/* --- 修改點 2: 交通 (Transport) --- */}
+                  <span dangerouslySetInnerHTML={{ __html: item.transport }} />
+                </div>
+              )}
+
+              {item.ticket && (
+                <div className="flex gap-2 items-start text-wax bg-red-50 p-2 rounded border border-red-100">
+                  <span className="shrink-0">🎟️</span>
+                  {/* --- 修改點 3: 票務 (Ticket) --- */}
+                  <span dangerouslySetInnerHTML={{ __html: item.ticket }} />
+                </div>
+              )}
+
+              {item.hotel && (
+                <div className="flex gap-2 items-start text-forest bg-green-50 p-2 rounded border border-green-100">
+                  <span className="shrink-0">🏨</span>
+                  {/* --- 修改點 4: 飯店 (Hotel) --- */}
+                  <span dangerouslySetInnerHTML={{ __html: item.hotel }} />
+                </div>
+              )}
+            </div>
+            {item.link && (<div className="mt-3 text-right"><a href={item.link} target="_blank" rel="noopener noreferrer" className="inline-block bg-gold hover:bg-yellow-600 text-white text-xs font-display px-4 py-2 rounded transition-colors no-underline">購票 / 預約連結 ➜</a></div>)}
+
+            {/* 景點故事 & 地圖按鈕 */}
+            {(hasDetail || hasCoordinates) && (
+              <div className="mt-4 pt-3 border-t border-subtle flex gap-2">
+                {hasDetail && (
+                  <button
+                    onClick={() => setShowDetail(true)}
+                    className="flex-1 py-2 px-3 bg-gold/10 hover:bg-gold/20 border border-gold text-ink font-serif text-xs rounded-sm transition-all duration-300 flex items-center justify-center gap-1.5 group"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-gold">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <span>景點故事</span>
+                  </button>
+                )}
+                {hasCoordinates && (
+                  <button
+                    onClick={() => setShowMap(true)}
+                    className="flex-1 py-2 px-3 bg-forest/10 hover:bg-forest/20 border border-forest text-forest font-serif text-xs rounded-sm transition-all duration-300 flex items-center justify-center gap-1.5 group"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                    <span>景點地圖</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 景點詳細介紹 Modal */}
+          <DetailModal
+            isOpen={showDetail}
+            onClose={() => setShowDetail(false)}
+            dayKey={item.day}
+            city={item.city}
+            detail={detailData}
+          />
+
+          {/* 地圖 Modal */}
+          <MapModal
+            isOpen={showMap}
+            onClose={() => setShowMap(false)}
+            dayKey={item.day}
+            city={item.city}
+            coordData={coordData}
+          />
+        </div>
+      );
+    };
+
+    // --- 記帳項目 (維持上一版功能) ---
+    const ExpenseItem = ({ data, onUpdate, onDelete }) => {
+      const [isEditing, setIsEditing] = useState(false);
+      const [editForm, setEditForm] = useState({ ...data });
+      const [saving, setSaving] = useState(false);
+      let dateStr = "Unknown";
+      try { if (data.timestamp) { const d = new Date(data.timestamp); if (!isNaN(d.getTime())) dateStr = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`; else dateStr = String(data.timestamp); } } catch (e) { }
+      const handleEditChange = (e) => setEditForm({ ...editForm, [e.target.name]: e.target.value });
+      const handleSave = () => { setSaving(true); google.script.run.withSuccessHandler((res) => { setSaving(false); if (res.success) { setIsEditing(false); onUpdate(); } else { alert(res.message); } }).editExpense(editForm); };
+      const handleDelete = () => { if (confirm(`確定要刪除「${data.item}」嗎？`)) onDelete(data.rowNumber); };
+
+      if (isEditing) {
+        return (
+          <div className="bg-white border-2 border-gold p-4 mb-3 shadow-md rounded-sm">
+            <div className="grid grid-cols-1 gap-3">
+              <input type="text" name="item" value={editForm.item} onChange={handleEditChange} className="border p-2 w-full font-serif" placeholder="項目" />
+              <div className="flex gap-2"><input type="number" name="amount" value={editForm.amount} onChange={handleEditChange} className="border p-2 w-2/3 font-serif" placeholder="金額" /><select name="currency" value={editForm.currency} onChange={handleEditChange} className="border p-2 w-1/3 font-serif"><option value="EUR">€</option><option value="CHF">CHF</option><option value="GBP">£</option><option value="TWD">NT$</option></select></div>
+              <select name="category" value={editForm.category} onChange={handleEditChange} className="border p-2 w-full font-serif"><option value="Food">餐飲</option><option value="Transport">交通</option><option value="Shopping">購物</option><option value="Ticket">門票</option><option value="Toilet">廁所</option><option value="Other">其他</option></select>
+              <div className="flex gap-2 mt-2"><button onClick={handleSave} disabled={saving} className="flex-1 bg-forest text-white py-2 rounded font-display text-sm">{saving ? '...' : '儲存'}</button><button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-300 text-gray-700 py-2 rounded font-display text-sm">取消</button></div>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="bg-white border border-subtle p-4 mb-3 shadow-sm rounded-sm flex justify-between items-center">
+          <div className="flex-1"><div className="text-xs text-gray-400 font-serif mb-1">{dateStr} <span className="ml-2 bg-gray-100 px-1 rounded text-gray-500">{data.category}</span></div><div className="font-bold text-ink text-lg">{data.item}</div></div>
+          <div className="text-right"><div className="font-display font-bold text-gold text-lg">{data.currency === 'EUR' ? '€' : data.currency === 'GBP' ? '£' : data.currency === 'TWD' ? 'NT$' : 'CHF'} {data.amount}</div><div className="mt-1 flex gap-2 justify-end"><button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-blue-600 transition-colors p-1.5" title="編輯"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button onClick={handleDelete} className="text-gray-400 hover:text-red-600 transition-colors p-1.5" title="刪除"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div>
+        </div>
+      );
+    };
+
+    // --- 記帳頁面 (改進版) ---
+    const ExpensePage = () => {
+      const [formData, setFormData] = useState({ item: '', amount: '', currency: 'EUR', category: 'Food' });
+      const [list, setList] = useState([]);
+      const [status, setStatus] = useState('idle');
+      const [loadingList, setLoadingList] = useState(false);
+      const [searchTerm, setSearchTerm] = useState('');
+      const [filterCategory, setFilterCategory] = useState('all');
+      const [filterCurrency, setFilterCurrency] = useState('all');
+      const [showAll, setShowAll] = useState(false);
+
+      const fetchList = () => { setLoadingList(true); google.script.run.withSuccessHandler((data) => { if (data && !data.error) setList(data); setLoadingList(false); }).getExpenseData(); };
+      useEffect(() => { fetchList(); }, []);
+
+      const handleSubmit = (e) => { e.preventDefault(); setStatus('submitting'); google.script.run.withSuccessHandler((res) => { if (res.success) { setStatus('success'); setFormData({ ...formData, item: '', amount: '' }); fetchList(); setTimeout(() => setStatus('idle'), 2000); } else { alert(res.message); setStatus('idle'); } }).saveExpense(formData); };
+      const handleItemDelete = (rowNumber) => { const oldList = [...list]; setList(list.filter(item => item.rowNumber !== rowNumber)); google.script.run.withSuccessHandler((res) => { if (!res.success) { alert(res.message); setList(oldList); } else { fetchList(); } }).deleteExpense(rowNumber); };
+
+      // 計算統計
+      const stats = useMemo(() => {
+        const filtered = list.filter(item => {
+          const matchSearch = !searchTerm || item.item.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchCategory = filterCategory === 'all' || item.category === filterCategory;
+          const matchCurrency = filterCurrency === 'all' || item.currency === filterCurrency;
+          return matchSearch && matchCategory && matchCurrency;
+        });
+
+        const totals = {};
+        filtered.forEach(item => {
+          const key = item.currency;
+          if (!totals[key]) totals[key] = 0;
+          totals[key] += parseFloat(item.amount) || 0;
+        });
+
+        return { filtered, totals, totalCount: filtered.length };
+      }, [list, searchTerm, filterCategory, filterCurrency]);
+
+      // 按日期分組
+      const groupedByDate = useMemo(() => {
+        const groups = {};
+        stats.filtered.forEach(item => {
+          try {
+            const d = new Date(item.timestamp);
+            if (!isNaN(d.getTime())) {
+              const dateKey = `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+              if (!groups[dateKey]) groups[dateKey] = [];
+              groups[dateKey].push(item);
+            } else {
+              const dateKey = '其他';
+              if (!groups[dateKey]) groups[dateKey] = [];
+              groups[dateKey].push(item);
+            }
+          } catch (e) {
+            const dateKey = '其他';
+            if (!groups[dateKey]) groups[dateKey] = [];
+            groups[dateKey].push(item);
+          }
+        });
+        return groups;
+      }, [stats.filtered]);
+
+      const dateKeys = Object.keys(groupedByDate).sort((a, b) => {
+        if (a === '其他') return 1;
+        if (b === '其他') return -1;
+        return b.localeCompare(a);
+      });
+
+      const displayDates = showAll ? dateKeys : dateKeys.slice(0, 3);
+      const hasMore = dateKeys.length > 3;
+
+      return (
+        <div className="space-y-6">
+          <div className="bg-white p-5 border-4 border-double border-subtle shadow-md">
+            <h2 className="font-display text-lg text-center mb-4 text-ink border-b pb-2 border-gold">新增花費</h2>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <input type="text" value={formData.item} onChange={(e) => setFormData({ ...formData, item: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm" placeholder="項目" required />
+              <div className="grid grid-cols-2 gap-3"><input type="number" step="0.01" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm" placeholder="金額" required /><select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"><option value="EUR">€ 歐元</option><option value="CHF">CHF 瑞法</option><option value="GBP">£ 英鎊</option><option value="TWD">NT$ 台幣</option></select></div>
+              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"><option value="Food">餐飲</option><option value="Transport">交通</option><option value="Shopping">購物</option><option value="Ticket">門票</option><option value="Toilet">廁所</option><option value="Other">其他</option></select>
+              <button type="submit" disabled={status === 'submitting'} className={`w-full py-3 mt-2 font-display font-bold text-white transition-colors ${status === 'submitting' ? 'bg-gray-400' : 'bg-wax'} ${status === 'success' ? '!bg-forest' : ''}`}>{status === 'submitting' ? '...' : status === 'success' ? '✔' : '紀錄'}</button>
+            </form>
+          </div>
+
+          {/* 統計摘要 */}
+          {list.length > 0 && (
+            <div className="bg-white p-4 border border-subtle shadow-sm rounded-sm">
+              <h3 className="font-display text-sm mb-3 text-ink border-b border-gold-light pb-2">統計摘要</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(stats.totals).map(([currency, total]) => (
+                  <div key={currency} className="bg-gray-50 p-2 rounded border border-gray-100">
+                    <div className="text-xs text-gray-500 font-serif">{currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'TWD' ? 'NT$' : 'CHF'} 總計</div>
+                    <div className="font-display font-bold text-gold text-lg">{currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'TWD' ? 'NT$' : 'CHF'} {total.toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 篩選和搜尋 */}
+          {list.length > 0 && (
+            <div className="bg-white p-4 border border-subtle shadow-sm rounded-sm space-y-3">
+              <div className="flex flex-col gap-2">
+                <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="搜尋項目..." className="w-full border border-subtle p-2 font-serif text-sm rounded-sm bg-paper" />
+                <div className="flex gap-2">
+                  <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="flex-1 border border-subtle p-2 font-serif text-sm rounded-sm bg-paper">
+                    <option value="all">所有類別</option>
+                    <option value="Food">餐飲</option>
+                    <option value="Transport">交通</option>
+                    <option value="Shopping">購物</option>
+                    <option value="Ticket">門票</option>
+                    <option value="Toilet">廁所</option>
+                    <option value="Other">其他</option>
+                  </select>
+                  <select value={filterCurrency} onChange={(e) => setFilterCurrency(e.target.value)} className="flex-1 border border-subtle p-2 font-serif text-sm rounded-sm bg-paper">
+                    <option value="all">所有貨幣</option>
+                    <option value="EUR">€ 歐元</option>
+                    <option value="CHF">CHF 瑞法</option>
+                    <option value="GBP">£ 英鎊</option>
+                    <option value="TWD">NT$ 台幣</option>
+                  </select>
+                </div>
+              </div>
+              {(searchTerm || filterCategory !== 'all' || filterCurrency !== 'all') && (
+                <button onClick={() => { setSearchTerm(''); setFilterCategory('all'); setFilterCurrency('all'); }} className="text-xs text-gray-500 underline">清除篩選</button>
+              )}
+            </div>
+          )}
+
+          {/* 花費列表 - 按日期分組 */}
+          <div>
+            <h2 className="font-display text-lg mb-4 pl-2 border-l-4 border-gold text-ink">花費記錄 {stats.totalCount > 0 && <span className="text-sm text-gray-500 font-normal">({stats.totalCount})</span>}</h2>
+            {loadingList ? <Loading /> : stats.totalCount === 0 ? <p className="text-center text-gray-400 py-4">無符合條件的紀錄</p> : (
+              <div className="space-y-4">
+                {displayDates.map(dateKey => (
+                  <div key={dateKey} className="bg-white border border-subtle rounded-sm overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b border-subtle">
+                      <h3 className="font-display text-sm text-ink">{dateKey}</h3>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {groupedByDate[dateKey].map(item => <ExpenseItem key={item.rowNumber} data={item} onUpdate={fetchList} onDelete={handleItemDelete} />)}
+                    </div>
+                  </div>
+                ))}
+                {hasMore && (
+                  <button onClick={() => setShowAll(!showAll)} className="w-full py-2 text-center text-sm text-gold hover:text-wax font-serif border border-gold rounded-sm transition-colors">
+                    {showAll ? '收起' : `顯示更多 (${dateKeys.length - 3} 天)`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // --- 主程式 App ---
+    const App = () => {
+      const [tab, setTab] = useState('itinerary');
+      const [itinerary, setItinerary] = useState([]);
+      const [loadingItin, setLoadingItin] = useState(false);
+      const [navigationData, setNavigationData] = useState({});
+      const [attractionDetails, setAttractionDetails] = useState({});
+
+      const fetchItinerary = () => { setLoadingItin(true); google.script.run.withSuccessHandler((data) => { setItinerary(data); setLoadingItin(false); }).getItineraryData(); };
+      const fetchNavigationData = () => { google.script.run.withSuccessHandler((data) => { setNavigationData(data || {}); }).getNavigationData(); };
+      const fetchAttractionDetails = () => { google.script.run.withSuccessHandler((data) => { setAttractionDetails(data || {}); }).getAttractionDetails(); };
+      useEffect(() => { if (tab === 'itinerary' && itinerary.length === 0) fetchItinerary(); }, [tab]);
+      useEffect(() => { fetchNavigationData(); fetchAttractionDetails(); }, []);
+
+      const cityList = useMemo(() => {
+        const cities = []; const seen = new Set();
+        itinerary.forEach(item => { if (item.city) { const shortName = item.city.trim().split(' ')[0]; if (shortName && !seen.has(shortName)) { cities.push(shortName); seen.add(shortName); } } });
+        return cities;
+      }, [itinerary]);
+
+      const scrollToCity = (shortName) => {
+        const targetItem = itinerary.find(i => { const currentShort = i.city ? i.city.trim().split(' ')[0] : ""; return currentShort === shortName; });
+        if (targetItem) { const el = document.getElementById(`day-${targetItem.day}`); if (el) el.scrollIntoView({ behavior: 'smooth' }); }
+      };
+
+      return (
+        <div className="min-h-screen pb-20 bg-paper">
+          {/* Header：使用最小 UI */}
+          <header className="sticky top-0 z-50 bg-[#f4f0e6]/95 backdrop-blur-sm shadow-md py-1 border-b-0">
+            <div className="text-center">
+              <h1 className="font-display text-ink uppercase text-sm mb-0.5 tracking-wider">
+                LY's Honeymoon Journal
+              </h1>
+            </div>
+
+            {/* 導覽列 */}
+            {tab === 'itinerary' && cityList.length > 0 && (
+              <div className="bg-white border-t border-subtle overflow-x-auto no-scrollbar py-1.5 px-4 shadow-inner mt-0.5">
+                <div className="flex gap-2 whitespace-nowrap min-w-max px-2">
+                  <span className="font-display text-xs self-center text-gold mr-1">JUMP TO:</span>
+                  {cityList.map(cityShortName => (
+                    <button key={cityShortName} onClick={() => scrollToCity(cityShortName)} className="px-3 py-1 rounded-full border border-gold text-ink text-xs font-serif hover:bg-gold hover:text-white transition-colors">
+                      {cityShortName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </header>
+
+          <main className="max-w-xl mx-auto p-4 mt-2">
+            {tab === 'itinerary' && (
+              <div className="animate-fade-in-up">
+                {loadingItin ? <Loading /> : itinerary.length === 0 ? <div className="text-center mt-10 p-6 border border-dashed border-gray-300"><p className="text-gray-500 font-serif">暫無行程資料</p></div> : itinerary.map((item, idx) => <ItineraryCard key={idx} item={item} id={`day-${item.day}`} onUpdate={fetchItinerary} navigationData={navigationData} attractionDetails={attractionDetails} />)}
+              </div>
+            )}
+            {tab === 'expense' && (<div className="animate-fade-in-up"><ExpensePage /></div>)}
+          </main>
+
+          {/* 底部固定的 Tab 切換按鈕 */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gold shadow-lg">
+            <div className="flex w-full">
+              <button
+                onClick={() => setTab('itinerary')}
+                className={`flex-1 py-3 font-display text-sm tracking-wider transition-all duration-300 ${tab === 'itinerary'
+                    ? 'bg-ink text-white shadow-md'
+                    : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
+                  }`}
+              >
+                ITINERARY
+              </button>
+              <button
+                onClick={() => setTab('expense')}
+                className={`flex-1 py-3 font-display text-sm tracking-wider transition-all duration-300 border-l border-subtle ${tab === 'expense'
+                    ? 'bg-ink text-white shadow-md'
+                    : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
+                  }`}
+              >
+                EXPENSES
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>

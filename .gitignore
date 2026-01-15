@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+
+# CSV data files (maintained in Google Sheets)
+*.csv
+
+# Local clasp credentials (sensitive)
+.clasprc.json
