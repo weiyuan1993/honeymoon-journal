@@ -16,7 +16,7 @@ var CONFIG = {
   sheetNames: {
     itinerary: '行程',
     expenses: '記帳',
-    attractions: '景點介紹',
+    attractions: '景點規劃',
     navigation: '導航'
   }
 };
@@ -388,12 +388,17 @@ function generateAttractionStory(dayKey, city, itineraryContent) {
   }
 
   // 建立 prompt
-  var prompt = '你是一位文學旅遊作家。請根據以下行程資訊，生成一篇優雅的文學風格景點介紹（300-500字）。\n\n' +
-    '要求：\n' +
-    '- 使用第二人稱「你」\n' +
-    '- 融入歷史典故和文化背景\n' +
-    '- 語氣優雅、富有詩意\n' +
-    '- 讓讀者感受到旅行的浪漫與期待\n\n' +
+  var prompt = '你是一位專業的蜜月旅遊規劃師。請根據以下行程資訊，生成一份完整的當日景點規劃。\n\n' +
+    '重要：請使用純文字格式，不要使用 markdown 語法（如 **粗體**、# 標題等）。\n\n' +
+    '請按以下格式輸出：\n\n' +
+    '【景點故事】\n' +
+    '用優雅的文學風格介紹當日景點，約200-300字。使用第二人稱「你」，融入歷史典故和文化背景，讓讀者感受旅行的浪漫。\n\n' +
+    '【交通規劃】\n' +
+    '根據行程內容，規劃合理的時間與交通方式，格式如下：\n' +
+    '• HH:MM 地點A → 交通方式 → 地點B（約X分鐘）\n' +
+    '• HH:MM 地點B → 交通方式 → 地點C（約X分鐘）\n\n' +
+    '【小提醒】\n' +
+    '2-3點實用建議，如：票券購買、最佳參觀時間、注意事項等\n\n' +
     '行程資訊：\n' +
     'Day: ' + dayKey + '\n' +
     '城市: ' + city + '\n' +
@@ -401,7 +406,7 @@ function generateAttractionStory(dayKey, city, itineraryContent) {
 
   try {
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
       {
         method: 'post',
         contentType: 'application/json',
@@ -409,7 +414,7 @@ function generateAttractionStory(dayKey, city, itineraryContent) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.8,
-            maxOutputTokens: 1024
+            maxOutputTokens: 8192
           }
         }),
         muteHttpExceptions: true
@@ -489,7 +494,7 @@ function suggestItinerary(city, date, preferences) {
 
   try {
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
       {
         method: 'post',
         contentType: 'application/json',
@@ -497,7 +502,7 @@ function suggestItinerary(city, date, preferences) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 2048
+            maxOutputTokens: 8192
           }
         }),
         muteHttpExceptions: true

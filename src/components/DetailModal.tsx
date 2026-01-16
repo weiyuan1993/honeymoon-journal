@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AttractionDetail } from '@/types';
 import { gasClient } from '@/utils/gasClient';
 
@@ -26,6 +26,16 @@ export default function DetailModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -120,14 +130,14 @@ export default function DetailModal({
           ) : (
             <div className="text-center py-8">
               <p className="font-serif text-gray-400 text-sm mb-4">
-                尚無景點故事
+                尚無景點規劃
               </p>
               {canEdit && (
                 <button
                   onClick={handleGenerate}
                   className="px-6 py-2.5 bg-gradient-to-r from-gold to-gold/80 text-white font-display text-sm tracking-wider rounded-sm hover:from-gold/90 hover:to-gold/70 transition-all shadow-md"
                 >
-                  ✨ AI 生成故事
+                  ✨ AI 生成規劃
                 </button>
               )}
             </div>
@@ -157,7 +167,7 @@ export default function DetailModal({
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-ink transition-colors"
+          className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-ink transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

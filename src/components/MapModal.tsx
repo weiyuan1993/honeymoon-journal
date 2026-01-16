@@ -23,6 +23,16 @@ export default function MapModal({
     if (isOpen) setSelectedIndex(0);
   }, [isOpen, dayKey]);
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !coordData) return null;
 
   const selectedAttr = coordData.attractions[selectedIndex];
@@ -43,23 +53,12 @@ export default function MapModal({
       >
         {/* Header - compact version */}
         <div className="bg-gold/10 px-4 h-10 border-b border-gold flex items-center justify-between">
-          <div className="w-8"></div>
-          <div className="flex items-center gap-3">
-            <span className="font-display text-xs text-gold tracking-wider">
-              {dayKey}
-            </span>
-            <span className="text-gold">·</span>
-            <span className="font-display text-sm text-ink">
-              {city} 景點地圖
-            </span>
-            <span className="text-gold">·</span>
-            <span className="font-serif text-xs text-gray-500">
-              {coordData.attractions.length} 處
-            </span>
-          </div>
+          <span className="font-display text-sm text-ink truncate pr-2">
+            {dayKey} · {city}
+          </span>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-ink transition-colors"
+            className="-mr-1 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-ink transition-colors shrink-0"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

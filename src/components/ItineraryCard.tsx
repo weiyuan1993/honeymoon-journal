@@ -41,7 +41,6 @@ export default function ItineraryCard({
 
   // Check if there's detail data for this day
   const detailData = attractionDetails && attractionDetails[item.day];
-  const hasDetail = !!detailData;
 
   // Check if there's coordinate data for this day
   const coordData = navigationData && navigationData[item.day];
@@ -282,10 +281,8 @@ export default function ItineraryCard({
         )}
 
         {/* Story & Map buttons */}
-        {(hasDetail || hasCoordinates || canEdit) && (
-          <div className="mt-4 pt-3 border-t border-subtle flex gap-2">
-            {(hasDetail || canEdit) && (
-              <button
+        <div className="mt-4 pt-3 border-t border-subtle flex gap-2">
+          <button
                 onClick={() => setShowDetail(true)}
                 className="flex-1 py-2 px-3 bg-gold/10 hover:bg-gold/20 border border-gold text-ink font-serif text-xs rounded-sm transition-all duration-300 flex items-center justify-center gap-1.5 group"
               >
@@ -303,10 +300,9 @@ export default function ItineraryCard({
                     d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
                   />
                 </svg>
-                <span>景點故事</span>
-              </button>
-            )}
-            {hasCoordinates && (
+                <span>景點規劃</span>
+          </button>
+          {hasCoordinates && (
               <button
                 onClick={() => setShowMap(true)}
                 className="flex-1 py-2 px-3 bg-forest/10 hover:bg-forest/20 border border-forest text-forest font-serif text-xs rounded-sm transition-all duration-300 flex items-center justify-center gap-1.5 group"
@@ -332,9 +328,8 @@ export default function ItineraryCard({
                 </svg>
                 <span>景點地圖</span>
               </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Detail Modal */}
