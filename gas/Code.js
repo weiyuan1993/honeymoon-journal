@@ -359,3 +359,162 @@ function getNavigationData() {
     return {};
   }
 }
+
+// ============================================
+// AI 功能 (使用 Google Gemini API)
+// ============================================
+
+// 設定 API Key (執行一次即可)
+// 前往 https://aistudio.google.com/apikey 取得 API Key
+function setupGeminiApiKey() {
+  var apiKey = Browser.inputBox('請輸入 Gemini API Key:');
+  if (apiKey && apiKey !== 'cancel') {
+    PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', apiKey);
+    Browser.msgBox('API Key 已儲存！');
+  }
+}
+
+// AI 景點故事生成
+function generateAttractionStory(dayKey, city, itineraryContent) {
+  // 權限檢查
+  if (!isAuthorizedEditor()) {
+    return { success: false, message: '您沒有權限使用此功能' };
+  }
+
+  // 取得 API Key
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) {
+    return { success: false, message: 'Gemini API Key 未設定，請聯繫管理員' };
+  }
+
+  // 建立 prompt
+  var prompt = '你是一位文學旅遊作家。請根據以下行程資訊，生成一篇優雅的文學風格景點介紹（300-500字）。\n\n' +
+    '要求：\n' +
+    '- 使用第二人稱「你」\n' +
+    '- 融入歷史典故和文化背景\n' +
+    '- 語氣優雅、富有詩意\n' +
+    '- 讓讀者感受到旅行的浪漫與期待\n\n' +
+    '行程資訊：\n' +
+    'Day: ' + dayKey + '\n' +
+    '城市: ' + city + '\n' +
+    '行程內容: ' + itineraryContent;
+
+  try {
+    var response = UrlFetchApp.fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 1024
+          }
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+    var result = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() === 200 && result.candidates && result.candidates[0]) {
+      var generatedText = result.candidates[0].content.parts[0].text;
+
+      // 儲存到 Google Sheet
+      saveAttractionStory(dayKey, city, generatedText);
+
+      return { success: true, content: generatedText };
+    } else {
+      var errorMsg = result.error ? result.error.message : '生成失敗，請稍後再試';
+      return { success: false, message: errorMsg };
+    }
+  } catch (e) {
+    Logger.log('AI 生成錯誤: ' + e.toString());
+    return { success: false, message: '生成失敗: ' + e.toString() };
+  }
+}
+
+// 儲存 AI 生成的故事到 Sheet
+function saveAttractionStory(dayKey, title, content) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.attractions);
+    if (!sheet) {
+      Logger.log('找不到景點介紹 Sheet');
+      return;
+    }
+
+    // 檢查是否已存在該 Day 的資料
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] === dayKey) {
+        // 更新現有行
+        sheet.getRange(i + 1, 2, 1, 2).setValues([[title, content]]);
+        Logger.log('已更新 ' + dayKey + ' 的景點故事');
+        return;
+      }
+    }
+
+    // 新增行
+    sheet.appendRow([dayKey, title, content]);
+    Logger.log('已新增 ' + dayKey + ' 的景點故事');
+  } catch (e) {
+    Logger.log('儲存故事錯誤: ' + e.toString());
+  }
+}
+
+// AI 行程建議
+function suggestItinerary(city, date, preferences) {
+  // 權限檢查
+  if (!isAuthorizedEditor()) {
+    return { success: false, message: '您沒有權限使用此功能' };
+  }
+
+  // 取得 API Key
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) {
+    return { success: false, message: 'Gemini API Key 未設定，請聯繫管理員' };
+  }
+
+  var prompt = '你是一位專業的旅遊規劃師。請為以下條件提供一日行程建議：\n\n' +
+    '城市: ' + city + '\n' +
+    '日期: ' + (date || '不限') + '\n' +
+    '偏好: ' + (preferences || '一般觀光、美食、拍照打卡') + '\n\n' +
+    '請提供：\n' +
+    '1. 3-5 個推薦景點（含簡短介紹）\n' +
+    '2. 1-2 間推薦餐廳\n' +
+    '3. 建議路線順序\n' +
+    '4. 交通建議\n\n' +
+    '請用繁體中文回覆，格式清晰易讀。';
+
+  try {
+    var response = UrlFetchApp.fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048
+          }
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+    var result = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() === 200 && result.candidates && result.candidates[0]) {
+      var suggestion = result.candidates[0].content.parts[0].text;
+      return { success: true, content: suggestion };
+    } else {
+      var errorMsg = result.error ? result.error.message : '生成失敗，請稍後再試';
+      return { success: false, message: errorMsg };
+    }
+  } catch (e) {
+    Logger.log('AI 建議錯誤: ' + e.toString());
+    return { success: false, message: '生成失敗: ' + e.toString() };
+  }
+}

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { AttractionDetail } from '@/types';
+import { gasClient } from '@/utils/gasClient';
 
 interface DetailModalProps {
   isOpen: boolean;
@@ -6,6 +8,9 @@ interface DetailModalProps {
   dayKey: string;
   city: string;
   detail: AttractionDetail | undefined;
+  itineraryContent?: string;
+  canEdit?: boolean;
+  onStoryGenerated?: (dayKey: string, content: string) => void;
 }
 
 export default function DetailModal({
@@ -14,13 +19,54 @@ export default function DetailModal({
   dayKey,
   city,
   detail,
+  itineraryContent = '',
+  canEdit = false,
+  onStoryGenerated,
 }: DetailModalProps) {
-  if (!isOpen || !detail) return null;
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const displayContent = generatedContent || detail?.content;
+  const hasContent = !!displayContent;
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      const result = await gasClient.generateAttractionStory(
+        dayKey,
+        city,
+        itineraryContent
+      );
+
+      if (result.success && result.content) {
+        setGeneratedContent(result.content);
+        onStoryGenerated?.(dayKey, result.content);
+      } else {
+        setError(result.message || '生成失敗，請稍後再試');
+      }
+    } catch (err) {
+      setError('生成失敗，請稍後再試');
+      console.error('AI generation error:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleClose = () => {
+    setGeneratedContent(null);
+    setError(null);
+    onClose();
+  };
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       {/* Background overlay */}
       <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
@@ -42,7 +88,7 @@ export default function DetailModal({
               </span>
             </div>
             <h2 className="font-display text-xl text-ink tracking-wide">
-              {detail.title}
+              {detail?.title || city}
             </h2>
             <p className="font-serif text-sm text-gray-500 mt-1 italic">
               {city}
@@ -52,24 +98,65 @@ export default function DetailModal({
 
         {/* Content area */}
         <div className="p-6 overflow-y-auto max-h-[50vh] custom-scrollbar">
-          <div className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line">
-            {detail.content}
-          </div>
+          {isGenerating ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="font-serif text-gray-500 text-sm">AI 正在創作中...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-4">
+              <p className="font-serif text-wax text-sm mb-4">{error}</p>
+              <button
+                onClick={handleGenerate}
+                className="px-4 py-2 bg-gold text-white font-serif text-sm rounded-sm hover:bg-gold/90 transition-colors"
+              >
+                重試
+              </button>
+            </div>
+          ) : hasContent ? (
+            <div className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line">
+              {displayContent}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="font-serif text-gray-400 text-sm mb-4">
+                尚無景點故事
+              </p>
+              {canEdit && (
+                <button
+                  onClick={handleGenerate}
+                  className="px-6 py-2.5 bg-gradient-to-r from-gold to-gold/80 text-white font-display text-sm tracking-wider rounded-sm hover:from-gold/90 hover:to-gold/70 transition-all shadow-md"
+                >
+                  ✨ AI 生成故事
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-sm"
-          >
-            CLOSE
-          </button>
+          <div className="flex gap-2">
+            {canEdit && hasContent && !isGenerating && (
+              <button
+                onClick={handleGenerate}
+                className="flex-1 py-2.5 bg-gold/10 text-gold border border-gold font-display text-sm tracking-wider hover:bg-gold/20 transition-colors rounded-sm"
+              >
+                ✨ 重新生成
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className={`${canEdit && hasContent ? 'flex-1' : 'w-full'} py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-sm`}
+            >
+              CLOSE
+            </button>
+          </div>
         </div>
 
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-ink transition-colors"
         >
           <svg

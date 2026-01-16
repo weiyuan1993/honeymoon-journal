@@ -75,6 +75,13 @@ export interface ApiResponse {
   message: string;
 }
 
+// AI response types
+export interface AIGenerateResponse {
+  success: boolean;
+  content?: string;
+  message?: string;
+}
+
 // Google Apps Script types
 declare global {
   const google: {
@@ -96,6 +103,13 @@ interface GoogleScriptRun {
   getNavigationData(): void;
   getAttractionDetails(): void;
   getUserPermission(): void;
+  // AI methods
+  generateAttractionStory(
+    dayKey: string,
+    city: string,
+    itineraryContent: string
+  ): void;
+  suggestItinerary(city: string, date?: string, preferences?: string): void;
 }
 
 export {};

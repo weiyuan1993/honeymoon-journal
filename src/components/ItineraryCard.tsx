@@ -282,9 +282,9 @@ export default function ItineraryCard({
         )}
 
         {/* Story & Map buttons */}
-        {(hasDetail || hasCoordinates) && (
+        {(hasDetail || hasCoordinates || canEdit) && (
           <div className="mt-4 pt-3 border-t border-subtle flex gap-2">
-            {hasDetail && (
+            {(hasDetail || canEdit) && (
               <button
                 onClick={() => setShowDetail(true)}
                 className="flex-1 py-2 px-3 bg-gold/10 hover:bg-gold/20 border border-gold text-ink font-serif text-xs rounded-sm transition-all duration-300 flex items-center justify-center gap-1.5 group"
@@ -344,6 +344,8 @@ export default function ItineraryCard({
         dayKey={item.day}
         city={item.city}
         detail={detailData}
+        itineraryContent={item.content}
+        canEdit={canEdit}
       />
 
       {/* Map Modal */}

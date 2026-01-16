@@ -7,6 +7,7 @@ import type {
   AttractionDetails,
   UserPermission,
   ApiResponse,
+  AIGenerateResponse,
 } from '@/types';
 
 // Check if running in Google Apps Script environment
@@ -127,6 +128,41 @@ export const gasClient = {
   // User Permission
   getUserPermission: (): Promise<UserPermission> =>
     callGAS('getUserPermission', mockPermission),
+
+  // AI Features
+  generateAttractionStory: (
+    dayKey: string,
+    city: string,
+    itineraryContent: string
+  ): Promise<AIGenerateResponse> =>
+    callGAS(
+      'generateAttractionStory',
+      {
+        success: true,
+        content:
+          '[Mock] 踏上這片承載千年風華的土地，你會發現這座城市獨特的魅力。漫步在古老的街道上，歷史的痕跡與現代的活力在此交織，讓每一步都充滿驚喜與感動...',
+      },
+      dayKey,
+      city,
+      itineraryContent
+    ),
+
+  suggestItinerary: (
+    city: string,
+    date?: string,
+    preferences?: string
+  ): Promise<AIGenerateResponse> =>
+    callGAS(
+      'suggestItinerary',
+      {
+        success: true,
+        content:
+          '[Mock] 推薦景點：\n1. 著名地標 - 必訪經典景點\n2. 當地美食街 - 品嚐道地風味\n3. 歷史博物館 - 了解文化背景\n\n推薦餐廳：\n- 當地人氣餐廳\n\n建議路線：早上參觀地標 → 中午用餐 → 下午博物館',
+      },
+      city,
+      date,
+      preferences
+    ),
 };
 
 export default gasClient;
