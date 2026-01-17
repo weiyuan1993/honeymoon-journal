@@ -5,6 +5,7 @@ import type {
   ExpenseFormData,
   NavigationData,
   AttractionDetails,
+  FoodRecommendations,
   UserPermission,
   ApiResponse,
   AIGenerateResponse,
@@ -69,6 +70,8 @@ const mockAttractionDetails: AttractionDetails = {
   },
 };
 
+const mockFoodRecommendations: FoodRecommendations = {};
+
 const mockPermission: UserPermission = {
   email: 'dev@localhost',
   canEdit: true,
@@ -125,6 +128,9 @@ export const gasClient = {
   getAttractionDetails: (): Promise<AttractionDetails> =>
     callGAS('getAttractionDetails', mockAttractionDetails),
 
+  getFoodRecommendations: (): Promise<FoodRecommendations> =>
+    callGAS('getFoodRecommendations', mockFoodRecommendations),
+
   // User Permission
   getUserPermission: (): Promise<UserPermission> =>
     callGAS('getUserPermission', mockPermission),
@@ -162,6 +168,25 @@ export const gasClient = {
       city,
       date,
       preferences
+    ),
+
+  generateFoodRecommendations: (
+    dayKey: string,
+    city: string,
+    itineraryContent: string,
+    priceLevel: 'budget' | 'mid' | 'high'
+  ): Promise<AIGenerateResponse> =>
+    callGAS(
+      'generateFoodRecommendations',
+      {
+        success: true,
+        content:
+          '[Mock]\n\n【早餐推薦】\n• Café Central - 經典維也納咖啡館，推薦維也納早餐套餐（約€15）\n\n【午餐推薦】\n• Figlmüller - 維也納炸豬排名店，招牌炸豬排（約€20）\n• Plachutta - 傳統牛肉湯專門店（約€25）\n\n【晚餐推薦】\n• Steirereck - 米其林二星，蜜月首選（約€150/人，需提前訂位）\n• Zum Schwarzen Kameel - 百年老店，氣氛浪漫（約€60/人）\n\n【當地必吃】\n• Sacher Torte 薩赫蛋糕\n• Apfelstrudel 蘋果卷\n\n【美食小提醒】\n• 高級餐廳建議提前 1-2 週訂位\n• 午餐時段通常有較優惠的套餐價格',
+      },
+      dayKey,
+      city,
+      itineraryContent,
+      priceLevel
     ),
 };
 

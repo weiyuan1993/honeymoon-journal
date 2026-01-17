@@ -63,6 +63,10 @@ export interface AttractionDetail {
 
 export type AttractionDetails = Record<string, AttractionDetail>;
 
+// Food recommendations types
+export type PriceLevel = 'budget' | 'mid' | 'high';
+export type FoodRecommendations = Record<string, Partial<Record<PriceLevel, string>>>;
+
 // User permission types
 export interface UserPermission {
   email: string | null;
@@ -102,6 +106,7 @@ interface GoogleScriptRun {
   deleteExpense(rowNumber: number): void;
   getNavigationData(): void;
   getAttractionDetails(): void;
+  getFoodRecommendations(): void;
   getUserPermission(): void;
   // AI methods
   generateAttractionStory(
@@ -110,6 +115,12 @@ interface GoogleScriptRun {
     itineraryContent: string
   ): void;
   suggestItinerary(city: string, date?: string, preferences?: string): void;
+  generateFoodRecommendations(
+    dayKey: string,
+    city: string,
+    itineraryContent: string,
+    priceLevel: 'budget' | 'mid' | 'high'
+  ): void;
 }
 
 export {};

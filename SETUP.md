@@ -25,6 +25,12 @@ export const tripConfig = {
   // Change app title
   tripName: "My Japan Trip 2026",
 
+  // Menu links (Google Sheet & GitHub)
+  links: {
+    googleSheet: 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID',
+    github: 'https://github.com/YOUR_USERNAME/YOUR_REPO',
+  },
+
   // Add/remove currencies as needed
   currencies: [
     { code: 'JPY', symbol: '¥', label: '日圓' },
@@ -65,8 +71,9 @@ var CONFIG = {
   sheetNames: {
     itinerary: '行程',
     expenses: '記帳',
-    attractions: '景點介紹',
-    navigation: '導航'
+    attractions: '景點規劃',
+    navigation: '導航',
+    food: '美食推薦'
   }
 };
 ```

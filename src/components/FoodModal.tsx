@@ -1,31 +1,48 @@
-import { useState, useEffect } from 'react';
-import type { AttractionDetail } from '@/types';
+import { useState, useEffect, useMemo } from 'react';
 import { gasClient } from '@/utils/gasClient';
+import type { PriceLevel } from '@/types';
 
-interface DetailModalProps {
+interface FoodModalProps {
   isOpen: boolean;
   onClose: () => void;
   dayKey: string;
   city: string;
-  detail: AttractionDetail | undefined;
-  itineraryContent?: string;
-  canEdit?: boolean;
-  onStoryGenerated?: (dayKey: string, content: string) => void;
+  itineraryContent: string;
+  canEdit: boolean;
+  savedData?: Partial<Record<PriceLevel, string>>;
+  onFoodGenerated?: () => void;
 }
 
-export default function DetailModal({
+const priceLevels: { value: PriceLevel; label: string; emoji: string }[] = [
+  { value: 'budget', label: '平價', emoji: '💰' },
+  { value: 'mid', label: '中價位', emoji: '💰💰' },
+  { value: 'high', label: '高價位', emoji: '💰💰💰' },
+];
+
+// Convert URLs in text to clickable links
+function linkifyContent(text: string): string {
+  // Match URLs (http/https)
+  const urlRegex = /(https?:\/\/[^\s\]]+)/g;
+  return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #c5a059; text-decoration: underline;">查看地圖</a>');
+}
+
+export default function FoodModal({
   isOpen,
   onClose,
   dayKey,
   city,
-  detail,
-  itineraryContent = '',
-  canEdit = false,
-  onStoryGenerated,
-}: DetailModalProps) {
+  itineraryContent,
+  canEdit,
+  savedData,
+  onFoodGenerated,
+}: FoodModalProps) {
+  const [selectedPrice, setSelectedPrice] = useState<PriceLevel>('mid');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if there's saved content for the selected price level
+  const savedContent = savedData?.[selectedPrice];
 
   // Prevent background scroll when modal is open
   useEffect(() => {
@@ -37,39 +54,59 @@ export default function DetailModal({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Reset generated content when modal closes or price changes
+  useEffect(() => {
+    if (!isOpen) {
+      setGeneratedContent(null);
+      setError(null);
+    }
+  }, [isOpen]);
 
-  const displayContent = generatedContent || detail?.content;
+  // Reset generated content when price level changes
+  useEffect(() => {
+    setGeneratedContent(null);
+    setError(null);
+  }, [selectedPrice]);
+
+  // Determine what content to display
+  const displayContent = generatedContent || savedContent;
   const hasContent = !!displayContent;
+
+  // Convert content with links
+  const contentHtml = useMemo(() => {
+    if (!displayContent) return '';
+    return linkifyContent(displayContent);
+  }, [displayContent]);
+
+  if (!isOpen) return null;
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
 
     try {
-      const result = await gasClient.generateAttractionStory(
+      const result = await gasClient.generateFoodRecommendations(
         dayKey,
         city,
-        itineraryContent
+        itineraryContent,
+        selectedPrice
       );
 
       if (result.success && result.content) {
         setGeneratedContent(result.content);
-        onStoryGenerated?.(dayKey, result.content);
+        onFoodGenerated?.();
       } else {
         setError(result.message || '生成失敗，請稍後再試');
       }
     } catch (err) {
       setError('生成失敗，請稍後再試');
-      console.error('AI generation error:', err);
+      console.error('AI food generation error:', err);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleClose = () => {
-    setGeneratedContent(null);
-    setError(null);
     onClose();
   };
 
@@ -89,7 +126,7 @@ export default function DetailModal({
         {/* Header */}
         <div className="bg-gold/10 px-4 h-10 border-b border-gold flex items-center justify-between">
           <span className="font-display text-sm text-ink truncate pr-2">
-            {dayKey} · {city}
+            🍽️ {dayKey} · {city} 美食推薦
           </span>
           <button
             onClick={handleClose}
@@ -112,12 +149,33 @@ export default function DetailModal({
           </button>
         </div>
 
+        {/* Price level tabs */}
+        <div className="flex border-b border-gold/30 bg-gold/5">
+          {priceLevels.map((level) => (
+            <button
+              key={level.value}
+              onClick={() => setSelectedPrice(level.value)}
+              className={`flex-1 py-2 px-2 font-serif text-xs transition-all ${
+                selectedPrice === level.value
+                  ? 'bg-gold/20 text-gold border-b-2 border-gold font-bold'
+                  : 'text-gray-500 hover:bg-gold/10'
+              }`}
+            >
+              <span className="block text-[10px] mb-0.5">{level.emoji}</span>
+              {level.label}
+              {savedData?.[level.value] && (
+                <span className="ml-1 text-[10px] text-forest">✓</span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* Content area */}
-        <div className="p-6 overflow-y-auto max-h-[50vh] custom-scrollbar">
+        <div className="p-6 overflow-y-auto max-h-[45vh] custom-scrollbar">
           {isGenerating ? (
             <div className="flex flex-col items-center justify-center py-8">
               <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="font-serif text-gray-500 text-sm">AI 正在創作中...</p>
+              <p className="font-serif text-gray-500 text-sm">AI 正在搜尋美食中...</p>
             </div>
           ) : error ? (
             <div className="text-center py-4">
@@ -130,20 +188,21 @@ export default function DetailModal({
               </button>
             </div>
           ) : hasContent ? (
-            <div className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line">
-              {displayContent}
-            </div>
+            <div
+              className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line"
+              dangerouslySetInnerHTML={{ __html: contentHtml }}
+            />
           ) : (
             <div className="text-center py-8">
               <p className="font-serif text-gray-400 text-sm mb-4">
-                尚無景點規劃
+                尚無{priceLevels.find(l => l.value === selectedPrice)?.label}美食推薦
               </p>
               {canEdit && (
                 <button
                   onClick={handleGenerate}
                   className="px-6 py-2.5 bg-gradient-to-r from-gold to-gold/80 text-white font-display text-sm tracking-wider rounded-sm hover:from-gold/90 hover:to-gold/70 transition-all shadow-md"
                 >
-                  ✨ AI 生成規劃
+                  🍽️ 生成美食推薦
                 </button>
               )}
             </div>
@@ -169,7 +228,6 @@ export default function DetailModal({
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

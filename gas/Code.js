@@ -17,7 +17,8 @@ var CONFIG = {
     itinerary: '行程',
     expenses: '記帳',
     attractions: '景點規劃',
-    navigation: '導航'
+    navigation: '導航',
+    food: '美食推薦'
   }
 };
 
@@ -97,23 +98,26 @@ function getItineraryData() {
     if (!sheet) return [];
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return [];
-    
-    // 讀取 A~I (共9欄)
-    var data = sheet.getRange(2, 1, lastRow - 1, 9).getRichTextValues();
 
-    return data.map(function(row, index) {
+    var range = sheet.getRange(2, 1, lastRow - 1, 9);
+    // 用 getDisplayValues 取得顯示值（處理日期格式）
+    var displayValues = range.getDisplayValues();
+    // 用 getRichTextValues 取得含超連結的內容
+    var richTextValues = range.getRichTextValues();
+
+    return displayValues.map(function(row, index) {
+      var richRow = richTextValues[index];
       return {
-        rowNumber: index + 2, // 關鍵：記下行號以便修改
-        day: row[0].getText(),       // Day 只要純文字
-        date: row[1].getText(),      // 日期 只要純文字
-        weekday: row[2].getText(),   // 星期 只要純文字
-        // 下面這些欄位可能包含連結，我們轉成 HTML
-        city: row[3].getText(),      // 城市通常不需要超連結顯示在標題上，取純文字即可，或者你要轉 HTML 也可以
-        content: convertRichTextToHtml(row[4]),   // 主要內容 (轉 HTML)
-        transport: convertRichTextToHtml(row[5]), // 交通 (轉 HTML)
-        ticket: convertRichTextToHtml(row[6]),    // 票務 (轉 HTML)
-        link: row[7].getText(),       // 這是原本的「購票連結」欄位，通常是純網址，維持原樣
-        hotel: convertRichTextToHtml(row[8]), 
+        rowNumber: index + 2,
+        day: row[0],                              // Day (顯示值)
+        date: row[1],                             // 日期 (顯示值，處理日期格式)
+        weekday: row[2],                          // 星期 (顯示值)
+        city: row[3],                             // 城市 (顯示值)
+        content: convertRichTextToHtml(richRow[4]),   // 主要內容 (轉 HTML)
+        transport: convertRichTextToHtml(richRow[5]), // 交通 (轉 HTML)
+        ticket: convertRichTextToHtml(richRow[6]),    // 票務 (轉 HTML)
+        link: row[7],                             // 購票連結 (顯示值)
+        hotel: convertRichTextToHtml(richRow[8]),     // 住宿 (轉 HTML)
       };
     });
   } catch (e) {
@@ -465,6 +469,150 @@ function saveAttractionStory(dayKey, title, content) {
     Logger.log('已新增 ' + dayKey + ' 的景點故事');
   } catch (e) {
     Logger.log('儲存故事錯誤: ' + e.toString());
+  }
+}
+
+// AI 美食推薦
+function generateFoodRecommendations(dayKey, city, itineraryContent, priceLevel) {
+  // 權限檢查
+  if (!isAuthorizedEditor()) {
+    return { success: false, message: '您沒有權限使用此功能' };
+  }
+
+  // 取得 API Key
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) {
+    return { success: false, message: 'Gemini API Key 未設定，請聯繫管理員' };
+  }
+
+  // 價位描述
+  var priceLevelDesc = {
+    'budget': '平價美食（每人約 €10-20 或當地等值貨幣）',
+    'mid': '中價位餐廳（每人約 €25-50 或當地等值貨幣）',
+    'high': '高級餐廳（每人約 €60+ 或當地等值貨幣，適合特別的蜜月晚餐）'
+  };
+
+  var priceDesc = priceLevelDesc[priceLevel] || priceLevelDesc['mid'];
+
+  // 建立 prompt
+  var prompt = '你是一位專業的蜜月旅遊美食顧問。請根據以下行程資訊，推薦當日的用餐選擇。\n\n' +
+    '重要規則：\n' +
+    '1. 請使用純文字格式，不要使用 markdown 語法（如 **粗體**、# 標題等）\n' +
+    '2. 每間餐廳名稱後面請附上 Google Maps 搜尋連結，格式為：\n' +
+    '   店名 [地圖: https://www.google.com/maps/search/店名+城市名]\n\n' +
+    '價位需求：' + priceDesc + '\n\n' +
+    '請按以下格式輸出：\n\n' +
+    '【早餐推薦】\n' +
+    '推薦 1-2 間適合的早餐地點，包含店名（附地圖連結）、特色餐點、大約價位\n\n' +
+    '【午餐推薦】\n' +
+    '推薦 2-3 間餐廳，需考慮與當日景點的距離，包含店名（附地圖連結）、招牌菜、大約價位、為什麼推薦\n\n' +
+    '【晚餐推薦】\n' +
+    '推薦 2-3 間餐廳，考慮蜜月氛圍，包含店名（附地圖連結）、特色、大約價位、訂位建議\n\n' +
+    '【當地必吃】\n' +
+    '2-3 樣當地特色小吃或甜點，適合當作下午茶或點心，如有知名店家也請附上地圖連結\n\n' +
+    '【美食小提醒】\n' +
+    '1-2 點當地用餐文化或注意事項\n\n' +
+    '行程資訊：\n' +
+    'Day: ' + dayKey + '\n' +
+    '城市: ' + city + '\n' +
+    '當日行程: ' + itineraryContent;
+
+  try {
+    var response = UrlFetchApp.fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 8192
+          }
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+    var result = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() === 200 && result.candidates && result.candidates[0]) {
+      var generatedText = result.candidates[0].content.parts[0].text;
+
+      // 儲存到 Google Sheet
+      saveFoodRecommendation(dayKey, city, priceLevel, generatedText);
+
+      return { success: true, content: generatedText };
+    } else {
+      var errorMsg = result.error ? result.error.message : '生成失敗，請稍後再試';
+      return { success: false, message: errorMsg };
+    }
+  } catch (e) {
+    Logger.log('AI 美食推薦錯誤: ' + e.toString());
+    return { success: false, message: '生成失敗: ' + e.toString() };
+  }
+}
+
+// 儲存美食推薦到 Sheet
+function saveFoodRecommendation(dayKey, city, priceLevel, content) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.food);
+    if (!sheet) {
+      // 如果 Sheet 不存在，建立一個新的
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONFIG.sheetNames.food);
+      sheet.appendRow(['Day', '城市', '價位', '內容', '更新時間']);
+      Logger.log('已建立美食推薦 Sheet');
+    }
+
+    // 檢查是否已存在該 Day + 價位 的資料
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] === dayKey && data[i][2] === priceLevel) {
+        // 更新現有行
+        sheet.getRange(i + 1, 2, 1, 4).setValues([[city, priceLevel, content, new Date()]]);
+        Logger.log('已更新 ' + dayKey + ' (' + priceLevel + ') 的美食推薦');
+        return;
+      }
+    }
+
+    // 新增行
+    sheet.appendRow([dayKey, city, priceLevel, content, new Date()]);
+    Logger.log('已新增 ' + dayKey + ' (' + priceLevel + ') 的美食推薦');
+  } catch (e) {
+    Logger.log('儲存美食推薦錯誤: ' + e.toString());
+  }
+}
+
+// 取得已儲存的美食推薦
+function getFoodRecommendations() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.food);
+    if (!sheet) return {};
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return {};
+
+    // 讀取 A~D 欄 (Day, 城市, 價位, 內容)
+    var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+
+    // 整理成以 Day 為 key，價位為 sub-key 的物件
+    var result = {};
+    data.forEach(function(row) {
+      var day = row[0];
+      var priceLevel = row[2];
+      var content = row[3];
+
+      if (!day || !priceLevel || !content) return;
+
+      if (!result[day]) {
+        result[day] = {};
+      }
+      result[day][priceLevel] = content;
+    });
+
+    return result;
+  } catch (e) {
+    Logger.log(e);
+    return {};
   }
 }
 

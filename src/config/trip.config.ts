@@ -5,6 +5,12 @@ export const tripConfig = {
   // App title displayed in header
   tripName: "LY's Honeymoon Journal",
 
+  // External links for menu
+  links: {
+    googleSheet: 'https://docs.google.com/spreadsheets/d/1sd5CVy0qd4QSuOUUDnQH6I1Mx2F2W1NvgWVbujcePiU/edit?usp=sharing',
+    github: 'https://github.com/weiyuan1993/honeymoon-journal',
+  },
+
   // Currencies available for expense tracking
   currencies: [
     { code: 'EUR', symbol: '€', label: '歐元' },
