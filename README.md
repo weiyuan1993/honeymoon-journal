@@ -131,6 +131,43 @@ Push 到 `main` 分支會自動觸發 GitHub Actions 執行建置與部署。
 | Day | City | PriceLevel | Content | UpdatedAt |
 |-----|------|------------|---------|-----------|
 
+## AI 功能
+
+本專案整合 Google Gemini API 提供智慧旅遊助理功能。
+
+### AI 景點規劃
+
+點擊行程卡片的「規劃」按鈕，AI 會根據當日行程生成：
+
+- **景點故事**：融入歷史典故與文化背景的文學風格介紹
+- **交通規劃**：景點間的移動建議與時間安排
+- **旅遊小提醒**：當地習俗、注意事項
+
+生成的內容會自動儲存至 Google Sheet「景點介紹」分頁，下次開啟直接顯示。
+
+### AI 美食推薦
+
+點擊行程卡片的「美食」按鈕，可依價位獲得餐廳推薦：
+
+| 價位 | 說明 |
+|------|------|
+| 平價 | 當地小吃、快餐、街邊美食 |
+| 中價位 | 特色餐廳、當地人氣店家 |
+| 高價位 | 米其林推薦、高級餐廳 |
+
+每間餐廳附有 Google Maps 連結，方便導航。推薦內容儲存至「美食推薦」分頁。
+
+### API 設定
+
+1. 前往 [Google AI Studio](https://aistudio.google.com/apikey) 取得 API Key
+2. 在 Google Apps Script 編輯器執行：
+
+```javascript
+PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', 'your-api-key');
+```
+
+> **注意**：API Key 存於 Script Properties，不會進入版本控制。免費版有每分鐘請求限制。
+
 ## 建立新旅遊
 
 此專案設計為可重用的 template。建立新旅遊只需修改兩個設定檔：
@@ -139,17 +176,6 @@ Push 到 `main` 分支會自動觸發 GitHub Actions 執行建置與部署。
 |------|----------|
 | `src/config/trip.config.ts` | 前端設定（App 標題、幣別、支出類別、外部連結） |
 | `gas/Code.js` 的 `CONFIG` | 後端設定（頁面標題、授權帳號、Sheet 名稱） |
-
-### AI 功能設定
-
-使用 AI 功能需在 Google Apps Script 設定 Gemini API Key：
-
-```javascript
-// 在 GAS 編輯器執行一次
-PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', 'your-api-key');
-```
-
-API Key 可從 [Google AI Studio](https://aistudio.google.com/apikey) 取得。
 
 詳細步驟請參考 [SETUP.md](SETUP.md)。
 
