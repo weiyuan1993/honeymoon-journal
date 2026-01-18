@@ -79,10 +79,23 @@ export interface ApiResponse {
   message: string;
 }
 
+// Journey content types
+export interface JourneyContent {
+  intro: string;
+  cities: Record<string, string>; // cityName -> content
+  closing: string;
+}
+
 // AI response types
 export interface AIGenerateResponse {
   success: boolean;
   content?: string;
+  message?: string;
+}
+
+export interface JourneyGenerateResponse {
+  success: boolean;
+  content?: JourneyContent;
   message?: string;
 }
 
@@ -121,6 +134,9 @@ interface GoogleScriptRun {
     itineraryContent: string,
     priceLevel: 'budget' | 'mid' | 'high'
   ): void;
+  // Journey methods
+  getJourneyContent(): void;
+  generateJourneyIntro(itinerary: ItineraryItem[]): void;
 }
 
 export {};

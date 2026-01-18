@@ -10,10 +10,11 @@ import { tripConfig } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
 import ItineraryCard from './ItineraryCard';
 import ExpensePage from './ExpensePage';
+import JourneyPage from './JourneyPage';
 import Loading from './Loading';
 
 export default function App() {
-  const [tab, setTab] = useState<'itinerary' | 'expense'>('itinerary');
+  const [tab, setTab] = useState<'itinerary' | 'expense' | 'journey'>('itinerary');
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [loadingItin, setLoadingItin] = useState(false);
   const [navigationData, setNavigationData] = useState<NavigationData>({});
@@ -119,31 +120,21 @@ export default function App() {
     <div className="min-h-screen pb-20 bg-paper">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-gradient-to-b from-[#f8f5ed] via-[#f4f0e6] to-[#f0ebe0] backdrop-blur-sm shadow-md border-b border-gold/20">
-        <div className="relative flex flex-col items-center justify-center px-4 py-3">
-          {/* Decorative top line */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent" />
-
+        <div className="relative flex flex-col items-center justify-center px-4 py-2">
           {/* Subtitle */}
-          <div className="flex items-center gap-2 text-gold/80 text-[10px] tracking-[0.3em] uppercase mb-1">
-            <span className="w-4 h-px bg-gold/40" />
+          <div className="flex items-center gap-1.5 text-gold/80 text-[9px] tracking-[0.25em] uppercase">
+            <span className="w-3 h-px bg-gold/40" />
             <span>{tripConfig.tripSubtitle}</span>
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
-            <span className="w-4 h-px bg-gold/40" />
+            <span className="w-3 h-px bg-gold/40" />
           </div>
 
           {/* Main title */}
-          <h1 className="font-display text-ink text-base tracking-wide">
+          <h1 className="font-display text-ink text-sm tracking-wide">
             {tripConfig.tripName}
           </h1>
-
-          {/* Decorative bottom element */}
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="w-8 h-px bg-gold/30" />
-            <span className="w-1.5 h-1.5 rounded-full bg-gold/50" />
-            <span className="w-8 h-px bg-gold/30" />
-          </div>
 
           {/* Menu button */}
           <button
@@ -211,7 +202,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="max-w-xl mx-auto p-4 mt-2">
+      <main className={tab === 'journey' ? 'mt-2' : 'max-w-xl mx-auto p-4 mt-2'}>
         {tab === 'itinerary' && (
           <div className="animate-fade-in-up">
             {loadingItin ? (
@@ -242,14 +233,32 @@ export default function App() {
             <ExpensePage canEdit={userPermission.canEdit} />
           </div>
         )}
+        {tab === 'journey' && (
+          <div className="animate-fade-in-up w-full">
+            <JourneyPage
+              itinerary={itinerary}
+              canEdit={userPermission.canEdit}
+            />
+          </div>
+        )}
       </main>
 
       {/* Bottom fixed tab navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gold shadow-lg">
         <div className="flex w-full">
           <button
+            onClick={() => setTab('journey')}
+            className={`flex-1 py-3 font-display text-xs tracking-wider transition-all duration-300 ${
+              tab === 'journey'
+                ? 'bg-ink text-white shadow-md'
+                : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
+            }`}
+          >
+            JOURNEY
+          </button>
+          <button
             onClick={() => setTab('itinerary')}
-            className={`flex-1 py-3 font-display text-sm tracking-wider transition-all duration-300 ${
+            className={`flex-1 py-3 font-display text-xs tracking-wider transition-all duration-300 border-l border-subtle ${
               tab === 'itinerary'
                 ? 'bg-ink text-white shadow-md'
                 : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
@@ -259,7 +268,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setTab('expense')}
-            className={`flex-1 py-3 font-display text-sm tracking-wider transition-all duration-300 border-l border-subtle ${
+            className={`flex-1 py-3 font-display text-xs tracking-wider transition-all duration-300 border-l border-subtle ${
               tab === 'expense'
                 ? 'bg-ink text-white shadow-md'
                 : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'

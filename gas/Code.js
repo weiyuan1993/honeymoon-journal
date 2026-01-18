@@ -6,30 +6,49 @@ var CONFIG = {
   // App title displayed in browser tab
   pageTitle: 'Honeymoon Journey',
 
-  // Users who can edit (add expenses, modify itinerary)
-  authorizedEditors: [
-    'ab889721@gmail.com',
-    'tingyyyung@gmail.com'
-  ],
-
   // Google Sheet tab names (must match your spreadsheet)
   sheetNames: {
     itinerary: '行程',
     expenses: '記帳',
     attractions: '景點規劃',
     navigation: '導航',
-    food: '美食推薦'
+    food: '美食推薦',
+    journey: '旅程介紹'
   }
 };
 
-// Legacy alias for backward compatibility
-var AUTHORIZED_EDITORS = CONFIG.authorizedEditors;
+// === Script Properties Setup ===
+// Run these functions ONCE in the GAS editor to configure:
+//
+// 1. setupAuthorizedEditors() - Set authorized editor emails
+// 2. setupApiKey() - Set Gemini API key (if using AI features)
+
+function setupAuthorizedEditors() {
+  // Comma-separated list of emails that can edit
+  var editors = 'ab889721@gmail.com,tingyyyung@gmail.com';
+  PropertiesService.getScriptProperties().setProperty('AUTHORIZED_EDITORS', editors);
+  Logger.log('Authorized editors set: ' + editors);
+}
+
+function setupApiKey() {
+  var apiKey = 'YOUR_GEMINI_API_KEY_HERE';
+  PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', apiKey);
+  Logger.log('API Key set successfully');
+}
+
+// Get authorized editors from Script Properties
+function getAuthorizedEditors() {
+  var editors = PropertiesService.getScriptProperties().getProperty('AUTHORIZED_EDITORS');
+  if (!editors) return [];
+  return editors.split(',').map(function(e) { return e.trim(); });
+}
 
 // 檢查目前使用者是否有編輯權限
 function isAuthorizedEditor() {
   try {
     var email = Session.getActiveUser().getEmail();
-    return AUTHORIZED_EDITORS.indexOf(email) !== -1;
+    var authorizedEditors = getAuthorizedEditors();
+    return authorizedEditors.indexOf(email) !== -1;
   } catch (e) {
     return false;
   }
@@ -39,7 +58,8 @@ function isAuthorizedEditor() {
 function getUserPermission() {
   try {
     var email = Session.getActiveUser().getEmail();
-    var canEdit = AUTHORIZED_EDITORS.indexOf(email) !== -1;
+    var authorizedEditors = getAuthorizedEditors();
+    var canEdit = authorizedEditors.indexOf(email) !== -1;
     return {
       email: email,
       canEdit: canEdit
@@ -669,5 +689,249 @@ function suggestItinerary(city, date, preferences) {
   } catch (e) {
     Logger.log('AI 建議錯誤: ' + e.toString());
     return { success: false, message: '生成失敗: ' + e.toString() };
+  }
+}
+
+// ============================================
+// 旅程介紹功能
+// ============================================
+
+// 取得已儲存的旅程介紹
+function getJourneyContent() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.journey);
+    if (!sheet) return null;
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return null;
+
+    // 讀取所有資料
+    var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+
+    var result = {
+      intro: '',
+      cities: {},
+      closing: ''
+    };
+
+    data.forEach(function(row) {
+      var type = row[0]; // intro, city:城市名, closing
+      var content = row[1];
+
+      if (type === 'intro') {
+        result.intro = content;
+      } else if (type === 'closing') {
+        result.closing = content;
+      } else if (type.startsWith('city:')) {
+        var cityName = type.replace('city:', '');
+        result.cities[cityName] = content;
+      }
+    });
+
+    return result;
+  } catch (e) {
+    Logger.log('取得旅程介紹錯誤: ' + e.toString());
+    return null;
+  }
+}
+
+// AI 生成旅程介紹
+function generateJourneyIntro(itinerary) {
+  // 權限檢查
+  if (!isAuthorizedEditor()) {
+    return { success: false, message: '您沒有權限使用此功能' };
+  }
+
+  // 取得 API Key
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) {
+    return { success: false, message: 'Gemini API Key 未設定，請聯繫管理員' };
+  }
+
+  // 整理城市區段
+  var citySegments = [];
+  var currentCity = null;
+
+  itinerary.forEach(function(item) {
+    if (!item.city) return;
+
+    // 取得主要城市名（處理 "倫敦 London" 或 "倫敦 → 巴黎" 格式）
+    var cityParts = item.city.split('→')[0].trim().split(' ');
+    var cityZh = cityParts[0];
+    var dayNum = parseInt(item.day.replace('Day ', '')) || 0;
+
+    // 如果是移動日（有箭頭），跳過
+    if (item.city.includes('→')) {
+      if (currentCity) {
+        currentCity.endDay = dayNum;
+        currentCity.days.push(item);
+      }
+      return;
+    }
+
+    // 檢查是否是新城市
+    if (!currentCity || currentCity.city !== cityZh) {
+      if (currentCity) {
+        citySegments.push(currentCity);
+      }
+      currentCity = {
+        city: cityZh,
+        startDay: dayNum,
+        endDay: dayNum,
+        days: [item],
+        hotels: []
+      };
+    } else {
+      currentCity.endDay = dayNum;
+      currentCity.days.push(item);
+    }
+
+    // 收集飯店
+    if (item.hotel && currentCity) {
+      var hotelText = item.hotel.replace(/<[^>]*>/g, '').trim();
+      if (hotelText && currentCity.hotels.indexOf(hotelText) === -1) {
+        currentCity.hotels.push(hotelText);
+      }
+    }
+  });
+
+  if (currentCity) {
+    citySegments.push(currentCity);
+  }
+
+  var totalDays = itinerary.length;
+  var cityNames = citySegments.map(function(s) { return s.city; });
+
+  // 建立城市詳細資訊
+  var cityDetails = citySegments.map(function(seg) {
+    var daysContent = seg.days.map(function(d) {
+      return d.day + ': ' + (d.content ? d.content.replace(/<[^>]*>/g, '').substring(0, 80) : '');
+    }).join('\n');
+
+    return '【' + seg.city + '】Day ' + seg.startDay + '-' + seg.endDay +
+      '\n住宿: ' + (seg.hotels[0] || '未定') +
+      '\n行程:\n' + daysContent;
+  }).join('\n\n');
+
+  // 建立 prompt - 依城市生成介紹
+  var prompt = '你是一位文筆優美的旅遊作家，專門為蜜月旅行撰寫浪漫動人的旅程介紹。\n\n' +
+    '請根據以下蜜月行程資訊，撰寫如精品旅行社的行程介紹。\n' +
+    '文風要求：文藝、浪漫、優雅，讓讀者心生嚮往，迫不及待想要出發。\n' +
+    '使用第一人稱複數「我們」，營造甜蜜的蜜月氛圍。\n\n' +
+    '重要：請使用純文字格式，不要使用 markdown 語法。\n\n' +
+    '行程資訊：\n' +
+    '• 總天數：' + totalDays + ' 天\n' +
+    '• 城市順序：' + cityNames.join(' → ') + '\n\n' +
+    '詳細行程：\n' + cityDetails + '\n\n' +
+    '請依照以下格式輸出（用 ||| 分隔）：\n\n' +
+    '【intro】\n' +
+    '旅程序章（約 100-150 字）：以詩意筆觸描繪這趟蜜月旅程的整體樣貌，讓讀者感受到浪漫與期待。\n\n' +
+    '|||\n\n' +
+    '【' + cityNames[0] + '】\n' +
+    '（約 80-120 字）：描述在這座城市的體驗，融入景點特色、文化氛圍、下榻飯店的舒適感。\n\n' +
+    cityNames.slice(1).map(function(city) {
+      return '|||\n\n【' + city + '】\n（約 80-120 字）：同上格式。';
+    }).join('\n\n') + '\n\n' +
+    '|||\n\n' +
+    '【closing】\n' +
+    '期待出發（約 40-60 字）：簡短動人的結語，表達對這趟旅程的期待與意義。';
+
+  try {
+    var response = UrlFetchApp.fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 8192
+          }
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+    var result = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() === 200 && result.candidates && result.candidates[0]) {
+      var generatedText = result.candidates[0].content.parts[0].text;
+
+      // 解析回應
+      var parts = generatedText.split('|||');
+      var content = {
+        intro: '',
+        cities: {},
+        closing: ''
+      };
+
+      parts.forEach(function(part) {
+        var trimmed = part.trim();
+
+        if (trimmed.startsWith('【intro】')) {
+          content.intro = trimmed.replace('【intro】', '').trim();
+        } else if (trimmed.startsWith('【closing】')) {
+          content.closing = trimmed.replace('【closing】', '').trim();
+        } else {
+          // 嘗試匹配城市
+          cityNames.forEach(function(city) {
+            if (trimmed.startsWith('【' + city + '】')) {
+              content.cities[city] = trimmed.replace('【' + city + '】', '').trim();
+            }
+          });
+        }
+      });
+
+      // 儲存到 Google Sheet
+      saveJourneyContent(content);
+
+      return { success: true, content: content };
+    } else {
+      var errorMsg = result.error ? result.error.message : '生成失敗，請稍後再試';
+      return { success: false, message: errorMsg };
+    }
+  } catch (e) {
+    Logger.log('AI 旅程介紹錯誤: ' + e.toString());
+    return { success: false, message: '生成失敗: ' + e.toString() };
+  }
+}
+
+// 儲存旅程介紹到 Sheet
+function saveJourneyContent(content) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.journey);
+    if (!sheet) {
+      // 如果 Sheet 不存在，建立一個新的
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONFIG.sheetNames.journey);
+      sheet.appendRow(['類型', '內容', '更新時間']);
+      Logger.log('已建立旅程介紹 Sheet');
+    }
+
+    // 清空現有資料（保留標題行）
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.deleteRows(2, lastRow - 1);
+    }
+
+    // 新增序章
+    if (content.intro) {
+      sheet.appendRow(['intro', content.intro, new Date()]);
+    }
+
+    // 新增各城市介紹
+    if (content.cities) {
+      Object.keys(content.cities).forEach(function(city) {
+        sheet.appendRow(['city:' + city, content.cities[city], new Date()]);
+      });
+    }
+
+    // 新增結語
+    if (content.closing) {
+      sheet.appendRow(['closing', content.closing, new Date()]);
+    }
+
+    Logger.log('已儲存旅程介紹（共 ' + (Object.keys(content.cities || {}).length + 2) + ' 筆）');
+  } catch (e) {
+    Logger.log('儲存旅程介紹錯誤: ' + e.toString());
   }
 }

@@ -9,6 +9,8 @@ import type {
   UserPermission,
   ApiResponse,
   AIGenerateResponse,
+  JourneyContent,
+  JourneyGenerateResponse,
 } from '@/types';
 
 // Check if running in Google Apps Script environment
@@ -71,6 +73,15 @@ const mockAttractionDetails: AttractionDetails = {
 };
 
 const mockFoodRecommendations: FoodRecommendations = {};
+
+const mockJourneyContent: JourneyContent = {
+  intro: '這是一趟橫跨歐陸的浪漫蜜月之旅。從倫敦啟程，穿越巴黎的浪漫、瑞士的壯麗山巒，最終在義大利的陽光下畫下完美句點。三十天的旅程，將帶領我們穿梭於中世紀古城與現代都會之間。',
+  cities: {
+    '倫敦': '踏上這座霧都，我們將在泰晤士河畔開啟這段蜜月之旅。從白金漢宮的皇家氣派，到大英博物館的千年瑰寶，倫敦以她的優雅與深厚文化底蘊，為我們的旅程揭開序幕。',
+    '巴黎': '塞納河畔的浪漫，艾菲爾鐵塔的璀璨，羅浮宮的藝術殿堂。在這座光之城，每一個轉角都是一幅畫，每一刻都值得被永遠珍藏。',
+  },
+  closing: '讓我們攜手踏上這段旅程，在歐洲的土地上，寫下屬於我們的永恆篇章。',
+};
 
 const mockPermission: UserPermission = {
   email: 'dev@localhost',
@@ -187,6 +198,20 @@ export const gasClient = {
       city,
       itineraryContent,
       priceLevel
+    ),
+
+  // Journey
+  getJourneyContent: (): Promise<JourneyContent | null> =>
+    callGAS('getJourneyContent', null),
+
+  generateJourneyIntro: (itinerary: ItineraryItem[]): Promise<JourneyGenerateResponse> =>
+    callGAS(
+      'generateJourneyIntro',
+      {
+        success: true,
+        content: mockJourneyContent,
+      },
+      itinerary
     ),
 };
 
