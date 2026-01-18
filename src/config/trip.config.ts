@@ -5,6 +5,9 @@ export const tripConfig = {
   // App title displayed in header
   tripName: "LY's Honeymoon Journal",
 
+  // Subtitle displayed above the main title
+  tripSubtitle: 'Europe 2026',
+
   // External links for menu
   links: {
     googleSheet: 'https://docs.google.com/spreadsheets/d/1sd5CVy0qd4QSuOUUDnQH6I1Mx2F2W1NvgWVbujcePiU/edit?usp=sharing',

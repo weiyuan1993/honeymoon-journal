@@ -118,30 +118,53 @@ export default function App() {
   return (
     <div className="min-h-screen pb-20 bg-paper">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#f4f0e6]/95 backdrop-blur-sm shadow-md py-1 border-b-0">
-        <div className="relative flex items-center justify-center px-4">
-          <h1 className="font-display text-ink uppercase text-sm tracking-wider">
+      <header className="sticky top-0 z-50 bg-gradient-to-b from-[#f8f5ed] via-[#f4f0e6] to-[#f0ebe0] backdrop-blur-sm shadow-md border-b border-gold/20">
+        <div className="relative flex flex-col items-center justify-center px-4 py-3">
+          {/* Decorative top line */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent" />
+
+          {/* Subtitle */}
+          <div className="flex items-center gap-2 text-gold/80 text-[10px] tracking-[0.3em] uppercase mb-1">
+            <span className="w-4 h-px bg-gold/40" />
+            <span>{tripConfig.tripSubtitle}</span>
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <span className="w-4 h-px bg-gold/40" />
+          </div>
+
+          {/* Main title */}
+          <h1 className="font-display text-ink text-base tracking-wide">
             {tripConfig.tripName}
           </h1>
+
+          {/* Decorative bottom element */}
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="w-8 h-px bg-gold/30" />
+            <span className="w-1.5 h-1.5 rounded-full bg-gold/50" />
+            <span className="w-8 h-px bg-gold/30" />
+          </div>
+
           {/* Menu button */}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="absolute right-3 p-1.5 text-gold hover:text-gold/70 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gold/70 hover:text-gold transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
+
           {/* Dropdown menu */}
           {showMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-3 top-full mt-1 z-50 bg-white border border-gold/30 rounded-sm shadow-lg py-1 min-w-[160px]">
+              <div className="absolute right-3 top-full mt-1 z-50 bg-white/95 backdrop-blur-sm border border-gold/20 rounded shadow-xl py-1.5 min-w-[180px]">
                 <a
                   href={tripConfig.links.googleSheet}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
                   onClick={() => setShowMenu(false)}
                 >
                   <svg className="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="currentColor">
@@ -149,11 +172,12 @@ export default function App() {
                   </svg>
                   Google Sheet
                 </a>
+                <div className="mx-3 my-1 h-px bg-gold/10" />
                 <a
                   href={tripConfig.links.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
                   onClick={() => setShowMenu(false)}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
