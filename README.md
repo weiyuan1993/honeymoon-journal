@@ -1,5 +1,7 @@
 # LY's Honeymoon Journal
 
+![Cover](src/config/cover.PNG)
+
 歐洲蜜月旅行日誌 Web App，使用 Google Apps Script 部署，資料儲存於 Google Sheets。
 
 > **Template 專案**：此專案可作為 template 重複使用，建立其他旅遊日誌。詳見 [SETUP.md](SETUP.md)。

@@ -1,22 +1,29 @@
 /**
  * Journey Page Image Configuration
- * Using Pexels free images - all URLs verified as valid
+ * Local images stored in src/config/images/
  */
 
-// Helper to build Pexels URL
-const pexels = (photoId: string, width: number = 1600) =>
-  `https://images.pexels.com/photos/${photoId}/pexels-photo-${photoId}.jpeg?auto=compress&cs=tinysrgb&w=${width}`;
+import coverImage from './cover.PNG';
+import londonImage from './images/london.jpg';
+import parisImage from './images/paris.jpg';
+import lucerneImage from './images/lucerne.jpg';
+import interlakenImage from './images/interlaken.jpg';
+import zermattImage from './images/zermatt.jpg';
+import milanImage from './images/milan.jpg';
+import veniceImage from './images/venice.jpg';
+import florenceImage from './images/florence.jpg';
+import romeImage from './images/rome.jpg';
 
 // City hero images
 export const cityHeroImages: Record<string, string> = {
-  '封面': pexels('2676557'),
-  '倫敦': pexels('672532'), // Big Ben and London skyline
-  '巴黎': pexels('5005305'), // Eiffel Tower
-  '琉森': pexels('5210630'), // Swiss lake and mountains
-  '因特拉肯': pexels('12301006'), // Swiss Alps
-  '策馬特': pexels('6344695'), // Matterhorn
-  '米蘭': pexels('6274557'), // Milan Cathedral
-  '威尼斯': pexels('804954'), // Venice Grand Canal
-  '佛羅倫斯': pexels('4179480'), // Florence Duomo
-  '羅馬': pexels('1797161'), // Colosseum
+  '封面': coverImage,
+  '倫敦': londonImage,
+  '巴黎': parisImage,
+  '琉森': lucerneImage,
+  '因特拉肯': interlakenImage,
+  '策馬特': zermattImage,
+  '米蘭': milanImage,
+  '威尼斯': veniceImage,
+  '佛羅倫斯': florenceImage,
+  '羅馬': romeImage,
 };

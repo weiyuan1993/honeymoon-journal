@@ -152,23 +152,23 @@ export default function JourneyPage({ itinerary, canEdit }: JourneyPageProps) {
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <div className="relative h-[55vh] md:h-[70vh] min-h-[350px] overflow-hidden">
+      <div className="-mt-16 relative h-[80vh] md:h-[85vh] min-h-[450px] max-h-[700px] overflow-hidden">
         <img
           src={cityHeroImages['封面']}
           alt="Journey Hero"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <div className="max-w-5xl mx-auto text-center px-4">
-            <p className="text-gold text-[10px] tracking-[0.3em] uppercase mb-2">
+          <div className="max-w-5xl mx-auto text-center px-4 [text-shadow:_0_2px_8px_rgba(0,0,0,0.8)]">
+            <p className="text-gold text-[10px] tracking-[0.3em] uppercase mb-2 drop-shadow-lg">
               {tripConfig.tripSubtitle}
             </p>
-            <h1 className="font-display text-2xl md:text-3xl mb-3">
+            <h1 className="font-display text-2xl md:text-3xl mb-3 drop-shadow-lg">
               {tripConfig.tripName}
             </h1>
-            <p className="text-white/70 text-sm font-serif mb-4">
+            <p className="text-white/90 text-sm font-serif mb-4">
               {itinerary.length} Days · {citySegments.length} Cities
             </p>
             <div className="flex flex-wrap justify-center gap-2">
