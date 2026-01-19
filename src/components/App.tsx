@@ -14,8 +14,18 @@ import ExpensePage from './ExpensePage';
 import JourneyPage from './JourneyPage';
 import Loading from './Loading';
 
+type TabType = 'itinerary' | 'expense' | 'journey';
+
+const getTabFromHash = (): TabType => {
+  const hash = window.location.hash.replace('#', '');
+  if (hash === 'itinerary' || hash === 'expense' || hash === 'journey') {
+    return hash;
+  }
+  return 'journey'; // default tab
+};
+
 export default function App() {
-  const [tab, setTab] = useState<'itinerary' | 'expense' | 'journey'>('itinerary');
+  const [tab, setTab] = useState<TabType>(getTabFromHash);
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [loadingItin, setLoadingItin] = useState(false);
   const [navigationData, setNavigationData] = useState<NavigationData>({});
@@ -32,6 +42,21 @@ export default function App() {
   const [showMenu, setShowMenu] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
+  const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
+
+  // Sync tab with URL hash
+  useEffect(() => {
+    window.location.hash = tab;
+  }, [tab]);
+
+  // Listen for browser back/forward
+  useEffect(() => {
+    const handleHashChange = () => {
+      setTab(getTabFromHash());
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,6 +127,23 @@ export default function App() {
       fetchItinerary();
     }
   }, [tab, itinerary.length]);
+
+  // Auto-scroll to today's itinerary card (only once on first load)
+  useEffect(() => {
+    if (tab === 'itinerary' && itinerary.length > 0 && !hasAutoScrolled) {
+      const today = new Date();
+      const todayStr = `${today.getMonth() + 1}/${today.getDate()}`;
+      const todayItem = itinerary.find((item) => item.date === todayStr);
+      if (todayItem) {
+        setHasAutoScrolled(true);
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          const el = document.getElementById(`day-${todayItem.day}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [itinerary.length, tab, hasAutoScrolled]);
 
   useEffect(() => {
     fetchNavigationData();
