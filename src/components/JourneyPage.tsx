@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import type { ItineraryItem } from '@/types';
+import { useState, useMemo } from 'react';
+import type { ItineraryItem, JourneyContent } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { cityHeroImages } from '@/config/journey.images';
 import { gasClient } from '@/utils/gasClient';
@@ -7,6 +7,8 @@ import { gasClient } from '@/utils/gasClient';
 interface JourneyPageProps {
   itinerary: ItineraryItem[];
   canEdit: boolean;
+  journeyContent: JourneyContent | null;
+  onJourneyContentUpdate: (content: JourneyContent) => void;
 }
 
 interface CitySegment {
@@ -16,12 +18,6 @@ interface CitySegment {
   endDay: number;
   days: ItineraryItem[];
   hotels: string[];
-}
-
-interface JourneyContent {
-  intro: string;
-  cities: Record<string, string>;
-  closing: string;
 }
 
 // City name mapping (Chinese -> English)
@@ -59,9 +55,7 @@ function extractMainCity(cityStr: string): { zh: string; en: string } {
   };
 }
 
-export default function JourneyPage({ itinerary, canEdit }: JourneyPageProps) {
-  const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
-  const [loading, setLoading] = useState(false);
+export default function JourneyPage({ itinerary, canEdit, journeyContent, onJourneyContentUpdate }: JourneyPageProps) {
   const [generating, setGenerating] = useState(false);
 
   // Group itinerary by city segments
@@ -105,20 +99,6 @@ export default function JourneyPage({ itinerary, canEdit }: JourneyPageProps) {
     return segments;
   }, [itinerary]);
 
-  useEffect(() => {
-    const loadContent = async () => {
-      setLoading(true);
-      try {
-        const data = await gasClient.getJourneyContent();
-        if (data && data.intro) setJourneyContent(data);
-      } catch (error) {
-        console.error('Failed to load journey content:', error);
-      }
-      setLoading(false);
-    };
-    loadContent();
-  }, []);
-
   const handleGenerate = async () => {
     if (itinerary.length === 0) {
       alert('請先載入行程資料');
@@ -128,7 +108,7 @@ export default function JourneyPage({ itinerary, canEdit }: JourneyPageProps) {
     try {
       const result = await gasClient.generateJourneyIntro(itinerary);
       if (result.success && result.content) {
-        setJourneyContent(result.content);
+        onJourneyContentUpdate(result.content);
       } else {
         alert(result.message || '生成失敗');
       }
@@ -137,17 +117,6 @@ export default function JourneyPage({ itinerary, canEdit }: JourneyPageProps) {
     }
     setGenerating(false);
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-500 font-serif text-sm">載入中...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full">

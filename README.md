@@ -1,4 +1,4 @@
-# LY's Honeymoon Journal
+# Our Honeymoon Journey
 
 ![Cover](src/config/cover.PNG)
 
