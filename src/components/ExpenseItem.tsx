@@ -142,25 +142,25 @@ export default function ExpenseItem({
   }
 
   return (
-    <div className="bg-white border border-subtle p-4 mb-3 shadow-sm rounded-sm flex justify-between items-center">
-      <div className="flex-1">
-        <div className="text-xs text-gray-400 font-serif mb-1">
-          {dateStr}{' '}
-          <span className="ml-2 bg-gray-100 px-1 rounded text-gray-500">
+    <div className="px-4 py-3 flex justify-between items-center hover:bg-gray-50 transition-colors">
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] text-gray-400 font-serif flex items-center gap-2">
+          <span>{dateStr}</span>
+          <span className="bg-gold/10 text-gold px-1.5 py-0.5 rounded text-[10px]">
             {data.category}
           </span>
         </div>
-        <div className="font-bold text-ink text-lg">{data.item}</div>
+        <div className="font-serif text-ink truncate">{data.item}</div>
       </div>
-      <div className="text-right">
-        <div className="font-display font-bold text-gold text-lg">
+      <div className="text-right flex items-center gap-2">
+        <div className="font-display font-bold text-gold">
           {currencySymbol(data.currency)} {data.amount}
         </div>
         {canEdit && (
-          <div className="mt-1 flex gap-2 justify-end">
+          <div className="flex gap-1">
             <button
               onClick={() => setIsEditing(true)}
-              className="text-gray-400 hover:text-blue-600 transition-colors p-1.5"
+              className="text-gray-300 hover:text-gold transition-colors p-1"
               title="編輯"
             >
               <svg
@@ -180,7 +180,7 @@ export default function ExpenseItem({
             </button>
             <button
               onClick={handleDelete}
-              className="text-gray-400 hover:text-red-600 transition-colors p-1.5"
+              className="text-gray-300 hover:text-red-500 transition-colors p-1"
               title="刪除"
             >
               <svg

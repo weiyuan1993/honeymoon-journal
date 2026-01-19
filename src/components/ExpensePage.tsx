@@ -138,22 +138,22 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
   return (
     <div className="space-y-6">
       {canEdit && (
-        <div className="bg-white p-5 border-4 border-double border-subtle shadow-md">
-          <h2 className="font-display text-lg text-center mb-4 text-ink border-b pb-2 border-gold">
-            新增花費
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-gold/10 to-gold/5 px-4 py-3 border-b border-gold/10">
+            <h2 className="font-display text-sm text-ink/80">新增花費</h2>
+          </div>
+          <form onSubmit={handleSubmit} className="p-4 space-y-3">
             <input
               type="text"
               value={formData.item}
               onChange={(e) =>
                 setFormData({ ...formData, item: e.target.value })
               }
-              className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"
-              placeholder="項目"
+              className="w-full bg-gray-50 border border-gray-200 px-3 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
+              placeholder="項目名稱"
               required
             />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-5 gap-2">
               <input
                 type="number"
                 step="0.01"
@@ -161,7 +161,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 onChange={(e) =>
                   setFormData({ ...formData, amount: e.target.value })
                 }
-                className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"
+                className="col-span-3 bg-gray-50 border border-gray-200 px-3 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                 placeholder="金額"
                 required
               />
@@ -173,7 +173,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                     currency: e.target.value as ExpenseFormData['currency'],
                   })
                 }
-                className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"
+                className="col-span-2 bg-gray-50 border border-gray-200 px-2 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
               >
                 {tripConfig.currencies.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -182,79 +182,88 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 ))}
               </select>
             </div>
-            <select
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  category: e.target.value as ExpenseFormData['category'],
-                })
-              }
-              className="w-full bg-paper border border-subtle p-3 font-serif rounded-sm"
-            >
-              {tripConfig.categories.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={status === 'submitting'}
-              className={`w-full py-3 mt-2 font-display font-bold text-white transition-colors ${
-                status === 'submitting' ? 'bg-gray-400' : 'bg-wax'
-              } ${status === 'success' ? '!bg-forest' : ''}`}
-            >
-              {status === 'submitting'
-                ? '...'
-                : status === 'success'
-                  ? '✔'
-                  : '紀錄'}
-            </button>
+            <div className="flex gap-2">
+              <select
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    category: e.target.value as ExpenseFormData['category'],
+                  })
+                }
+                className="flex-1 bg-gray-50 border border-gray-200 px-3 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
+              >
+                {tripConfig.categories.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                disabled={status === 'submitting'}
+                className={`px-6 py-2.5 font-display text-sm text-white rounded-lg transition-all ${
+                  status === 'submitting' ? 'bg-gray-400' : 'bg-gold hover:bg-gold/90 shadow-sm'
+                } ${status === 'success' ? '!bg-forest' : ''}`}
+              >
+                {status === 'submitting'
+                  ? '...'
+                  : status === 'success'
+                    ? '✔'
+                    : '記錄'}
+              </button>
+            </div>
           </form>
         </div>
       )}
 
       {/* Statistics summary */}
       {list.length > 0 && (
-        <div className="bg-white p-4 border border-subtle shadow-sm rounded-sm">
-          <h3 className="font-display text-sm mb-3 text-ink border-b border-gold-light pb-2">
-            統計摘要
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {Object.entries(stats.totals).map(([currency, total]) => (
-              <div
-                key={currency}
-                className="bg-gray-50 p-2 rounded border border-gray-100"
-              >
-                <div className="text-xs text-gray-500 font-serif">
-                  {getCurrencySymbol(currency)} 總計
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-gold/10 to-gold/5 px-4 py-3 border-b border-gold/10">
+            <h3 className="font-display text-sm text-ink/80">統計摘要</h3>
+          </div>
+          <div className="p-4">
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(stats.totals).map(([currency, total]) => (
+                <div
+                  key={currency}
+                  className="bg-gradient-to-br from-gold/5 to-gold/10 px-4 py-2 rounded-lg"
+                >
+                  <div className="text-[10px] text-ink/50 font-serif uppercase tracking-wide">
+                    {getCurrencySymbol(currency)} 總計
+                  </div>
+                  <div className="font-display font-bold text-gold text-lg">
+                    {getCurrencySymbol(currency)} {total.toFixed(2)}
+                  </div>
                 </div>
-                <div className="font-display font-bold text-gold text-lg">
-                  {getCurrencySymbol(currency)} {total.toFixed(2)}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* Filter and search */}
       {list.length > 0 && (
-        <div className="bg-white p-4 border border-subtle shadow-sm rounded-sm space-y-3">
+        <div className="bg-white rounded-lg shadow-sm p-4">
           <div className="flex flex-col gap-2">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="搜尋項目..."
-              className="w-full border border-subtle p-2 font-serif text-sm rounded-sm bg-paper"
-            />
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="搜尋項目..."
+                className="w-full bg-gray-50 border border-gray-200 pl-9 pr-3 py-2 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
+              />
+            </div>
             <div className="flex gap-2">
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="flex-1 border border-subtle p-2 font-serif text-sm rounded-sm bg-paper"
+                className="flex-1 bg-gray-50 border border-gray-200 px-3 py-2 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
               >
                 <option value="all">所有類別</option>
                 {tripConfig.categories.map((c) => (
@@ -266,7 +275,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
               <select
                 value={filterCurrency}
                 onChange={(e) => setFilterCurrency(e.target.value)}
-                className="flex-1 border border-subtle p-2 font-serif text-sm rounded-sm bg-paper"
+                className="flex-1 bg-gray-50 border border-gray-200 px-3 py-2 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
               >
                 <option value="all">所有貨幣</option>
                 {tripConfig.currencies.map((c) => (
@@ -286,9 +295,9 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 setFilterCategory('all');
                 setFilterCurrency('all');
               }}
-              className="text-xs text-gray-500 underline"
+              className="mt-2 text-xs text-gold hover:text-gold/70 transition-colors"
             >
-              清除篩選
+              ✕ 清除篩選
             </button>
           )}
         </div>
@@ -309,14 +318,14 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
         ) : stats.totalCount === 0 ? (
           <p className="text-center text-gray-400 py-4">無符合條件的紀錄</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {displayDates.map((dateKey) => (
               <div
                 key={dateKey}
-                className="bg-white border border-subtle rounded-sm overflow-hidden"
+                className="bg-white rounded-lg shadow-sm overflow-hidden"
               >
-                <div className="bg-gray-50 px-4 py-2 border-b border-subtle">
-                  <h3 className="font-display text-sm text-ink">{dateKey}</h3>
+                <div className="bg-gradient-to-r from-gold/5 to-transparent px-4 py-2 border-b border-gold/10">
+                  <h3 className="font-display text-sm text-ink/70">{dateKey}</h3>
                 </div>
                 <div className="divide-y divide-gray-100">
                   {groupedByDate[dateKey].map((item) => (
