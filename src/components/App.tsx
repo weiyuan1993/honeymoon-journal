@@ -16,16 +16,26 @@ import Loading from './Loading';
 
 type TabType = 'itinerary' | 'expense' | 'journey';
 
-const getTabFromHash = (): TabType => {
+const getInitialTab = (): TabType => {
+  // Try URL hash first (for local dev)
   const hash = window.location.hash.replace('#', '');
   if (hash === 'itinerary' || hash === 'expense' || hash === 'journey') {
     return hash;
+  }
+  // Then try localStorage (for GAS)
+  try {
+    const saved = localStorage.getItem('activeTab');
+    if (saved === 'itinerary' || saved === 'expense' || saved === 'journey') {
+      return saved;
+    }
+  } catch {
+    // localStorage not available
   }
   return 'journey'; // default tab
 };
 
 export default function App() {
-  const [tab, setTab] = useState<TabType>(getTabFromHash);
+  const [tab, setTab] = useState<TabType>(getInitialTab);
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [loadingItin, setLoadingItin] = useState(false);
   const [navigationData, setNavigationData] = useState<NavigationData>({});
@@ -44,15 +54,24 @@ export default function App() {
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
   const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
 
-  // Sync tab with URL hash
+  // Sync tab with URL hash and localStorage
   useEffect(() => {
-    window.location.hash = tab;
+    // Save to localStorage (works in GAS)
+    try {
+      localStorage.setItem('activeTab', tab);
+    } catch {
+      // localStorage not available
+    }
+    // Also update hash (works in local dev)
+    if (window.location.hash !== `#${tab}`) {
+      window.location.hash = tab;
+    }
   }, [tab]);
 
-  // Listen for browser back/forward
+  // Listen for browser back/forward (local dev only)
   useEffect(() => {
     const handleHashChange = () => {
-      setTab(getTabFromHash());
+      setTab(getInitialTab());
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
