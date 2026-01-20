@@ -20,7 +20,18 @@
 body {
   background-color: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-serif);
+  font-family: 'Lora', 'Noto Serif TC', 'Songti TC', 'Georgia', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Explicit font classes for iOS compatibility */
+.font-serif {
+  font-family: 'Lora', 'Noto Serif TC', 'Songti TC', 'Georgia', serif !important;
+}
+
+.font-display {
+  font-family: 'Cinzel', 'Noto Serif TC', 'Songti TC', 'Palatino', serif !important;
 }
 
 /* Smooth scrolling */
