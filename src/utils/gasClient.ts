@@ -11,6 +11,9 @@ import type {
   AIGenerateResponse,
   JourneyContent,
   JourneyGenerateResponse,
+  ChatMessage,
+  ChatHistoryItem,
+  ChatResponse,
 } from '@/types';
 
 // Check if running in Google Apps Script environment
@@ -82,6 +85,8 @@ const mockJourneyContent: JourneyContent = {
   },
   closing: '讓我們攜手踏上這段旅程，在歐洲的土地上，寫下屬於我們的永恆篇章。',
 };
+
+const mockChatHistory: ChatHistoryItem[] = [];
 
 const mockPermission: UserPermission = {
   email: 'dev@localhost',
@@ -213,6 +218,27 @@ export const gasClient = {
       },
       itinerary
     ),
+
+  // Chat methods
+  chatWithSecretary: (question: string, history: ChatMessage[]): Promise<ChatResponse> =>
+    callGAS(
+      'chatWithSecretary',
+      {
+        success: true,
+        answer: `[Mock] 感謝您的提問！關於「${question}」，根據您的行程安排，我建議您可以參考當日的景點規劃。如果需要更詳細的資訊，請告訴我您想了解哪一天的行程。`,
+      },
+      question,
+      history
+    ),
+
+  getChatHistory: (): Promise<ChatHistoryItem[]> =>
+    callGAS('getChatHistory', mockChatHistory),
+
+  deleteChatHistory: (rowNumber: number): Promise<ApiResponse> =>
+    callGAS('deleteChatHistory', { success: true, message: '已刪除' }, rowNumber),
+
+  clearChatHistory: (): Promise<ApiResponse> =>
+    callGAS('clearChatHistory', { success: true, message: '已清除所有對話記錄' }),
 };
 
 export default gasClient;

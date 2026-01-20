@@ -13,7 +13,8 @@ var CONFIG = {
     attractions: '景點規劃',
     navigation: '導航',
     food: '美食推薦',
-    journey: '旅程介紹'
+    journey: '旅程介紹',
+    chat: 'AI秘書對話'
   }
 };
 
@@ -933,5 +934,242 @@ function saveJourneyContent(content) {
     Logger.log('已儲存旅程介紹（共 ' + (Object.keys(content.cities || {}).length + 2) + ' 筆）');
   } catch (e) {
     Logger.log('儲存旅程介紹錯誤: ' + e.toString());
+  }
+}
+
+// ============================================
+// 旅程秘書 AI 對話功能
+// ============================================
+
+// 建構行程上下文資料給 AI
+function buildTripContext() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.itinerary);
+    if (!sheet) return '';
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return '';
+
+    var data = sheet.getRange(2, 1, lastRow - 1, 9).getDisplayValues();
+
+    var contextLines = ['這是一趟蜜月旅行的完整行程資料：\n'];
+
+    data.forEach(function(row) {
+      var day = row[0];      // Day
+      var date = row[1];     // 日期
+      var weekday = row[2];  // 星期
+      var city = row[3];     // 城市
+      var content = row[4];  // 內容
+      var transport = row[5]; // 交通
+      var ticket = row[6];   // 票務
+      var hotel = row[8];    // 住宿
+
+      if (day) {
+        contextLines.push(day + ' (' + date + ' ' + weekday + ')');
+        if (city) contextLines.push('  城市: ' + city);
+        if (content) contextLines.push('  行程: ' + content.replace(/<[^>]*>/g, '').substring(0, 200));
+        if (transport) contextLines.push('  交通: ' + transport.replace(/<[^>]*>/g, ''));
+        if (ticket) contextLines.push('  票務: ' + ticket.replace(/<[^>]*>/g, ''));
+        if (hotel) contextLines.push('  住宿: ' + hotel.replace(/<[^>]*>/g, ''));
+        contextLines.push('');
+      }
+    });
+
+    return contextLines.join('\n');
+  } catch (e) {
+    Logger.log('建構行程上下文錯誤: ' + e.toString());
+    return '';
+  }
+}
+
+// AI 秘書對話主函數
+function chatWithSecretary(question, history) {
+  // 權限檢查
+  if (!isAuthorizedEditor()) {
+    return { success: false, message: '您沒有權限使用此功能' };
+  }
+
+  // 取得 API Key
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) {
+    return { success: false, message: 'Gemini API Key 未設定，請聯繫管理員' };
+  }
+
+  // 建構行程上下文
+  var tripContext = buildTripContext();
+
+  // 建構系統提示
+  var systemPrompt = '你是一位專業且貼心的蜜月旅程秘書，名叫「旅程秘書」。\n\n' +
+    '你的任務是回答關於這趟蜜月旅行的所有問題。以下是完整的行程資料：\n\n' +
+    tripContext + '\n\n' +
+    '回答規則：\n' +
+    '1. 使用繁體中文回答\n' +
+    '2. 回答要簡潔明瞭，控制在 200 字以內\n' +
+    '3. 使用純文字格式，不要使用 markdown 語法\n' +
+    '4. 如果問題與行程無關，請禮貌地引導回行程相關話題\n' +
+    '5. 可以根據行程資料提供建議，但不要編造不存在的內容\n' +
+    '6. 語氣親切溫暖，像是在幫助好朋友規劃旅行\n' +
+    '7. 如果被問到即時資訊（如天氣、匯率），請利用你的網路搜尋能力查詢最新資料';
+
+  // 建構對話歷史
+  var contents = [];
+
+  // 加入歷史對話
+  if (history && history.length > 0) {
+    history.forEach(function(msg) {
+      contents.push({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }]
+      });
+    });
+  }
+
+  // 加入當前問題
+  contents.push({
+    role: 'user',
+    parts: [{ text: question }]
+  });
+
+  try {
+    var response = UrlFetchApp.fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          contents: contents,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048
+          },
+          tools: [{
+            google_search: {}
+          }]
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+    var result = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() === 200 && result.candidates && result.candidates[0]) {
+      var answer = result.candidates[0].content.parts[0].text;
+
+      // 儲存對話記錄
+      saveChatHistory(question, answer);
+
+      return { success: true, answer: answer };
+    } else {
+      var errorMsg = result.error ? result.error.message : '生成回答失敗，請稍後再試';
+      return { success: false, message: errorMsg };
+    }
+  } catch (e) {
+    Logger.log('AI 對話錯誤: ' + e.toString());
+    return { success: false, message: '對話失敗: ' + e.toString() };
+  }
+}
+
+// 儲存對話記錄到 Sheet
+function saveChatHistory(question, answer) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.chat);
+    if (!sheet) {
+      // 如果 Sheet 不存在，建立一個新的
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONFIG.sheetNames.chat);
+      sheet.appendRow(['時間', '問題', '回答']);
+      Logger.log('已建立 AI 秘書對話 Sheet');
+    }
+
+    // 新增記錄
+    sheet.appendRow([new Date(), question, answer]);
+
+    // 限制最多保留 20 筆記錄
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 21) { // 標題行 + 20 筆
+      var rowsToDelete = lastRow - 21;
+      sheet.deleteRows(2, rowsToDelete);
+    }
+
+    Logger.log('已儲存對話記錄');
+  } catch (e) {
+    Logger.log('儲存對話記錄錯誤: ' + e.toString());
+  }
+}
+
+// 取得對話記錄
+function getChatHistory() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.chat);
+    if (!sheet) return [];
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return [];
+
+    var data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+
+    var history = data.map(function(row, index) {
+      var timeStr = '';
+      if (row[0] instanceof Date) {
+        timeStr = row[0].toISOString();
+      } else {
+        timeStr = String(row[0]);
+      }
+
+      return {
+        rowNumber: index + 2,
+        timestamp: timeStr,
+        question: row[1],
+        answer: row[2]
+      };
+    });
+
+    // 返回最新的在前面
+    return history.reverse();
+  } catch (e) {
+    Logger.log('取得對話記錄錯誤: ' + e.toString());
+    return [];
+  }
+}
+
+// 刪除單筆對話記錄
+function deleteChatHistory(rowNumber) {
+  try {
+    // 權限檢查
+    if (!isAuthorizedEditor()) {
+      return { success: false, message: '您沒有編輯權限' };
+    }
+
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.chat);
+    if (!sheet) return { success: false, message: '找不到對話記錄' };
+
+    if (rowNumber < 2) return { success: false, message: '無效的行號' };
+
+    sheet.deleteRow(rowNumber);
+    return { success: true, message: '已刪除' };
+  } catch (e) {
+    return { success: false, message: '刪除失敗: ' + e.toString() };
+  }
+}
+
+// 清除所有對話記錄
+function clearChatHistory() {
+  try {
+    // 權限檢查
+    if (!isAuthorizedEditor()) {
+      return { success: false, message: '您沒有編輯權限' };
+    }
+
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.chat);
+    if (!sheet) return { success: true, message: '無對話記錄' };
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.deleteRows(2, lastRow - 1);
+    }
+
+    return { success: true, message: '已清除所有對話記錄' };
+  } catch (e) {
+    return { success: false, message: '清除失敗: ' + e.toString() };
   }
 }

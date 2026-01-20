@@ -99,6 +99,26 @@ export interface JourneyGenerateResponse {
   message?: string;
 }
 
+// Chat types for Trip Secretary
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string;
+}
+
+export interface ChatHistoryItem {
+  rowNumber: number;
+  timestamp: string;
+  question: string;
+  answer: string;
+}
+
+export interface ChatResponse {
+  success: boolean;
+  answer?: string;
+  message?: string;
+}
+
 // Google Apps Script types
 declare global {
   const google: {
@@ -137,6 +157,11 @@ interface GoogleScriptRun {
   // Journey methods
   getJourneyContent(): void;
   generateJourneyIntro(itinerary: ItineraryItem[]): void;
+  // Chat methods
+  chatWithSecretary(question: string, history: ChatMessage[]): void;
+  getChatHistory(): void;
+  deleteChatHistory(rowNumber: number): void;
+  clearChatHistory(): void;
 }
 
 export {};
