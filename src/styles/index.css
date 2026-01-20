@@ -11,9 +11,9 @@
   --color-subtle: #dcd6ce;
   --color-forest: #2d4f3c;
 
-  /* Font families */
-  --font-serif: 'Lora', serif;
-  --font-display: 'Cinzel', serif;
+  /* Font families with iOS-friendly fallbacks */
+  --font-serif: 'Lora', 'Georgia', 'Noto Serif TC', serif;
+  --font-display: 'Cinzel', 'Palatino Linotype', 'Palatino', serif;
 }
 
 /* Base styles */
