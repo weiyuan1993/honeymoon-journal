@@ -331,12 +331,18 @@ export default function App() {
         )}
         {tab === 'journey' && (
           <div className="animate-fade-in-up w-full">
-            <JourneyPage
-              itinerary={itinerary}
-              canEdit={userPermission.canEdit}
-              journeyContent={journeyContent}
-              onJourneyContentUpdate={setJourneyContent}
-            />
+            {loadingItin ? (
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <Loading />
+              </div>
+            ) : (
+              <JourneyPage
+                itinerary={itinerary}
+                canEdit={userPermission.canEdit}
+                journeyContent={journeyContent}
+                onJourneyContentUpdate={setJourneyContent}
+              />
+            )}
           </div>
         )}
       </main>
