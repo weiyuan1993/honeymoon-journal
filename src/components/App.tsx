@@ -142,7 +142,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (tab === 'itinerary' && itinerary.length === 0) {
+    // Journey page also needs itinerary data for city segments
+    if ((tab === 'itinerary' || tab === 'journey') && itinerary.length === 0) {
       fetchItinerary();
     }
   }, [tab, itinerary.length]);
