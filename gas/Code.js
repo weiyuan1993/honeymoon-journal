@@ -19,23 +19,11 @@ var CONFIG = {
 };
 
 // === Script Properties Setup ===
-// Run these functions ONCE in the GAS editor to configure:
+// Configure in GAS Editor: Project Settings > Script Properties
 //
-// 1. setupAuthorizedEditors() - Set authorized editor emails
-// 2. setupApiKey() - Set Gemini API key (if using AI features)
-
-function setupAuthorizedEditors() {
-  // Comma-separated list of emails that can edit
-  var editors = 'ab889721@gmail.com,tingyyyung@gmail.com';
-  PropertiesService.getScriptProperties().setProperty('AUTHORIZED_EDITORS', editors);
-  Logger.log('Authorized editors set: ' + editors);
-}
-
-function setupApiKey() {
-  var apiKey = 'YOUR_GEMINI_API_KEY_HERE';
-  PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', apiKey);
-  Logger.log('API Key set successfully');
-}
+// Required properties:
+//   AUTHORIZED_EDITORS - Comma-separated emails (e.g., "user1@gmail.com,user2@gmail.com")
+//   GEMINI_API_KEY     - Your Gemini API key from https://aistudio.google.com/apikey
 
 // Get authorized editors from Script Properties
 function getAuthorizedEditors() {
@@ -388,16 +376,6 @@ function getNavigationData() {
 // ============================================
 // AI 功能 (使用 Google Gemini API)
 // ============================================
-
-// 設定 API Key (執行一次即可)
-// 前往 https://aistudio.google.com/apikey 取得 API Key
-function setupGeminiApiKey() {
-  var apiKey = Browser.inputBox('請輸入 Gemini API Key:');
-  if (apiKey && apiKey !== 'cancel') {
-    PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', apiKey);
-    Browser.msgBox('API Key 已儲存！');
-  }
-}
 
 // AI 景點故事生成
 function generateAttractionStory(dayKey, city, itineraryContent) {
