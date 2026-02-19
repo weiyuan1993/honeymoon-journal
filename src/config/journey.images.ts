@@ -1,29 +1,21 @@
 /**
  * Journey Page Image Configuration
- * Local images stored in src/config/images/
+ * Images hosted via GitHub raw URLs to keep the bundle small.
  */
 
-import coverImage from './cover.PNG';
-import londonImage from './images/london.jpg';
-import parisImage from './images/paris.jpg';
-import lucerneImage from './images/lucerne.jpg';
-import interlakenImage from './images/interlaken.jpg';
-import zermattImage from './images/zermatt.jpg';
-import milanImage from './images/milan.jpg';
-import veniceImage from './images/venice.jpg';
-import florenceImage from './images/florence.jpg';
-import romeImage from './images/rome.jpg';
+const BASE_URL =
+  'https://raw.githubusercontent.com/weiyuan1993/honeymoon-journal/main/assets/images';
 
 // City hero images
 export const cityHeroImages: Record<string, string> = {
-  '封面': coverImage,
-  '倫敦': londonImage,
-  '巴黎': parisImage,
-  '琉森': lucerneImage,
-  '因特拉肯': interlakenImage,
-  '策馬特': zermattImage,
-  '米蘭': milanImage,
-  '威尼斯': veniceImage,
-  '佛羅倫斯': florenceImage,
-  '羅馬': romeImage,
+  '封面': `${BASE_URL}/cover.jpg`,
+  '倫敦': `${BASE_URL}/london.jpg`,
+  '巴黎': `${BASE_URL}/paris.jpg`,
+  '琉森': `${BASE_URL}/lucerne.jpg`,
+  '因特拉肯': `${BASE_URL}/interlaken.jpg`,
+  '策馬特': `${BASE_URL}/zermatt.jpg`,
+  '米蘭': `${BASE_URL}/milan.jpg`,
+  '威尼斯': `${BASE_URL}/venice.jpg`,
+  '佛羅倫斯': `${BASE_URL}/florence.jpg`,
+  '羅馬': `${BASE_URL}/rome.jpg`,
 };
