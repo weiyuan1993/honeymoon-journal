@@ -12,7 +12,7 @@ export const cityHeroImages: Record<string, string> = {
   '倫敦': `${BASE_URL}/london.jpg`,
   '巴黎': `${BASE_URL}/paris.jpg`,
   '琉森': `${BASE_URL}/lucerne.jpg`,
-  '因特拉肯': `${BASE_URL}/interlaken.jpg`,
+  '格林德瓦': `${BASE_URL}/grindelwald.jpg`,
   '策馬特': `${BASE_URL}/zermatt.jpg`,
   '米蘭': `${BASE_URL}/milan.jpg`,
   '威尼斯': `${BASE_URL}/venice.jpg`,
