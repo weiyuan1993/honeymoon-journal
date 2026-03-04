@@ -74,6 +74,7 @@ export default function ItineraryCard({
   };
 
   const handleSave = async () => {
+    if (!canEdit) return;
     setSaving(true);
     try {
       const res = await gasClient.editItinerary(formData);
@@ -245,11 +246,15 @@ export default function ItineraryCard({
                 </svg>
               </button>
             )}
-            {canEdit && (
-              <button
+            <button
                 onClick={() => setIsEditing(true)}
-                className="text-gold/40 hover:text-gold transition-colors p-1"
-                title="編輯"
+                disabled={!canEdit}
+                className={`transition-colors p-1 ${
+                  canEdit
+                    ? 'text-gold/40 hover:text-gold'
+                    : 'text-gray-300 cursor-not-allowed'
+                }`}
+                title={canEdit ? '編輯' : '需編輯權限'}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -266,7 +271,6 @@ export default function ItineraryCard({
                   />
                 </svg>
               </button>
-            )}
           </div>
         </div>
       </div>

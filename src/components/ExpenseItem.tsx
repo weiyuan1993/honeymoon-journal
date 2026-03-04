@@ -54,6 +54,7 @@ export default function ExpenseItem({
   };
 
   const handleSave = async () => {
+    if (!canEdit) return;
     setSaving(true);
     try {
       const res = await gasClient.editExpense(editForm as ExpenseItemType);
@@ -70,6 +71,7 @@ export default function ExpenseItem({
   };
 
   const handleDelete = () => {
+    if (!canEdit) return;
     if (confirm(`確定要刪除「${data.item}」嗎？`)) {
       onDelete(data.rowNumber);
     }
@@ -156,12 +158,16 @@ export default function ExpenseItem({
         <div className="font-display font-bold text-gold">
           {currencySymbol(data.currency)} {data.amount}
         </div>
-        {canEdit && (
-          <div className="flex gap-1">
+        <div className="flex gap-1">
             <button
               onClick={() => setIsEditing(true)}
-              className="text-gray-300 hover:text-gold transition-colors p-1"
-              title="編輯"
+              disabled={!canEdit}
+              className={`transition-colors p-1 ${
+                canEdit
+                  ? 'text-gray-300 hover:text-gold'
+                  : 'text-gray-200 cursor-not-allowed'
+              }`}
+              title={canEdit ? '編輯' : '需編輯權限'}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -180,8 +186,13 @@ export default function ExpenseItem({
             </button>
             <button
               onClick={handleDelete}
-              className="text-gray-300 hover:text-red-500 transition-colors p-1"
-              title="刪除"
+              disabled={!canEdit}
+              className={`transition-colors p-1 ${
+                canEdit
+                  ? 'text-gray-300 hover:text-red-500'
+                  : 'text-gray-200 cursor-not-allowed'
+              }`}
+              title={canEdit ? '刪除' : '需編輯權限'}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -199,7 +210,6 @@ export default function ExpenseItem({
               </svg>
             </button>
           </div>
-        )}
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ export default function DetailModal({
   const hasContent = !!displayContent;
 
   const handleGenerate = async () => {
+    if (!canEdit) return;
     setIsGenerating(true);
     setError(null);
 
@@ -138,14 +139,18 @@ export default function DetailModal({
               <p className="font-serif text-gray-400 text-sm mb-4">
                 尚無景點規劃
               </p>
-              {canEdit && (
-                <button
-                  onClick={handleGenerate}
-                  className="px-6 py-2.5 bg-gradient-to-r from-gold to-gold/80 text-white font-display text-sm tracking-wider rounded-sm hover:from-gold/90 hover:to-gold/70 transition-all shadow-md"
-                >
-                  ✨ AI 生成規劃
-                </button>
-              )}
+              <button
+                onClick={handleGenerate}
+                disabled={!canEdit}
+                className={`px-6 py-2.5 text-white font-display text-sm tracking-wider rounded-sm transition-all shadow-md ${
+                  canEdit
+                    ? 'bg-gradient-to-r from-gold to-gold/80 hover:from-gold/90 hover:to-gold/70'
+                    : 'bg-gray-400 cursor-not-allowed'
+                }`}
+                title={!canEdit ? '需編輯權限' : undefined}
+              >
+                ✨ AI 生成規劃
+              </button>
             </div>
           )}
         </div>
@@ -153,17 +158,23 @@ export default function DetailModal({
         {/* Footer */}
         <div className="p-4 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
           <div className="flex gap-2">
-            {canEdit && hasContent && !isGenerating && (
+            {hasContent && !isGenerating && (
               <button
                 onClick={handleGenerate}
-                className="flex-1 py-2.5 bg-gold/10 text-gold border border-gold font-display text-sm tracking-wider hover:bg-gold/20 transition-colors rounded-sm"
+                disabled={!canEdit}
+                className={`flex-1 py-2.5 border font-display text-sm tracking-wider transition-colors rounded-sm ${
+                  canEdit
+                    ? 'bg-gold/10 text-gold border-gold hover:bg-gold/20'
+                    : 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                }`}
+                title={!canEdit ? '需編輯權限' : undefined}
               >
                 ✨ 重新生成
               </button>
             )}
             <button
               onClick={handleClose}
-              className={`${canEdit && hasContent ? 'flex-1' : 'w-full'} py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-sm`}
+              className={`${hasContent ? 'flex-1' : 'w-full'} py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-sm`}
             >
               CLOSE
             </button>

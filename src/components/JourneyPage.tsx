@@ -100,6 +100,7 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
   }, [itinerary]);
 
   const handleGenerate = async () => {
+    if (!canEdit) return;
     if (itinerary.length === 0) {
       alert('請先載入行程資料');
       return;
@@ -269,33 +270,34 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
           </div>
 
           {/* Generate Button */}
-          {canEdit && (
-            <div className="mt-8">
-              <button
-                onClick={handleGenerate}
-                disabled={generating || itinerary.length === 0}
-                className={`inline-flex items-center gap-2 px-6 py-3 font-display text-sm rounded-lg shadow-lg transition-all ${
-                  journeyContent
+          <div className="mt-8">
+            <button
+              onClick={handleGenerate}
+              disabled={!canEdit || generating || itinerary.length === 0}
+              className={`inline-flex items-center gap-2 px-6 py-3 font-display text-sm rounded-lg shadow-lg transition-all ${
+                !canEdit
+                  ? 'bg-gray-300 text-white cursor-not-allowed'
+                  : journeyContent
                     ? 'bg-white border border-gold/30 text-gold hover:bg-gold/5'
                     : 'bg-gradient-to-r from-gold to-amber-500 text-white hover:shadow-xl'
-                } disabled:opacity-50`}
-              >
-                {generating ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                    AI 撰寫中...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                    {journeyContent ? '重新生成文案' : '✨ AI 生成旅程介紹'}
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+              } disabled:opacity-50`}
+              title={!canEdit ? '需編輯權限' : undefined}
+            >
+              {generating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                  AI 撰寫中...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                  {journeyContent ? '重新生成文案' : '✨ AI 生成旅程介紹'}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -45,6 +45,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) return;
     setStatus('submitting');
     try {
       const res = await gasClient.saveExpense(formData);
@@ -64,6 +65,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
   };
 
   const handleItemDelete = async (rowNumber: number) => {
+    if (!canEdit) return;
     const oldList = [...list];
     setList(list.filter((item) => item.rowNumber !== rowNumber));
     try {
@@ -137,18 +139,23 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
 
   return (
     <div className="space-y-6">
-      {canEdit && (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-gold/10 to-gold/5 px-4 py-3 border-b border-gold/10">
-            <h2 className="font-display text-sm text-ink/80">新增花費</h2>
-          </div>
-          <form onSubmit={handleSubmit} className="p-4 space-y-3">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-gold/10 to-gold/5 px-4 py-3 border-b border-gold/10">
+          <h2 className="font-display text-sm text-ink/80">新增花費</h2>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+          {!canEdit && (
+            <p className="text-xs text-ink/50 font-serif">
+              目前為瀏覽模式，可查看功能但無法編輯。
+            </p>
+          )}
             <input
               type="text"
               value={formData.item}
               onChange={(e) =>
                 setFormData({ ...formData, item: e.target.value })
               }
+              disabled={!canEdit}
               className="w-full bg-gray-50 border border-gray-200 px-3 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
               placeholder="項目名稱"
               required
@@ -161,6 +168,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                 onChange={(e) =>
                   setFormData({ ...formData, amount: e.target.value })
                 }
+                disabled={!canEdit}
                 className="col-span-3 bg-gray-50 border border-gray-200 px-3 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
                 placeholder="金額"
                 required
@@ -173,6 +181,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                     currency: e.target.value as ExpenseFormData['currency'],
                   })
                 }
+                disabled={!canEdit}
                 className="col-span-2 bg-gray-50 border border-gray-200 px-2 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
               >
                 {tripConfig.currencies.map((c) => (
@@ -191,6 +200,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                     category: e.target.value as ExpenseFormData['category'],
                   })
                 }
+                disabled={!canEdit}
                 className="flex-1 bg-gray-50 border border-gray-200 px-3 py-2.5 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
               >
                 {tripConfig.categories.map((c) => (
@@ -201,10 +211,13 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
               </select>
               <button
                 type="submit"
-                disabled={status === 'submitting'}
+                disabled={!canEdit || status === 'submitting'}
                 className={`px-6 py-2.5 font-display text-sm text-white rounded-lg transition-all ${
-                  status === 'submitting' ? 'bg-gray-400' : 'bg-gold hover:bg-gold/90 shadow-sm'
+                  !canEdit || status === 'submitting'
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gold hover:bg-gold/90 shadow-sm'
                 } ${status === 'success' ? '!bg-forest' : ''}`}
+                title={!canEdit ? '需編輯權限' : undefined}
               >
                 {status === 'submitting'
                   ? '...'
@@ -214,8 +227,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
               </button>
             </div>
           </form>
-        </div>
-      )}
+      </div>
 
       {/* Statistics summary */}
       {list.length > 0 && (
