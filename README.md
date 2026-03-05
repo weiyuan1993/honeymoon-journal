@@ -1,6 +1,6 @@
 # Our Honeymoon Journey
 
-![Cover](src/config/cover.PNG)
+![Cover](src/config/cover.jpg)
 
 歐洲蜜月旅行日誌 Web App，使用 Google Apps Script 部署，資料儲存於 Google Sheets。
 
