@@ -8,7 +8,7 @@ const BASE_URL =
 
 // City hero images
 export const cityHeroImages: Record<string, string> = {
-  '封面': `${BASE_URL}/cover.jpg`,
+  '封面': `${BASE_URL}/cover.png`,
   '倫敦': `${BASE_URL}/london.jpg`,
   '巴黎': `${BASE_URL}/paris.jpg`,
   '琉森': `${BASE_URL}/lucerne.jpg`,

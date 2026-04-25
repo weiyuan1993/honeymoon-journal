@@ -1,0 +1,18 @@
+[mcp_servers.google-sheets]
+enabled = true
+command = "/Users/vic.lo/.local/bin/uvx"
+args = ["mcp-google-sheets@latest"]
+startup_timeout_sec = 60.0
+
+[mcp_servers.google-sheets.env]
+CREDENTIALS_PATH = "/Users/vic.lo/mcp-credentials/credentials.json"
+TOKEN_PATH = "/Users/vic.lo/mcp-credentials/token.json"
+
+[mcp_servers.mcp-atlassian]
+enabled = false
+
+[mcp_servers.figma]
+enabled = false
+
+[mcp_servers.chrome-devtools]
+enabled = false
