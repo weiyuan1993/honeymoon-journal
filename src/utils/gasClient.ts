@@ -3,6 +3,7 @@ import type {
   ItineraryFormData,
   ExpenseItem,
   ExpenseFormData,
+  TodoItem,
   NavigationData,
   AttractionDetails,
   FoodRecommendations,
@@ -24,54 +25,285 @@ const mockItinerary: ItineraryItem[] = [
   {
     rowNumber: 2,
     day: 'Day 1',
-    date: '5/30',
-    weekday: 'Fri',
-    city: 'Paris',
-    content: '抵達巴黎戴高樂機場，搭乘 RER B 前往市區',
-    transport: '機場快線 RER B',
-    ticket: '',
-    link: '',
-    hotel: 'Hotel Example',
+    date: '9/28',
+    weekday: 'Mon',
+    city: '倫敦',
+    content: '抵達倫敦希斯洛機場，辦理 Oyster / contactless 交通設定，傍晚散步到泰晤士河畔。',
+    transport: 'Heathrow Express / Elizabeth Line 進市區',
+    ticket: '確認 eSIM 與機場交通票',
+    link: 'https://tfl.gov.uk/',
+    hotel: 'The Clermont London, Charing Cross',
   },
   {
     rowNumber: 3,
     day: 'Day 2',
-    date: '5/31',
+    date: '9/29',
+    weekday: 'Tue',
+    city: '倫敦',
+    content: '白金漢宮、聖詹姆士公園、西敏寺與大笨鐘；晚上安排 Soho 晚餐。',
+    transport: '地鐵 + 步行',
+    ticket: '西敏寺可提前預約',
+    link: 'https://www.westminster-abbey.org/',
+    hotel: 'The Clermont London, Charing Cross',
+  },
+  {
+    rowNumber: 4,
+    day: 'Day 3',
+    date: '9/30',
+    weekday: 'Wed',
+    city: '倫敦 → 巴黎',
+    content: '搭 Eurostar 前往巴黎，下午入住後到塞納河左岸與聖日耳曼散步。',
+    transport: 'Eurostar London St Pancras → Paris Gare du Nord',
+    ticket: 'Eurostar 車票需提前購買',
+    link: 'https://www.eurostar.com/',
+    hotel: 'Hotel Le Six Paris',
+  },
+  {
+    rowNumber: 5,
+    day: 'Day 4',
+    date: '10/1',
+    weekday: 'Thu',
+    city: '巴黎',
+    content: '羅浮宮、杜樂麗花園、橘園美術館，傍晚到艾菲爾鐵塔拍照。',
+    transport: 'Metro / 步行',
+    ticket: '羅浮宮與橘園建議預約時段',
+    link: 'https://www.louvre.fr/',
+    hotel: 'Hotel Le Six Paris',
+  },
+  {
+    rowNumber: 6,
+    day: 'Day 5',
+    date: '10/2',
+    weekday: 'Fri',
+    city: '巴黎 → 琉森',
+    content: '搭 TGV Lyria 進瑞士，下午抵達琉森後走卡貝爾橋與湖畔。',
+    transport: 'Paris Gare de Lyon → Basel → Lucerne',
+    ticket: 'TGV Lyria / SBB 分段確認',
+    link: 'https://www.sbb.ch/',
+    hotel: 'Hotel des Balances Lucerne',
+  },
+  {
+    rowNumber: 7,
+    day: 'Day 6',
+    date: '10/3',
     weekday: 'Sat',
-    city: 'Paris',
-    content: '艾菲爾鐵塔、塞納河遊船',
-    transport: '地鐵',
-    ticket: '需預約登塔',
-    link: 'https://www.toureiffel.paris/',
-    hotel: 'Hotel Example',
+    city: '琉森',
+    content: '琉森湖遊船，視天氣安排 Rigi 或 Pilatus；晚上回舊城晚餐。',
+    transport: '船班 + 登山鐵道',
+    ticket: '天氣佳再決定山區票券',
+    link: 'https://www.lakelucerne.ch/',
+    hotel: 'Hotel des Balances Lucerne',
+  },
+  {
+    rowNumber: 8,
+    day: 'Day 7',
+    date: '10/4',
+    weekday: 'Sun',
+    city: '策馬特',
+    content: '前往策馬特，午後走 Gornergrat 周邊或村內散步，保留馬特洪峰天氣彈性。',
+    transport: 'Lucerne → Visp → Zermatt',
+    ticket: 'SBB SuperSaver 可留意',
+    link: 'https://www.sbb.ch/',
+    hotel: 'Hotel Daniela Zermatt',
+  },
+  {
+    rowNumber: 9,
+    day: 'Day 8',
+    date: '10/5',
+    weekday: 'Mon',
+    city: '米蘭',
+    content: '從策馬特南下米蘭，下午安排米蘭大教堂與艾曼紐二世迴廊。',
+    transport: 'Zermatt → Brig → Milano Centrale',
+    ticket: '義大利段車票開賣後補訂',
+    link: 'https://www.trenitalia.com/',
+    hotel: 'Hotel Milano Castello',
   },
 ];
+
+const mockExpenseTimestamp = (daysAgo: number, hour: number, minute = 0) => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  date.setHours(hour, minute, 0, 0);
+  return date.toISOString();
+};
 
 const mockExpenses: ExpenseItem[] = [
   {
     rowNumber: 2,
-    timestamp: new Date().toISOString(),
-    item: '午餐',
+    timestamp: mockExpenseTimestamp(0, 12, 35),
+    item: '倫敦 Borough Market 午餐',
     amount: 25.5,
     currency: 'EUR',
     category: 'Food',
+  },
+  {
+    rowNumber: 3,
+    timestamp: mockExpenseTimestamp(0, 15, 20),
+    item: '巴黎地鐵 Navigo 加值',
+    amount: 11.3,
+    currency: 'EUR',
+    category: 'Transport',
+  },
+  {
+    rowNumber: 4,
+    timestamp: mockExpenseTimestamp(0, 19, 45),
+    item: '晚餐訂位訂金',
+    amount: 40,
+    currency: 'EUR',
+    category: 'Food',
+  },
+  {
+    rowNumber: 5,
+    timestamp: mockExpenseTimestamp(1, 9, 10),
+    item: '大英博物館捐款',
+    amount: 10,
+    currency: 'GBP',
+    category: 'Ticket',
+  },
+  {
+    rowNumber: 6,
+    timestamp: mockExpenseTimestamp(1, 14, 5),
+    item: '下午茶',
+    amount: 32.8,
+    currency: 'GBP',
+    category: 'Food',
+  },
+  {
+    rowNumber: 7,
+    timestamp: mockExpenseTimestamp(2, 10, 30),
+    item: '瑞士火車置物櫃',
+    amount: 7,
+    currency: 'CHF',
+    category: 'Transport',
+  },
+  {
+    rowNumber: 8,
+    timestamp: mockExpenseTimestamp(2, 16, 55),
+    item: '山景明信片',
+    amount: 18.5,
+    currency: 'CHF',
+    category: 'Shopping',
+  },
+  {
+    rowNumber: 9,
+    timestamp: mockExpenseTimestamp(3, 11, 25),
+    item: '車站廁所',
+    amount: 1.5,
+    currency: 'EUR',
+    category: 'Toilet',
+  },
+  {
+    rowNumber: 10,
+    timestamp: mockExpenseTimestamp(3, 18, 40),
+    item: '佛羅倫斯美術館門票',
+    amount: 44,
+    currency: 'EUR',
+    category: 'Ticket',
+  },
+  {
+    rowNumber: 11,
+    timestamp: mockExpenseTimestamp(4, 8, 50),
+    item: '機場到市區接駁',
+    amount: 1450,
+    currency: 'TWD',
+    category: 'Transport',
+  },
+  {
+    rowNumber: 12,
+    timestamp: mockExpenseTimestamp(4, 21, 15),
+    item: '旅平險加購',
+    amount: 980,
+    currency: 'TWD',
+    category: 'Other',
+  },
+];
+
+const mockTodos: TodoItem[] = [
+  {
+    rowNumber: 3,
+    section: '最優先（出發前 6-9 個月)',
+    item: '機票',
+    detail: 'TPE 23:50 (09/27) → LHR; FCO 14:55 (10/27) → TPE',
+    deadline: '越早越好',
+    done: true,
+  },
+  {
+    rowNumber: 4,
+    section: '最優先（出發前 6-9 個月)',
+    item: '英國eETA',
+    detail: 'https://apps.apple.com/us/app/uk-eta/id6444912481',
+    deadline: '',
+    done: false,
+  },
+  {
+    rowNumber: 17,
+    section: '高優先（出發前 3-6 個月)',
+    item: '策馬特米蘭車票',
+    detail: 'Zermatt → Milano (10/15)',
+    deadline: '早鳥較便宜',
+    done: false,
   },
 ];
 
 const mockNavigation: NavigationData = {
   'Day 1': {
     attractions: [
-      { name: '巴黎戴高樂機場', lat: 49.0097, lng: 2.5479 },
+      { name: 'Heathrow Airport', lat: 51.47, lng: -0.4543 },
+      { name: 'Charing Cross', lat: 51.5074, lng: -0.1232 },
     ],
-    center: [49.0097, 2.5479],
+    center: [51.5074, -0.1232],
     zoom: 12,
+  },
+  'Day 2': {
+    attractions: [
+      { name: 'Buckingham Palace', lat: 51.5014, lng: -0.1419 },
+      { name: 'Westminster Abbey', lat: 51.4993, lng: -0.1273 },
+      { name: 'Big Ben', lat: 51.5007, lng: -0.1246 },
+    ],
+    center: [51.5007, -0.1300],
+    zoom: 13,
+  },
+  'Day 4': {
+    attractions: [
+      { name: 'Louvre Museum', lat: 48.8606, lng: 2.3376 },
+      { name: 'Musee de l Orangerie', lat: 48.8638, lng: 2.3227 },
+      { name: 'Eiffel Tower', lat: 48.8584, lng: 2.2945 },
+    ],
+    center: [48.8606, 2.3376],
+    zoom: 13,
+  },
+  'Day 6': {
+    attractions: [
+      { name: 'Chapel Bridge', lat: 47.0517, lng: 8.3073 },
+      { name: 'Lake Lucerne Pier', lat: 47.0502, lng: 8.3100 },
+      { name: 'Mount Rigi', lat: 47.0567, lng: 8.4852 },
+    ],
+    center: [47.0517, 8.3073],
+    zoom: 12,
+  },
+  'Day 8': {
+    attractions: [
+      { name: 'Milano Centrale', lat: 45.4863, lng: 9.2044 },
+      { name: 'Duomo di Milano', lat: 45.4642, lng: 9.1916 },
+      { name: 'Galleria Vittorio Emanuele II', lat: 45.4658, lng: 9.1900 },
+    ],
+    center: [45.4642, 9.1916],
+    zoom: 13,
   },
 };
 
 const mockAttractionDetails: AttractionDetails = {
   'Day 1': {
-    title: '巴黎初印象',
-    content: '巴黎，這座被塞納河溫柔環抱的城市...',
+    title: '倫敦初印象',
+    content: '第一天以抵達與調整時差為主，沿著泰晤士河慢慢進入旅程節奏。',
+  },
+  'Day 4': {
+    title: '巴黎經典一日',
+    content: '從羅浮宮到艾菲爾鐵塔，用藝術與城市散步串起巴黎最經典的蜜月畫面。',
+  },
+  'Day 6': {
+    title: '琉森湖與山景',
+    content: '琉森適合保留天氣彈性，湖船與山區路線可依能見度調整。',
   },
 };
 
@@ -82,6 +314,9 @@ const mockJourneyContent: JourneyContent = {
   cities: {
     '倫敦': '踏上這座霧都，我們將在泰晤士河畔開啟這段蜜月之旅。從白金漢宮的皇家氣派，到大英博物館的千年瑰寶，倫敦以她的優雅與深厚文化底蘊，為我們的旅程揭開序幕。',
     '巴黎': '塞納河畔的浪漫，艾菲爾鐵塔的璀璨，羅浮宮的藝術殿堂。在這座光之城，每一個轉角都是一幅畫，每一刻都值得被永遠珍藏。',
+    '琉森': '琉森把瑞士的湖光山色濃縮在步行可及的尺度裡。卡貝爾橋、舊城與湖船，讓旅程從城市節奏切換到阿爾卑斯山腳下的從容。',
+    '策馬特': '策馬特是留給馬特洪峰的等待。天氣好的時候追逐山景，雲霧來時就在村裡慢慢散步，把瑞士的寧靜收進旅程。',
+    '米蘭': '米蘭是從山城進入義大利的第一站。大教堂、拱廊與咖啡館讓旅程轉向陽光、設計與義式生活感。',
   },
   closing: '讓我們攜手踏上這段旅程，在歐洲的土地上，寫下屬於我們的永恆篇章。',
 };
@@ -123,6 +358,18 @@ export const gasClient = {
 
   editItinerary: (form: ItineraryFormData): Promise<ApiResponse> =>
     callGAS('editItinerary', { success: true, message: '行程已更新' }, form),
+
+  // Todos
+  getTodoData: (): Promise<TodoItem[]> =>
+    callGAS('getTodoData', mockTodos),
+
+  updateTodoStatus: (rowNumber: number, done: boolean): Promise<ApiResponse> =>
+    callGAS(
+      'updateTodoStatus',
+      { success: true, message: '待辦狀態已更新' },
+      rowNumber,
+      done
+    ),
 
   // Expenses
   getExpenseData: (): Promise<ExpenseItem[]> =>

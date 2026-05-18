@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ExpenseItem as ExpenseItemType } from '@/types';
+import { tripConfig } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
 
 interface ExpenseItemProps {
@@ -32,15 +33,15 @@ export default function ExpenseItem({
   const [editForm, setEditForm] = useState({ ...data });
   const [saving, setSaving] = useState(false);
 
-  // Format date string
-  let dateStr = 'Unknown';
+  // Date is already shown by the group header; rows only need the time.
+  let timeStr = 'Unknown';
   try {
     if (data.timestamp) {
       const d = new Date(data.timestamp);
       if (!isNaN(d.getTime())) {
-        dateStr = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        timeStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
       } else {
-        dateStr = String(data.timestamp);
+        timeStr = String(data.timestamp);
       }
     }
   } catch {
@@ -70,6 +71,21 @@ export default function ExpenseItem({
     setSaving(false);
   };
 
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSave();
+  };
+
+  const handleStartEdit = () => {
+    setEditForm({ ...data });
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditForm({ ...data });
+    setIsEditing(false);
+  };
+
   const handleDelete = () => {
     if (!canEdit) return;
     if (confirm(`確定要刪除「${data.item}」嗎？`)) {
@@ -79,90 +95,115 @@ export default function ExpenseItem({
 
   if (isEditing) {
     return (
-      <div className="bg-white border-2 border-gold p-4 mb-3 shadow-md rounded-sm">
-        <div className="grid grid-cols-1 gap-3">
+      <form
+        onSubmit={handleEditSubmit}
+        className="bg-gold/5 px-3 py-2.5"
+      >
+        <div className="mb-2.5 flex items-center justify-between gap-3">
+          <div>
+            <div className="font-display text-sm text-ink/80">編輯花費</div>
+            <div className="mt-0.5 font-serif text-[11px] text-ink/45">
+              {timeStr}
+            </div>
+          </div>
+          <div className="rounded-lg bg-white px-2.5 py-1 text-right shadow-sm">
+            <div className="font-serif text-[10px] leading-none text-ink/45">
+              {currencySymbol(String(editForm.currency))}
+            </div>
+            <div className="mt-0.5 font-display text-sm font-bold text-gold">
+              {editForm.amount || '0'}
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-2.5">
           <input
             type="text"
             name="item"
             value={editForm.item}
             onChange={handleEditChange}
-            className="border p-2 w-full font-serif"
+            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/30"
             placeholder="項目"
           />
-          <div className="flex gap-2">
+          <div className="grid grid-cols-5 gap-2">
             <input
               type="number"
               name="amount"
               value={editForm.amount}
               onChange={handleEditChange}
-              className="border p-2 w-2/3 font-serif"
+              className="col-span-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/30"
               placeholder="金額"
             />
             <select
               name="currency"
               value={editForm.currency}
               onChange={handleEditChange}
-              className="border p-2 w-1/3 font-serif"
+              className="col-span-2 rounded-lg border border-gray-200 bg-white px-2 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none"
             >
-              <option value="EUR">€</option>
-              <option value="CHF">CHF</option>
-              <option value="GBP">£</option>
-              <option value="TWD">NT$</option>
+              {tripConfig.currencies.map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.label}
+                </option>
+              ))}
             </select>
           </div>
           <select
             name="category"
             value={editForm.category}
             onChange={handleEditChange}
-            className="border p-2 w-full font-serif"
+            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none"
           >
-            <option value="Food">餐飲</option>
-            <option value="Transport">交通</option>
-            <option value="Shopping">購物</option>
-            <option value="Ticket">門票</option>
-            <option value="Toilet">廁所</option>
-            <option value="Other">其他</option>
+            {tripConfig.categories.map((category) => (
+              <option key={category.code} value={category.code}>
+                {category.label}
+              </option>
+            ))}
           </select>
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 pt-1">
             <button
-              onClick={handleSave}
+              type="submit"
               disabled={saving}
-              className="flex-1 bg-forest text-white py-2 rounded font-display text-sm"
+              className={`flex-1 rounded-lg py-2.5 font-display text-sm text-white transition-all ${
+                saving
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-forest hover:bg-forest/90 shadow-sm'
+              }`}
             >
               {saving ? '...' : '儲存'}
             </button>
             <button
-              onClick={() => setIsEditing(false)}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 rounded font-display text-sm"
+              type="button"
+              onClick={handleCancelEdit}
+              disabled={saving}
+              className="flex-1 rounded-lg border border-gray-200 bg-white py-2.5 font-display text-sm text-ink/60 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               取消
             </button>
           </div>
         </div>
-      </div>
+      </form>
     );
   }
 
   return (
-    <div className="px-4 py-3 flex justify-between items-center hover:bg-gray-50 transition-colors">
+    <div className="px-3 py-2.5 flex justify-between items-center hover:bg-gray-50 transition-colors">
       <div className="flex-1 min-w-0">
-        <div className="text-[11px] text-gray-400 font-serif flex items-center gap-2">
-          <span>{dateStr}</span>
+        <div className="text-[10px] text-gray-400 font-serif flex items-center gap-1.5">
+          <span>{timeStr}</span>
           <span className="bg-gold/10 text-gold px-1.5 py-0.5 rounded text-[10px]">
             {data.category}
           </span>
         </div>
-        <div className="font-serif text-ink truncate">{data.item}</div>
+        <div className="font-serif text-sm text-ink truncate">{data.item}</div>
       </div>
-      <div className="text-right flex items-center gap-2">
-        <div className="font-display font-bold text-gold">
+      <div className="text-right flex items-center gap-1.5">
+        <div className="font-display text-sm font-bold text-gold whitespace-nowrap">
           {currencySymbol(data.currency)} {data.amount}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-0.5">
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={handleStartEdit}
               disabled={!canEdit}
-              className={`transition-colors p-1 ${
+              className={`transition-colors p-0.5 ${
                 canEdit
                   ? 'text-gray-300 hover:text-gold'
                   : 'text-gray-200 cursor-not-allowed'
@@ -187,7 +228,7 @@ export default function ExpenseItem({
             <button
               onClick={handleDelete}
               disabled={!canEdit}
-              className={`transition-colors p-1 ${
+              className={`transition-colors p-0.5 ${
                 canEdit
                   ? 'text-gray-300 hover:text-red-500'
                   : 'text-gray-200 cursor-not-allowed'

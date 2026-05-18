@@ -40,6 +40,16 @@ export interface ExpenseFormData {
   category: Category;
 }
 
+// Todo types
+export interface TodoItem {
+  rowNumber: number;
+  section: string;
+  item: string;
+  detail: string;
+  deadline: string;
+  done: boolean;
+}
+
 // Navigation types
 export interface Attraction {
   name: string;
@@ -133,6 +143,8 @@ interface GoogleScriptRun {
   withFailureHandler(handler: (error: Error) => void): GoogleScriptRun;
   getItineraryData(): void;
   editItinerary(form: ItineraryFormData): void;
+  getTodoData(): void;
+  updateTodoStatus(rowNumber: number, done: boolean): void;
   getExpenseData(): void;
   saveExpense(formData: ExpenseFormData): void;
   editExpense(data: ExpenseItem): void;

@@ -22,6 +22,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,15 +31,62 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input when modal opens
+  // Load persisted chat history whenever the modal opens
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
+    if (!isOpen) return;
+
+    let cancelled = false;
+
+    const loadHistory = async () => {
+      setIsLoadingHistory(true);
+      try {
+        const history = await gasClient.getChatHistory();
+        if (cancelled) return;
+
+        if (history.length === 0) {
+          setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+          return;
+        }
+
+        const restoredMessages = history.flatMap((item): ChatMessage[] => [
+          {
+            role: 'user',
+            content: item.question,
+            timestamp: item.timestamp,
+          },
+          {
+            role: 'assistant',
+            content: item.answer,
+            timestamp: item.timestamp,
+          },
+        ]);
+        setMessages(restoredMessages);
+      } catch (error) {
+        console.error('Load chat history error:', error);
+        if (!cancelled) {
+          setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
-  const handleSend = async () => {
-    const question = inputValue.trim();
+  // Focus input after history finishes loading
+  useEffect(() => {
+    if (isOpen && !isLoadingHistory) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen, isLoadingHistory]);
+
+  const handleSend = async (questionOverride?: string) => {
+    const question = (questionOverride ?? inputValue).trim();
     if (!question || isLoading) return;
 
     // Add user message
@@ -86,15 +134,17 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
   };
 
   const handleQuickSuggestion = (suggestion: string) => {
-    setInputValue(suggestion);
-    setTimeout(() => handleSend(), 0);
-    setInputValue(suggestion);
+    handleSend(suggestion);
   };
 
   const handleClearHistory = async () => {
     try {
-      await gasClient.clearChatHistory();
-      setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+      const res = await gasClient.clearChatHistory();
+      if (res.success) {
+        setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+      } else {
+        alert(res.message);
+      }
     } catch (error) {
       console.error('Clear history error:', error);
     }
@@ -103,7 +153,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center p-3">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -111,7 +161,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg h-[85vh] bg-paper rounded-t-2xl shadow-2xl flex flex-col animate-slide-up">
+      <div className="relative w-full max-w-lg h-[min(85dvh,720px)] max-h-[calc(100dvh-1.5rem)] bg-paper rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gold/20 bg-gradient-to-r from-[#f8f5ed] to-[#f4f0e6]">
           <div className="flex items-center gap-2">
@@ -153,26 +203,32 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} ${
-                message.role === 'user' ? 'animate-message-right' : 'animate-message-left'
-              }`}
-            >
+          {isLoadingHistory ? (
+            <div className="flex h-full items-center justify-center text-gold animate-pulse font-display text-xs tracking-wide">
+              載入對話中...
+            </div>
+          ) : (
+            messages.map((message, index) => (
               <div
-                className={`max-w-[85%] px-4 py-3 rounded-2xl ${
-                  message.role === 'user'
-                    ? 'bg-gold text-white rounded-br-md'
-                    : 'bg-white border border-subtle text-ink rounded-bl-md'
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} ${
+                  message.role === 'user' ? 'animate-message-right' : 'animate-message-left'
                 }`}
               >
-                <p className="text-sm font-serif leading-relaxed whitespace-pre-wrap">
-                  {message.content}
-                </p>
+                <div
+                  className={`max-w-[85%] px-4 py-3 rounded-3xl shadow-sm ${
+                    message.role === 'user'
+                      ? 'bg-gold text-white rounded-br-xl'
+                      : 'bg-white border border-subtle text-ink rounded-bl-xl'
+                  }`}
+                >
+                  <p className="text-sm font-serif leading-relaxed whitespace-pre-wrap">
+                    {message.content}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
 
           {/* Typing indicator */}
           {isLoading && (
@@ -191,7 +247,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
         </div>
 
         {/* Quick suggestions */}
-        {messages.length <= 2 && !isLoading && (
+        {messages.length <= 2 && !isLoading && !isLoadingHistory && (
           <div className="px-4 pb-2">
             <div className="flex flex-wrap gap-2">
               {QUICK_SUGGESTIONS.map((suggestion, index) => (
@@ -208,7 +264,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
         )}
 
         {/* Input area */}
-        <div className="p-4 border-t border-subtle bg-white rounded-b-2xl">
+        <div className="p-4 border-t border-subtle bg-white">
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -217,15 +273,15 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="請問有什麼可以幫助您的？"
-              className="flex-1 px-4 py-2.5 bg-gray-50 border border-subtle rounded-full text-sm font-serif text-ink placeholder:text-gray-400 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30"
-              disabled={isLoading}
+              className="min-w-0 flex-1 px-4 py-2 bg-gray-50 border border-subtle rounded-full text-[16px] leading-6 font-serif text-ink placeholder:text-gray-400 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30"
+              disabled={isLoading || isLoadingHistory}
             />
             <button
-              onClick={handleSend}
-              disabled={!inputValue.trim() || isLoading}
-              className="w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={() => handleSend()}
+              disabled={!inputValue.trim() || isLoading || isLoadingHistory}
+              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
-                background: inputValue.trim() && !isLoading
+                background: inputValue.trim() && !isLoading && !isLoadingHistory
                   ? 'linear-gradient(135deg, #c5a059, #d4b677)'
                   : '#e5e5e5',
               }}
@@ -233,7 +289,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                fill={inputValue.trim() && !isLoading ? 'white' : '#9ca3af'}
+                fill={inputValue.trim() && !isLoading && !isLoadingHistory ? 'white' : '#9ca3af'}
                 className="w-5 h-5"
               >
                 <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />

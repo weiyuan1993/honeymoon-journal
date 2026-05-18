@@ -234,18 +234,6 @@ export default function ItineraryCard({
                 </svg>
               </a>
             )}
-            {hasCoordinates && (
-              <button
-                onClick={() => setShowMap(true)}
-                className="text-forest/50 hover:text-forest transition-colors p-1"
-                title="景點地圖"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                </svg>
-              </button>
-            )}
             <button
                 onClick={() => setIsEditing(true)}
                 disabled={!canEdit}
@@ -327,6 +315,18 @@ export default function ItineraryCard({
             </svg>
             規劃
           </button>
+          {hasCoordinates && (
+            <button
+              onClick={() => setShowMap(true)}
+              className="flex-1 py-2 px-3 bg-forest/10 hover:bg-forest/20 text-forest font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              地圖
+            </button>
+          )}
           <button
             onClick={() => setShowFood(true)}
             className="flex-1 py-2 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"

@@ -11,6 +11,7 @@ export const tripConfig = {
   // External links for menu
   links: {
     googleSheet: 'https://docs.google.com/spreadsheets/d/1sd5CVy0qd4QSuOUUDnQH6I1Mx2F2W1NvgWVbujcePiU/edit?usp=sharing',
+    googleMap: 'https://maps.app.goo.gl/iHnvbeKHs6nsc1d77',
     github: 'https://github.com/weiyuan1993/honeymoon-journal',
   },
 

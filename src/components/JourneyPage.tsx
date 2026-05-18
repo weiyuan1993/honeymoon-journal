@@ -55,6 +55,8 @@ function extractMainCity(cityStr: string): { zh: string; en: string } {
   };
 }
 
+const getCitySectionId = (index: number) => `journey-city-${index}`;
+
 export default function JourneyPage({ itinerary, canEdit, journeyContent, onJourneyContentUpdate }: JourneyPageProps) {
   const [generating, setGenerating] = useState(false);
 
@@ -119,6 +121,13 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
     setGenerating(false);
   };
 
+  const scrollToCitySection = (index: number) => {
+    const target = document.getElementById(getCitySectionId(index));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="w-full">
       {/* Hero Section */}
@@ -143,12 +152,14 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {citySegments.map((seg, idx) => (
-                <span
+                <button
                   key={idx}
-                  className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white/90 border border-white/20"
+                  type="button"
+                  onClick={() => scrollToCitySection(idx)}
+                  className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white/90 border border-white/20 transition-colors hover:bg-white/20 focus:outline-none focus:ring-1 focus:ring-white/70"
                 >
                   {seg.city}
-                </span>
+                </button>
               ))}
             </div>
           </div>
@@ -178,7 +189,11 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
         const heroImage = cityHeroImages[segment.city] || cityHeroImages['倫敦'];
 
         return (
-          <section key={idx} className="relative bg-paper">
+          <section
+            key={idx}
+            id={getCitySectionId(idx)}
+            className="scroll-target relative bg-paper"
+          >
             {/* City Header */}
             <div className="max-w-5xl mx-auto px-4 md:px-8 pt-8 pb-4">
               <p className="text-gold text-[10px] tracking-[0.2em] uppercase mb-1">

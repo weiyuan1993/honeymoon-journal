@@ -76,7 +76,7 @@ export default function DetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3"
       onClick={handleClose}
     >
       {/* Background overlay */}
@@ -84,7 +84,7 @@ export default function DetailModal({
 
       {/* Modal content */}
       <div
-        className="relative bg-paper border-2 border-gold shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden rounded-sm"
+        className="relative bg-paper border border-gold/60 shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -125,7 +125,7 @@ export default function DetailModal({
               <p className="font-serif text-wax text-sm mb-4">{error}</p>
               <button
                 onClick={handleGenerate}
-                className="px-4 py-2 bg-gold text-white font-serif text-sm rounded-sm hover:bg-gold/90 transition-colors"
+                className="px-4 py-2 bg-gold text-white font-serif text-sm rounded-lg hover:bg-gold/90 transition-colors"
               >
                 重試
               </button>
@@ -142,7 +142,7 @@ export default function DetailModal({
               <button
                 onClick={handleGenerate}
                 disabled={!canEdit}
-                className={`px-6 py-2.5 text-white font-display text-sm tracking-wider rounded-sm transition-all shadow-md ${
+                className={`px-6 py-2.5 text-white font-display text-sm tracking-wider rounded-lg transition-all shadow-md ${
                   canEdit
                     ? 'bg-gradient-to-r from-gold to-gold/80 hover:from-gold/90 hover:to-gold/70'
                     : 'bg-gray-400 cursor-not-allowed'
@@ -162,7 +162,7 @@ export default function DetailModal({
               <button
                 onClick={handleGenerate}
                 disabled={!canEdit}
-                className={`flex-1 py-2.5 border font-display text-sm tracking-wider transition-colors rounded-sm ${
+                className={`flex-1 py-2.5 border font-display text-sm tracking-wider transition-colors rounded-lg ${
                   canEdit
                     ? 'bg-gold/10 text-gold border-gold hover:bg-gold/20'
                     : 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
@@ -174,7 +174,7 @@ export default function DetailModal({
             )}
             <button
               onClick={handleClose}
-              className={`${hasContent ? 'flex-1' : 'w-full'} py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-sm`}
+              className={`${hasContent ? 'flex-1' : 'w-full'} py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-lg`}
             >
               CLOSE
             </button>
