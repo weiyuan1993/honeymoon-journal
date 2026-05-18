@@ -12,21 +12,118 @@ import { gasClient } from '@/utils/gasClient';
 import ItineraryCard from './ItineraryCard';
 import ExpensePage from './ExpensePage';
 import JourneyPage from './JourneyPage';
+import TodoPage from './TodoPage';
 import Loading from './Loading';
 import TripSecretaryModal from './TripSecretaryModal';
 
-type TabType = 'itinerary' | 'expense' | 'journey';
+type TabType = 'itinerary' | 'todo' | 'expense' | 'journey';
+
+const bottomTabs: Array<{ id: TabType; label: string }> = [
+  { id: 'journey', label: 'Journey' },
+  { id: 'itinerary', label: 'Itinerary' },
+  { id: 'expense', label: 'Expenses' },
+  { id: 'todo', label: 'Todo' },
+];
+
+function TabIcon({ tab }: { tab: TabType }) {
+  const iconClass = 'h-5 w-5';
+
+  switch (tab) {
+    case 'journey':
+      return (
+        <svg
+          className={iconClass}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.7}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 19.5V5.75A2.75 2.75 0 0 1 6.75 3H20v15H6.75A2.75 2.75 0 0 0 4 20.75" />
+          <path d="M8 7h8" />
+          <path d="M8 11h6" />
+        </svg>
+      );
+    case 'itinerary':
+      return (
+        <svg
+          className={iconClass}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.7}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M8 2.5v3" />
+          <path d="M16 2.5v3" />
+          <path d="M4.5 9h15" />
+          <path d="M6.75 4h10.5A2.25 2.25 0 0 1 19.5 6.25v11A2.25 2.25 0 0 1 17.25 19.5H6.75A2.25 2.25 0 0 1 4.5 17.25v-11A2.25 2.25 0 0 1 6.75 4Z" />
+          <path d="M8 13h.01" />
+          <path d="M12 13h.01" />
+          <path d="M16 13h.01" />
+        </svg>
+      );
+    case 'todo':
+      return (
+        <svg
+          className={iconClass}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.7}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 11.5 11 13.5 15.5 8.5" />
+          <path d="M5.75 4h12.5A1.75 1.75 0 0 1 20 5.75v12.5A1.75 1.75 0 0 1 18.25 20H5.75A1.75 1.75 0 0 1 4 18.25V5.75A1.75 1.75 0 0 1 5.75 4Z" />
+        </svg>
+      );
+    case 'expense':
+      return (
+        <svg
+          className={iconClass}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.7}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M7 3.5h10A1.5 1.5 0 0 1 18.5 5v16l-2.25-1.25L14 21l-2-1.25L10 21l-2.25-1.25L5.5 21V5A1.5 1.5 0 0 1 7 3.5Z" />
+          <path d="M8.5 8h7" />
+          <path d="M8.5 12h7" />
+          <path d="M8.5 16h4" />
+        </svg>
+      );
+  }
+}
 
 const getInitialTab = (): TabType => {
   // Try URL hash first (for local dev)
   const hash = window.location.hash.replace('#', '');
-  if (hash === 'itinerary' || hash === 'expense' || hash === 'journey') {
+  if (
+    hash === 'itinerary' ||
+    hash === 'todo' ||
+    hash === 'expense' ||
+    hash === 'journey'
+  ) {
     return hash;
   }
   // Then try localStorage (for GAS)
   try {
     const saved = localStorage.getItem('activeTab');
-    if (saved === 'itinerary' || saved === 'expense' || saved === 'journey') {
+    if (
+      saved === 'itinerary' ||
+      saved === 'todo' ||
+      saved === 'expense' ||
+      saved === 'journey'
+    ) {
       return saved;
     }
   } catch {
@@ -204,10 +301,10 @@ export default function App() {
   return (
     <div className="min-h-screen pb-20 bg-paper">
       {/* Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-sm border-b border-gold/20 transition-all duration-300 ${
+      <header className={`sticky top-0 z-50 liquid-shell-header backdrop-blur-sm border-b border-gold/25 transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/95 shadow-sm'
-          : 'bg-gradient-to-b from-[#f8f5ed] via-[#f4f0e6] to-[#f0ebe0] shadow-md'
+          ? 'liquid-shell-header-compact shadow-sm'
+          : 'shadow-md'
       }`}>
         <div className={`relative flex flex-col items-center justify-center px-4 transition-all duration-300 ${
           isScrolled ? 'py-1.5' : 'py-2'
@@ -261,6 +358,19 @@ export default function App() {
                   </svg>
                   Google Sheet
                 </a>
+                <a
+                  href={tripConfig.links.googleMap}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
+                  onClick={() => setShowMenu(false)}
+                >
+                  <svg className="w-4 h-4 text-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                  Google Map
+                </a>
                 <div className="mx-3 my-1 h-px bg-gold/10" />
                 <a
                   href={tripConfig.links.github}
@@ -281,7 +391,7 @@ export default function App() {
 
         {/* Navigation bar */}
         {tab === 'itinerary' && cityList.length > 0 && (
-          <div className="bg-white border-t border-subtle overflow-x-auto no-scrollbar py-1.5 px-4 shadow-inner mt-0.5">
+          <div className="liquid-subnav border-t border-gold/20 overflow-x-auto no-scrollbar py-1.5 px-4 mt-0.5">
             <div className="flex gap-2 whitespace-nowrap min-w-max px-2">
               <span className="font-display text-xs self-center text-gold mr-1">
                 JUMP TO:
@@ -329,6 +439,11 @@ export default function App() {
         {tab === 'expense' && (
           <div className="animate-fade-in-up">
             <ExpensePage canEdit={userPermission.canEdit} />
+          </div>
+        )}
+        {tab === 'todo' && (
+          <div className="animate-fade-in-up">
+            <TodoPage canEdit={userPermission.canEdit} />
           </div>
         )}
         {tab === 'journey' && (
@@ -379,36 +494,23 @@ export default function App() {
       {/* Bottom fixed tab navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gold shadow-lg">
         <div className="flex w-full">
-          <button
-            onClick={() => setTab('journey')}
-            className={`flex-1 py-3 font-display text-xs tracking-wider transition-all duration-300 ${
-              tab === 'journey'
-                ? 'bg-ink text-white shadow-md'
-                : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
-            }`}
-          >
-            JOURNEY
-          </button>
-          <button
-            onClick={() => setTab('itinerary')}
-            className={`flex-1 py-3 font-display text-xs tracking-wider transition-all duration-300 border-l border-subtle ${
-              tab === 'itinerary'
-                ? 'bg-ink text-white shadow-md'
-                : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
-            }`}
-          >
-            ITINERARY
-          </button>
-          <button
-            onClick={() => setTab('expense')}
-            className={`flex-1 py-3 font-display text-xs tracking-wider transition-all duration-300 border-l border-subtle ${
-              tab === 'expense'
-                ? 'bg-ink text-white shadow-md'
-                : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
-            }`}
-          >
-            EXPENSES
-          </button>
+          {bottomTabs.map((item, index) => (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              aria-label={item.label}
+              title={item.label}
+              className={`flex h-12 flex-1 items-center justify-center transition-all duration-300 ${
+                index > 0 ? 'border-l border-subtle' : ''
+              } ${
+                tab === item.id
+                  ? 'bg-ink text-white shadow-md'
+                  : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
+              }`}
+            >
+              <TabIcon tab={item.id} />
+            </button>
+          ))}
         </div>
       </div>
     </div>

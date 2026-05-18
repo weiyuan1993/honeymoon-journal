@@ -10,6 +10,7 @@ var CONFIG = {
   sheetNames: {
     itinerary: '行程',
     expenses: '記帳',
+    todos: '待辦',
     attractions: '景點規劃',
     navigation: '導航',
     food: '美食推薦',
@@ -161,6 +162,80 @@ function editItinerary(form) {
     ]]);
     
     return { success: true, message: "行程已更新" };
+  } catch (e) {
+    return { success: false, message: "更新失敗: " + e.toString() };
+  }
+}
+
+// 取得待辦事項
+function getTodoData() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.todos);
+    if (!sheet) return [];
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return [];
+
+    var range = sheet.getRange(1, 1, lastRow, 5);
+    var values = range.getValues();
+    var displayValues = range.getDisplayValues();
+    var richTextValues = range.getRichTextValues();
+    var currentSection = '未分類';
+    var result = [];
+
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+      var displayRow = displayValues[i];
+      var richRow = richTextValues[i];
+      var section = String(displayRow[0] || '').trim();
+      var item = String(displayRow[1] || '').trim();
+
+      if (section === '【重要連結彙整】') break;
+
+      if (section && !item) {
+        currentSection = section;
+        continue;
+      }
+
+      if (!item) continue;
+
+      result.push({
+        rowNumber: i + 1,
+        section: currentSection,
+        item: convertRichTextToHtml(richRow[1]),
+        detail: convertRichTextToHtml(richRow[2]),
+        deadline: convertRichTextToHtml(richRow[3]),
+        done: row[4] === true || String(displayRow[4]).toUpperCase() === 'TRUE'
+      });
+    }
+
+    return result;
+  } catch (e) {
+    Logger.log(e);
+    return [];
+  }
+}
+
+// 更新待辦事項狀態
+function updateTodoStatus(rowNumber, done) {
+  try {
+    if (!isAuthorizedEditor()) {
+      return { success: false, message: "您沒有編輯權限" };
+    }
+
+    var row = Number(rowNumber);
+    if (!row || row < 2) throw new Error("無效的行號");
+
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.todos);
+    if (!sheet) throw new Error("找不到待辦 Sheet");
+
+    var todos = getTodoData();
+    var exists = todos.some(function(todo) {
+      return todo.rowNumber === row;
+    });
+    if (!exists) throw new Error("找不到待辦項目");
+
+    sheet.getRange(row, 5).setValue(done === true);
+    return { success: true, message: "待辦狀態已更新" };
   } catch (e) {
     return { success: false, message: "更新失敗: " + e.toString() };
   }
@@ -1063,13 +1138,6 @@ function saveChatHistory(question, answer) {
     // 新增記錄
     sheet.appendRow([new Date(), question, answer]);
 
-    // 限制最多保留 20 筆記錄
-    var lastRow = sheet.getLastRow();
-    if (lastRow > 21) { // 標題行 + 20 筆
-      var rowsToDelete = lastRow - 21;
-      sheet.deleteRows(2, rowsToDelete);
-    }
-
     Logger.log('已儲存對話記錄');
   } catch (e) {
     Logger.log('儲存對話記錄錯誤: ' + e.toString());
@@ -1102,8 +1170,8 @@ function getChatHistory() {
       };
     });
 
-    // 返回最新的在前面
-    return history.reverse();
+    // 依時間由舊到新返回，前端才能還原完整對話順序
+    return history;
   } catch (e) {
     Logger.log('取得對話記錄錯誤: ' + e.toString());
     return [];

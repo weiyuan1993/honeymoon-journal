@@ -40,7 +40,7 @@ export default function MapModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 lg:p-6"
       onClick={onClose}
     >
       {/* Background overlay */}
@@ -48,7 +48,7 @@ export default function MapModal({
 
       {/* Modal content */}
       <div
-        className="relative bg-paper border-2 border-gold shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-sm flex flex-col"
+        className="relative bg-paper border border-gold/60 shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl flex flex-col lg:h-[92vh] lg:w-[96vw] lg:max-w-none lg:max-h-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - compact version */}
@@ -78,7 +78,7 @@ export default function MapModal({
         </div>
 
         {/* Google Maps Embed area */}
-        <div className="flex-1 relative" style={{ minHeight: '340px' }}>
+        <div className="flex-1 relative min-h-[340px] lg:min-h-0">
           <iframe
             src={mapEmbedUrl}
             className="absolute inset-0 w-full h-full border-0"
@@ -122,7 +122,7 @@ export default function MapModal({
             href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAttr.lat},${selectedAttr.lng}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-2 bg-forest text-white font-display text-sm tracking-wider hover:bg-green-800 transition-colors rounded-sm"
+            className="flex items-center justify-center gap-2 w-full py-2 bg-forest text-white font-display text-sm tracking-wider hover:bg-green-800 transition-colors rounded-lg"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
