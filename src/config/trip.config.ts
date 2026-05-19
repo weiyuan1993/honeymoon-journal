@@ -40,8 +40,12 @@ export const tripConfig = {
   sheetNames: {
     itinerary: '行程',
     expenses: '記帳',
-    attractions: '景點介紹',
+    todos: '待辦',
+    attractions: '景點規劃',
     navigation: '導航',
+    food: '美食推薦',
+    journey: '旅程介紹',
+    chat: 'AI秘書對話',
   },
 };
 
