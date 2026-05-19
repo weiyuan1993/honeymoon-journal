@@ -5,11 +5,13 @@ import type {
   NavigationData,
   AttractionDetails,
   FoodRecommendations,
+  TicketItem,
 } from '@/types';
 import { gasClient } from '@/utils/gasClient';
 import DetailModal from './DetailModal';
 import MapModal from './MapModal';
 import FoodModal from './FoodModal';
+import TicketModal from './TicketModal';
 
 interface ItineraryCardProps {
   item: ItineraryItem;
@@ -18,6 +20,7 @@ interface ItineraryCardProps {
   navigationData: NavigationData;
   attractionDetails: AttractionDetails;
   foodRecommendations: FoodRecommendations;
+  dayTickets: TicketItem[];
   onFoodUpdate: () => void;
   canEdit: boolean;
 }
@@ -29,6 +32,7 @@ export default function ItineraryCard({
   navigationData,
   attractionDetails,
   foodRecommendations,
+  dayTickets,
   onFoodUpdate,
   canEdit,
 }: ItineraryCardProps) {
@@ -45,6 +49,7 @@ export default function ItineraryCard({
   const [showDetail, setShowDetail] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showFood, setShowFood] = useState(false);
+  const [showTickets, setShowTickets] = useState(false);
 
   // Check if there's detail data for this day
   const detailData = attractionDetails && attractionDetails[item.day];
@@ -55,6 +60,8 @@ export default function ItineraryCard({
 
   // Check if there's food data for this day
   const foodData = foodRecommendations && foodRecommendations[item.day];
+  const hasTickets = dayTickets.length > 0;
+  const headerTicketTitle = hasTickets ? '查看票券' : '票務連結';
 
   useEffect(() => {
     setFormData({
@@ -221,19 +228,35 @@ export default function ItineraryCard({
             {item.date.replace(/^\d{4}[\/\-]/, '').replace(/[\/\-]\d{4}$/, '')} ({item.weekday})
           </span>
           <div className="ml-auto flex items-center gap-1">
-            {item.link && (
+            {hasTickets ? (
+              <button
+                type="button"
+                onClick={() => setShowTickets(true)}
+                className="inline-flex items-center rounded-full bg-gold px-2.5 py-1 text-white shadow-sm transition-colors hover:bg-gold/90"
+                title={headerTicketTitle}
+                aria-label={headerTicketTitle}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+                </svg>
+                <span className="ml-1 font-serif text-[11px] leading-none">
+                  {dayTickets.length}
+                </span>
+              </button>
+            ) : item.link ? (
               <a
                 href={item.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gold/50 hover:text-gold transition-colors p-1"
-                title="票務連結"
+                title={headerTicketTitle}
+                aria-label={headerTicketTitle}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
                 </svg>
               </a>
-            )}
+            ) : null}
             <button
                 onClick={() => setIsEditing(true)}
                 disabled={!canEdit}
@@ -292,7 +315,12 @@ export default function ItineraryCard({
             {item.ticket && (
               <div className="flex items-start gap-2 text-ink/60 bg-gray-50 px-3 py-2 rounded-lg">
                 <span>🎟️</span>
-                <span className="font-serif" dangerouslySetInnerHTML={{ __html: item.ticket }} />
+                <div className="min-w-0 flex-1">
+                  <span
+                    className="font-serif"
+                    dangerouslySetInnerHTML={{ __html: item.ticket }}
+                  />
+                </div>
               </div>
             )}
             {item.hotel && (
@@ -367,6 +395,15 @@ export default function ItineraryCard({
         savedData={foodData}
         onFoodGenerated={onFoodUpdate}
       />
+      {showTickets && (
+        <TicketModal
+          day={item.day}
+          city={item.city}
+          tickets={dayTickets}
+          canViewTickets={canEdit}
+          onClose={() => setShowTickets(false)}
+        />
+      )}
     </div>
   );
 }

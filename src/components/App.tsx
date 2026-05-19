@@ -6,6 +6,7 @@ import type {
   FoodRecommendations,
   UserPermission,
   JourneyContent,
+  TicketItem,
 } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
@@ -137,6 +138,7 @@ export default function App() {
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [loadingItin, setLoadingItin] = useState(false);
   const [navigationData, setNavigationData] = useState<NavigationData>({});
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [attractionDetails, setAttractionDetails] = useState<AttractionDetails>(
     {}
   );
@@ -204,6 +206,15 @@ export default function App() {
     }
   };
 
+  const fetchTicketData = async () => {
+    try {
+      const data = await gasClient.getTicketData();
+      setTickets(data || []);
+    } catch (error) {
+      console.error('Failed to fetch ticket data:', error);
+    }
+  };
+
   const fetchAttractionDetails = async () => {
     try {
       const data = await gasClient.getAttractionDetails();
@@ -247,6 +258,12 @@ export default function App() {
     }
   }, [tab, itinerary.length]);
 
+  useEffect(() => {
+    if (tab === 'itinerary' && tickets.length === 0) {
+      fetchTicketData();
+    }
+  }, [tab, tickets.length]);
+
   // Auto-scroll to today's itinerary card (only once on first load)
   useEffect(() => {
     if (tab === 'itinerary' && itinerary.length > 0 && !hasAutoScrolled) {
@@ -266,6 +283,7 @@ export default function App() {
 
   useEffect(() => {
     fetchNavigationData();
+    fetchTicketData();
     fetchAttractionDetails();
     fetchFoodRecommendations();
     fetchUserPermission();
@@ -286,6 +304,14 @@ export default function App() {
     });
     return cities;
   }, [itinerary]);
+
+  const ticketsByDay = useMemo(() => {
+    return tickets.reduce<Record<string, TicketItem[]>>((result, ticket) => {
+      if (!result[ticket.day]) result[ticket.day] = [];
+      result[ticket.day].push(ticket);
+      return result;
+    }, {});
+  }, [tickets]);
 
   const scrollToCity = (shortName: string) => {
     const targetItem = itinerary.find((i) => {
@@ -429,6 +455,7 @@ export default function App() {
                   navigationData={navigationData}
                   attractionDetails={attractionDetails}
                   foodRecommendations={foodRecommendations}
+                  dayTickets={ticketsByDay[item.day] || []}
                   onFoodUpdate={fetchFoodRecommendations}
                   canEdit={userPermission.canEdit}
                 />

@@ -50,6 +50,19 @@ export interface TodoItem {
   done: boolean;
 }
 
+// Ticket types
+export interface TicketItem {
+  rowNumber: number;
+  day: string;
+  date: string;
+  city: string;
+  item: string;
+  type: string;
+  provider: string;
+  fileUrl: string;
+  notes: string;
+}
+
 // Navigation types
 export interface Attraction {
   name: string;
@@ -143,6 +156,7 @@ interface GoogleScriptRun {
   withFailureHandler(handler: (error: Error) => void): GoogleScriptRun;
   getItineraryData(): void;
   editItinerary(form: ItineraryFormData): void;
+  getTicketData(): void;
   getTodoData(): void;
   updateTodoStatus(rowNumber: number, done: boolean): void;
   getExpenseData(): void;

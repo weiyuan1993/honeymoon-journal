@@ -4,6 +4,7 @@ import type {
   ExpenseItem,
   ExpenseFormData,
   TodoItem,
+  TicketItem,
   NavigationData,
   AttractionDetails,
   FoodRecommendations,
@@ -75,12 +76,12 @@ const mockItinerary: ItineraryItem[] = [
     day: 'Day 5',
     date: '10/2',
     weekday: 'Fri',
-    city: '巴黎 → 琉森',
-    content: '搭 TGV Lyria 進瑞士，下午抵達琉森後走卡貝爾橋與湖畔。',
-    transport: 'Paris Gare de Lyon → Basel → Lucerne',
-    ticket: 'TGV Lyria / SBB 分段確認',
-    link: 'https://www.sbb.ch/',
-    hotel: 'Hotel des Balances Lucerne',
+    city: '倫敦 → 巴黎',
+    content: 'St Pancras 周邊散步後搭 Eurostar 前往巴黎，晚上看艾菲爾鐵塔夜景。',
+    transport: 'Eurostar London St Pancras → Paris Gare du Nord',
+    ticket: 'Eurostar 已購票；艾菲爾鐵塔外觀免費',
+    link: 'https://www.eurostar.com/',
+    hotel: 'Hotel Victoria ★★',
   },
   {
     rowNumber: 7,
@@ -111,12 +112,48 @@ const mockItinerary: ItineraryItem[] = [
     day: 'Day 8',
     date: '10/5',
     weekday: 'Mon',
-    city: '米蘭',
-    content: '從策馬特南下米蘭，下午安排米蘭大教堂與艾曼紐二世迴廊。',
-    transport: 'Zermatt → Brig → Milano Centrale',
-    ticket: '義大利段車票開賣後補訂',
-    link: 'https://www.trenitalia.com/',
-    hotel: 'Hotel Milano Castello',
+    city: '巴黎',
+    content: '巴黎迪士尼一日雙園遊。',
+    transport: 'Paris Gare de Lyon 轉 RER A 線到 Marne-la-Vallée Chessy',
+    ticket: '一日雙園門票已購買',
+    link: 'https://www.kkday.com/zh-tw/product/20829-disneyland-paris-ticket',
+    hotel: 'Hotel Victoria ★★',
+  },
+  {
+    rowNumber: 12,
+    day: 'Day 11',
+    date: '10/8',
+    weekday: 'Thu',
+    city: '巴黎 → 琉森',
+    content: 'TGV 9203 Paris Gare de Lyon 出發，Basel SBB 轉車後抵達 Luzern。',
+    transport: 'Paris Gare de Lyon → Basel SBB → Luzern',
+    ticket: '搭車時備妥車票與護照',
+    link: 'https://www.sbb.ch/en',
+    hotel: 'Hotel Luzernerhof ★★★★',
+  },
+  {
+    rowNumber: 21,
+    day: 'Day 20',
+    date: '10/17',
+    weekday: 'Sat',
+    city: '米蘭 → 威尼斯',
+    content: 'Italo 07:35 Milano Centrale 出發，10:03 抵達 Venezia S. Lucia。',
+    transport: 'Italo Milano Centrale → Venezia S. Lucia',
+    ticket: 'Italo 已購票：Prima Business，車廂1，座位41、42',
+    link: 'https://www.italotreno.com/',
+    hotel: 'Alberghiera Venezia ★★',
+  },
+  {
+    rowNumber: 23,
+    day: 'Day 22',
+    date: '10/19',
+    weekday: 'Mon',
+    city: '威尼斯 → 佛羅倫斯',
+    content: '早上威尼斯散步後，搭 Italo 前往 Firenze S.M. Novella。',
+    transport: 'Italo Venezia S. Lucia → Firenze S.M. Novella',
+    ticket: 'Italo 已購票：Prima Business，車廂2，座位6、7',
+    link: 'https://www.italotreno.com/',
+    hotel: 'Domus Duomo b&b ★★★',
   },
 ];
 
@@ -245,6 +282,75 @@ const mockTodos: TodoItem[] = [
   },
 ];
 
+const mockTickets: TicketItem[] = [
+  {
+    rowNumber: 2,
+    day: 'Day 5',
+    date: '2026-10-02',
+    city: '倫敦 → 巴黎',
+    item: 'Eurostar London St Pancras → Paris Gare du Nord',
+    type: '交通',
+    provider: 'Eurostar',
+    fileUrl: 'https://drive.google.com/file/d/1W8CVYtX0WwrbEBwYNlk3SSTP4tv7Nirh/view?usp=drivesdk',
+    notes: 'Tingyun Yang',
+  },
+  {
+    rowNumber: 3,
+    day: 'Day 5',
+    date: '2026-10-02',
+    city: '倫敦 → 巴黎',
+    item: 'Eurostar London St Pancras → Paris Gare du Nord',
+    type: '交通',
+    provider: 'Eurostar',
+    fileUrl: 'https://drive.google.com/file/d/1BZXbLrin2cfwpi_cQOB0yRokvVhnPBh7/view?usp=drivesdk',
+    notes: 'Weiyuan Lo',
+  },
+  {
+    rowNumber: 4,
+    day: 'Day 8',
+    date: '2026-10-05',
+    city: '巴黎',
+    item: '巴黎迪士尼一日雙園',
+    type: '門票',
+    provider: 'KKday',
+    fileUrl: 'https://drive.google.com/file/d/1PYzDIXNh0Z8_WNWjdMQFxlNzlfC5HTX7/view?usp=drivesdk',
+    notes: '兩張 NTD 6947',
+  },
+  {
+    rowNumber: 5,
+    day: 'Day 11',
+    date: '2026-10-08',
+    city: '巴黎 → 琉森',
+    item: 'TGV 9203 Paris Gare de Lyon → Luzern',
+    type: '交通',
+    provider: 'TGV Lyria / SBB',
+    fileUrl: 'https://drive.google.com/file/d/1qLBURZcCkg0mGN2J2eTU4xXBgJJHxf_N/view?usp=drivesdk',
+    notes: '07:22 → 12:05；Basel SBB 轉車',
+  },
+  {
+    rowNumber: 6,
+    day: 'Day 20',
+    date: '2026-10-17',
+    city: '米蘭 → 威尼斯',
+    item: 'Italo Milano Centrale → Venezia S. Lucia',
+    type: '交通',
+    provider: 'Italo',
+    fileUrl: 'https://drive.google.com/file/d/1yQ2WttBoa40m0NOGnJXqAEhONuRYGRn1/view?usp=drivesdk',
+    notes: 'Prima Business，車廂1，座位41、42',
+  },
+  {
+    rowNumber: 7,
+    day: 'Day 22',
+    date: '2026-10-19',
+    city: '威尼斯 → 佛羅倫斯',
+    item: 'Italo Venezia S. Lucia → Firenze S.M. Novella',
+    type: '交通',
+    provider: 'Italo',
+    fileUrl: 'https://drive.google.com/file/d/1xVSI-pTqTb6SxFJV8g3HHuSfU1XMb3WD/view?usp=drivesdk',
+    notes: 'Prima Business，車廂2，座位6、7',
+  },
+];
+
 const mockNavigation: NavigationData = {
   'Day 1': {
     attractions: [
@@ -358,6 +464,10 @@ export const gasClient = {
 
   editItinerary: (form: ItineraryFormData): Promise<ApiResponse> =>
     callGAS('editItinerary', { success: true, message: '行程已更新' }, form),
+
+  // Tickets
+  getTicketData: (): Promise<TicketItem[]> =>
+    callGAS('getTicketData', mockTickets),
 
   // Todos
   getTodoData: (): Promise<TodoItem[]> =>

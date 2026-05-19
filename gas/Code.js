@@ -11,6 +11,7 @@ var CONFIG = {
     itinerary: '行程',
     expenses: '記帳',
     todos: '待辦',
+    tickets: '票券',
     attractions: '景點規劃',
     navigation: '導航',
     food: '美食推薦',
@@ -164,6 +165,38 @@ function editItinerary(form) {
     return { success: true, message: "行程已更新" };
   } catch (e) {
     return { success: false, message: "更新失敗: " + e.toString() };
+  }
+}
+
+// 取得票券資料
+function getTicketData() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.tickets);
+    if (!sheet) return [];
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return [];
+
+    var range = sheet.getRange(2, 1, lastRow - 1, 8);
+    var displayValues = range.getDisplayValues();
+
+    return displayValues.map(function(row, index) {
+      return {
+        rowNumber: index + 2,
+        day: row[0],
+        date: row[1],
+        city: row[2],
+        item: row[3],
+        type: row[4],
+        provider: row[5],
+        fileUrl: row[6],
+        notes: row[7]
+      };
+    }).filter(function(ticket) {
+      return ticket.day && ticket.item && ticket.fileUrl;
+    });
+  } catch (e) {
+    Logger.log(e);
+    return [];
   }
 }
 
