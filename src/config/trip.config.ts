@@ -12,6 +12,7 @@ export const tripConfig = {
   links: {
     googleSheet: 'https://docs.google.com/spreadsheets/d/1sd5CVy0qd4QSuOUUDnQH6I1Mx2F2W1NvgWVbujcePiU/edit?usp=sharing',
     googleMap: 'https://maps.app.goo.gl/iHnvbeKHs6nsc1d77',
+    ticketFolder: 'https://drive.google.com/drive/folders/1LypM1Ad41lweTCB6smVCOqpGR3VjKjAn',
     github: 'https://github.com/weiyuan1993/honeymoon-journal',
   },
 

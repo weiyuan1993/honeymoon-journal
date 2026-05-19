@@ -12,9 +12,11 @@
 - **AI 景點規劃**：使用 Google Gemini API 生成景點故事與交通規劃
 - **AI 美食推薦**：依價位（平價/中價位/高價位）推薦當地美食，附 Google Maps 連結
 - **景點地圖**：Google Maps 整合，支援導航
+- **票券預覽**：從 Google Sheet「票券」分頁讀取雲端 PDF，行程卡可直接開啟當日票券預覽
 - **記帳功能**：多幣別記帳（EUR、CHF、GBP、TWD）
+- **待辦事項**：可在 Web App 勾選並同步 Google Sheet
 - **權限控制**：僅授權帳號可編輯
-- **選單連結**：快速存取 Google Sheet 與 GitHub
+- **選單連結**：快速存取 Google Sheet、Google Map、票券 Drive 資料夾與 GitHub
 
 ## 技術架構
 
@@ -39,7 +41,9 @@
 │   │   ├── ExpenseItem.tsx
 │   │   ├── DetailModal.tsx   # AI 景點規劃 Modal
 │   │   ├── FoodModal.tsx     # AI 美食推薦 Modal
+│   │   ├── TicketModal.tsx   # 票券預覽 Modal
 │   │   ├── MapModal.tsx
+│   │   ├── TodoPage.tsx
 │   │   └── Loading.tsx
 │   ├── utils/
 │   │   └── gasClient.ts   # GAS API 封裝 + 本機 mock
@@ -120,6 +124,18 @@ Push 到 `main` 分支會自動觸發 GitHub Actions 執行建置與部署。
 ### 記帳 (Expenses)
 | Timestamp | Item | Amount | Currency | Category |
 |-----------|------|--------|----------|----------|
+
+### 待辦 (Todos)
+| Section | Item | Detail | Deadline | Done |
+|---------|------|--------|----------|------|
+
+`Done` 使用 checkbox / boolean，Web App 會同步勾選狀態。
+
+### 票券 (Tickets)
+| Day | Date | City | Item | Type | Provider | File URL | Notes |
+|-----|------|------|------|------|----------|----------|-------|
+
+`Day` 必須對應「行程」分頁的 Day（例如 `Day 8`）。當該天有票券資料時，行程卡右上角票券按鈕會開啟當日票券 Modal。已授權編輯者可以預覽 PDF 與開啟 Drive 檔案；訪客只會看到票券清單，不會載入實際檔案內容。
 
 ### 景點介紹 (Attraction Details)
 | Day | Title | Content |
