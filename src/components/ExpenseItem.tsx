@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ExpenseItem as ExpenseItemType } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
+import InlineSpinner from './InlineSpinner';
 
 interface ExpenseItemProps {
   data: ExpenseItemType;
@@ -168,7 +169,7 @@ export default function ExpenseItem({
                   : 'bg-forest hover:bg-forest/90 shadow-sm'
               }`}
             >
-              {saving ? '...' : '儲存'}
+              {saving ? <InlineSpinner label="儲存中" /> : '儲存'}
             </button>
             <button
               type="button"

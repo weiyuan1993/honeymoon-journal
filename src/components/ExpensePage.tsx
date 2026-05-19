@@ -1,15 +1,17 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { ExpenseItem as ExpenseItemType, ExpenseFormData } from '@/types';
 import { tripConfig, getCurrencySymbol } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
 import ExpenseItem from './ExpenseItem';
+import InlineSpinner from './InlineSpinner';
 import Loading from './Loading';
 
 interface ExpensePageProps {
   canEdit: boolean;
+  isActive: boolean;
 }
 
-export default function ExpensePage({ canEdit }: ExpensePageProps) {
+export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
   const [formData, setFormData] = useState<ExpenseFormData>({
     item: '',
     amount: '',
@@ -25,23 +27,27 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterCurrency, setFilterCurrency] = useState('all');
   const [showAll, setShowAll] = useState(false);
+  const hasLoadedRef = useRef(false);
 
-  const fetchList = async () => {
-    setLoadingList(true);
+  const fetchList = useCallback(async (showLoading = !hasLoadedRef.current) => {
+    if (showLoading) setLoadingList(true);
     try {
       const data = await gasClient.getExpenseData();
       if (data && !('error' in data)) {
         setList(data);
+        hasLoadedRef.current = true;
       }
     } catch (error) {
       console.error('Failed to fetch expenses:', error);
+    } finally {
+      if (showLoading) setLoadingList(false);
     }
-    setLoadingList(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchList();
-  }, []);
+    if (!isActive) return;
+    fetchList(!hasLoadedRef.current);
+  }, [fetchList, isActive]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +58,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
       if (res.success) {
         setStatus('success');
         setFormData({ ...formData, item: '', amount: '' });
-        fetchList();
+        fetchList(false);
         setTimeout(() => setStatus('idle'), 2000);
       } else {
         alert(res.message);
@@ -74,7 +80,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
         alert(res.message);
         setList(oldList);
       } else {
-        fetchList();
+        fetchList(false);
       }
     } catch (error) {
       setList(oldList);
@@ -242,11 +248,13 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
               } ${status === 'success' ? '!bg-forest' : ''}`}
               title={!canEdit ? '需編輯權限' : undefined}
             >
-              {status === 'submitting'
-                ? '...'
-                : status === 'success'
-                  ? '✔'
-                  : '記錄'}
+              {status === 'submitting' ? (
+                <InlineSpinner label="記錄中" />
+              ) : status === 'success' ? (
+                '✔'
+              ) : (
+                '記錄'
+              )}
             </button>
           </div>
         </form>
@@ -335,7 +343,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
             )}
           </div>
         )}
-        {loadingList ? (
+        {loadingList && list.length === 0 ? (
           <Loading />
         ) : stats.totalCount === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
@@ -358,7 +366,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                     <ExpenseItem
                       key={item.rowNumber}
                       data={item}
-                      onUpdate={fetchList}
+                      onUpdate={() => fetchList(false)}
                       onDelete={handleItemDelete}
                       canEdit={canEdit}
                     />

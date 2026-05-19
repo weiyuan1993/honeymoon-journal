@@ -3,6 +3,7 @@ import type { ItineraryItem, JourneyContent } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { cityHeroImages } from '@/config/journey.images';
 import { gasClient } from '@/utils/gasClient';
+import InlineSpinner from './InlineSpinner';
 
 interface JourneyPageProps {
   itinerary: ItineraryItem[];
@@ -299,10 +300,7 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
               title={!canEdit ? '需編輯權限' : undefined}
             >
               {generating ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                  AI 撰寫中...
-                </>
+                <InlineSpinner label="AI 撰寫中..." />
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

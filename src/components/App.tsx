@@ -105,7 +105,7 @@ function TabIcon({ tab }: { tab: TabType }) {
 }
 
 const getInitialTab = (): TabType => {
-  // Try URL hash first (for local dev)
+  // Allow explicit deep links like #todo, but do not remember the last tab.
   const hash = window.location.hash.replace('#', '');
   if (
     hash === 'itinerary' ||
@@ -115,21 +115,7 @@ const getInitialTab = (): TabType => {
   ) {
     return hash;
   }
-  // Then try localStorage (for GAS)
-  try {
-    const saved = localStorage.getItem('activeTab');
-    if (
-      saved === 'itinerary' ||
-      saved === 'todo' ||
-      saved === 'expense' ||
-      saved === 'journey'
-    ) {
-      return saved;
-    }
-  } catch {
-    // localStorage not available
-  }
-  return 'journey'; // default tab
+  return 'itinerary';
 };
 
 export default function App() {
@@ -152,19 +138,18 @@ export default function App() {
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
   const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(
+    () => new Set([getInitialTab()])
+  );
 
-  // Sync tab with URL hash and localStorage
+  // Track which tabs have mounted so returning to a tab can keep its state.
   useEffect(() => {
-    // Save to localStorage (works in GAS)
-    try {
-      localStorage.setItem('activeTab', tab);
-    } catch {
-      // localStorage not available
-    }
-    // Also update hash (works in local dev)
-    if (window.location.hash !== `#${tab}`) {
-      window.location.hash = tab;
-    }
+    setVisitedTabs((current) => {
+      if (current.has(tab)) return current;
+      const next = new Set(current);
+      next.add(tab);
+      return next;
+    });
   }, [tab]);
 
   // Listen for browser back/forward (local dev only)
@@ -298,6 +283,12 @@ export default function App() {
     }
   };
 
+  const shouldRenderTab = (tabId: TabType) =>
+    tab === tabId || visitedTabs.has(tabId);
+
+  const tabPanelClass = (tabId: TabType, className: string) =>
+    `${tab === tabId ? 'block' : 'hidden'} ${className}`;
+
   return (
     <div className="min-h-screen pb-20 bg-paper">
       {/* Header */}
@@ -411,8 +402,8 @@ export default function App() {
       </header>
 
       <main className={tab === 'journey' ? 'mt-2' : 'max-w-xl mx-auto p-4 mt-2'}>
-        {tab === 'itinerary' && (
-          <div className="animate-fade-in-up">
+        {shouldRenderTab('itinerary') && (
+          <div className={tabPanelClass('itinerary', 'animate-fade-in-up')}>
             {loadingItin ? (
               <Loading />
             ) : itinerary.length === 0 ? (
@@ -436,18 +427,24 @@ export default function App() {
             )}
           </div>
         )}
-        {tab === 'expense' && (
-          <div className="animate-fade-in-up">
-            <ExpensePage canEdit={userPermission.canEdit} />
+        {shouldRenderTab('expense') && (
+          <div className={tabPanelClass('expense', 'animate-fade-in-up')}>
+            <ExpensePage
+              canEdit={userPermission.canEdit}
+              isActive={tab === 'expense'}
+            />
           </div>
         )}
-        {tab === 'todo' && (
-          <div className="animate-fade-in-up">
-            <TodoPage canEdit={userPermission.canEdit} />
+        {shouldRenderTab('todo') && (
+          <div className={tabPanelClass('todo', 'animate-fade-in-up')}>
+            <TodoPage
+              canEdit={userPermission.canEdit}
+              isActive={tab === 'todo'}
+            />
           </div>
         )}
-        {tab === 'journey' && (
-          <div className="animate-fade-in-up w-full">
+        {shouldRenderTab('journey') && (
+          <div className={tabPanelClass('journey', 'animate-fade-in-up w-full')}>
             {loadingItin ? (
               <div className="flex items-center justify-center min-h-[60vh]">
                 <Loading />

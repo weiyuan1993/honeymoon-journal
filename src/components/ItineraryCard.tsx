@@ -10,6 +10,7 @@ import { gasClient } from '@/utils/gasClient';
 import DetailModal from './DetailModal';
 import MapModal from './MapModal';
 import FoodModal from './FoodModal';
+import InlineSpinner from './InlineSpinner';
 
 interface ItineraryCardProps {
   item: ItineraryItem;
@@ -192,7 +193,7 @@ export default function ItineraryCard({
             disabled={saving}
             className="flex-1 bg-gold text-white py-2.5 font-display text-sm rounded-lg hover:bg-gold/90 transition-colors shadow-sm"
           >
-            {saving ? '儲存中...' : '儲存'}
+            {saving ? <InlineSpinner label="儲存中" /> : '儲存'}
           </button>
           <button
             onClick={handleCancel}

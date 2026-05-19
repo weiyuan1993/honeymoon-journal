@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { TodoItem } from '@/types';
 import { gasClient } from '@/utils/gasClient';
+import InlineSpinner from './InlineSpinner';
 import Loading from './Loading';
 
 type TodoFilter = 'all' | 'pending' | 'done';
@@ -9,6 +10,7 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
 interface TodoPageProps {
   canEdit: boolean;
+  isActive: boolean;
 }
 
 interface HtmlTextProps {
@@ -25,26 +27,30 @@ function HtmlText({ html, className = '' }: HtmlTextProps) {
   );
 }
 
-export default function TodoPage({ canEdit }: TodoPageProps) {
+export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<TodoFilter>('all');
   const [updatingRows, setUpdatingRows] = useState<Set<number>>(new Set());
+  const hasLoadedRef = useRef(false);
 
-  const fetchTodos = async () => {
-    setLoading(true);
+  const fetchTodos = useCallback(async (showLoading = !hasLoadedRef.current) => {
+    if (showLoading) setLoading(true);
     try {
       const data = await gasClient.getTodoData();
       setTodos(data || []);
+      hasLoadedRef.current = true;
     } catch (error) {
       console.error('Failed to fetch todos:', error);
+    } finally {
+      if (showLoading) setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchTodos();
-  }, []);
+    if (!isActive) return;
+    fetchTodos(!hasLoadedRef.current);
+  }, [fetchTodos, isActive]);
 
   const stats = useMemo(() => {
     const done = todos.filter((todo) => todo.done).length;
@@ -66,6 +72,7 @@ export default function TodoPage({ canEdit }: TodoPageProps) {
 
   const groupedTodos = useMemo(() => {
     const visibleTodos = todos.filter((todo) => {
+      if (updatingRows.has(todo.rowNumber)) return true;
       if (filter === 'pending') return !todo.done;
       if (filter === 'done') return todo.done;
       return true;
@@ -80,7 +87,7 @@ export default function TodoPage({ canEdit }: TodoPageProps) {
       section,
       items,
     }));
-  }, [todos, filter]);
+  }, [todos, filter, updatingRows]);
 
   const setRowUpdating = (rowNumber: number, updating: boolean) => {
     setUpdatingRows((current) => {
@@ -156,7 +163,7 @@ export default function TodoPage({ canEdit }: TodoPageProps) {
         </p>
       )}
 
-      {loading ? (
+      {loading && todos.length === 0 ? (
         <Loading />
       ) : todos.length === 0 ? (
         <div className="text-center mt-10 p-6 border border-dashed border-gray-300">
@@ -187,8 +194,13 @@ export default function TodoPage({ canEdit }: TodoPageProps) {
                   return (
                     <div
                       key={todo.rowNumber}
+                      aria-busy={isUpdating}
                       className={`flex gap-3 px-4 py-3 transition-colors ${
-                        todo.done ? 'bg-gray-50/60' : 'hover:bg-gray-50'
+                        isUpdating
+                          ? 'bg-gold/5'
+                          : todo.done
+                            ? 'bg-gray-50/60'
+                            : 'hover:bg-gray-50'
                       }`}
                     >
                       <input
@@ -201,14 +213,23 @@ export default function TodoPage({ canEdit }: TodoPageProps) {
                         title={canEdit ? undefined : '需編輯權限'}
                       />
                       <div className="min-w-0 flex-1">
-                        <div
-                          className={`font-serif text-sm leading-relaxed ${
-                            todo.done
-                              ? 'text-ink/45 line-through'
-                              : 'text-ink'
-                          }`}
-                        >
-                          <HtmlText html={todo.item} />
+                        <div className="flex items-start justify-between gap-3">
+                          <div
+                            className={`font-serif text-sm leading-relaxed ${
+                              todo.done
+                                ? 'text-ink/45 line-through'
+                                : 'text-ink'
+                            }`}
+                          >
+                            <HtmlText html={todo.item} />
+                          </div>
+                          {isUpdating && (
+                            <InlineSpinner
+                              size="xs"
+                              label="同步中"
+                              className="mt-0.5 shrink-0 whitespace-nowrap font-serif text-[11px] text-gold"
+                            />
+                          )}
                         </div>
                         {todo.detail && (
                           <p className="mt-1 font-serif text-xs leading-relaxed text-ink/60 break-words [&_a]:text-gold [&_a]:underline">
