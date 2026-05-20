@@ -3,7 +3,7 @@
 
 export const tripConfig = {
   // App title displayed in header
-  tripName: 'Our Honeymoon Journey',
+  tripName: 'Vic & Dora in Europe',
 
   // Subtitle displayed above the main title
   tripSubtitle: 'Europe 2026',

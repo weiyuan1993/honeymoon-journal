@@ -4,7 +4,7 @@
 // Edit this section to customize for your trip
 var CONFIG = {
   // App title displayed in browser tab
-  pageTitle: 'Honeymoon Journey',
+  pageTitle: 'Vic & Dora in Europe',
 
   // Google Sheet tab names (must match your spreadsheet)
   sheetNames: {

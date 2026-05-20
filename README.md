@@ -1,4 +1,4 @@
-# Our Honeymoon Journey
+# Vic & Dora in Europe
 
 ![Cover](assets/images/cover.png)
 
