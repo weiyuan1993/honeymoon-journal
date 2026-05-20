@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { ItineraryItem, JourneyContent } from '@/types';
 import { tripConfig } from '@/config/trip.config';
-import { cityHeroImages } from '@/config/journey.images';
+import { cityHeroImages, coverMobileImage } from '@/config/journey.images';
 import { gasClient } from '@/utils/gasClient';
 
 interface JourneyPageProps {
@@ -132,11 +132,14 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
     <div className="w-full">
       {/* Hero Section */}
       <div className="-mt-16 relative h-[80vh] md:h-[85vh] min-h-[450px] max-h-[700px] overflow-hidden">
-        <img
-          src={cityHeroImages['封面']}
-          alt="Journey Hero"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
+        <picture>
+          <source media="(max-width: 767px)" srcSet={coverMobileImage} />
+          <img
+            src={cityHeroImages['封面']}
+            alt="Journey Hero"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">

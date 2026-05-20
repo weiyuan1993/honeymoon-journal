@@ -7,6 +7,8 @@ const BASE_URL =
   'https://raw.githubusercontent.com/weiyuan1993/honeymoon-journal/main/assets/images';
 
 // City hero images
+export const coverMobileImage = `${BASE_URL}/cover-mobile.png`;
+
 export const cityHeroImages: Record<string, string> = {
   '封面': `${BASE_URL}/cover.png`,
   '倫敦': `${BASE_URL}/london.jpg`,
