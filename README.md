@@ -202,3 +202,4 @@ PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', 'your-api-
 - [Web App](https://script.google.com/macros/s/AKfycbyJY8XcWcWuHQBks2AN9miyp1z2QZNoyt7GgXoIU-W15Di8twr1QAxNpxhB_vBr0Zro/exec)
 - [Short URL](https://weiyuan1993.github.io/honeymoon-journal) (GitHub Pages 轉址)
 - [GitHub Repository](https://github.com/weiyuan1993/honeymoon-journal)
+- [App Script](https://script.google.com/home/projects/1aMzT7R1zAxh6buT3FTTjfjmw31xWIE6y9-eOjDpNHqw4JnhP2j0LSGHX/edit)
