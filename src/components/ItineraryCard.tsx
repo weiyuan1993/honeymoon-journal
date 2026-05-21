@@ -16,7 +16,7 @@ import TicketModal from './TicketModal';
 interface ItineraryCardProps {
   item: ItineraryItem;
   id: string;
-  onUpdate: () => void;
+  onUpdate: (updatedItem?: ItineraryFormData) => void;
   navigationData: NavigationData;
   attractionDetails: AttractionDetails;
   foodRecommendations: FoodRecommendations;
@@ -87,7 +87,7 @@ export default function ItineraryCard({
       const res = await gasClient.editItinerary(formData);
       if (res.success) {
         setIsEditing(false);
-        onUpdate();
+        onUpdate(formData);
       } else {
         alert(res.message);
       }

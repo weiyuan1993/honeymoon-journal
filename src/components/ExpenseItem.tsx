@@ -5,7 +5,7 @@ import { gasClient } from '@/utils/gasClient';
 
 interface ExpenseItemProps {
   data: ExpenseItemType;
-  onUpdate: () => void;
+  onUpdate: (updatedItem?: ExpenseItemType) => void;
   onDelete: (rowNumber: number) => void;
   canEdit: boolean;
 }
@@ -32,6 +32,7 @@ export default function ExpenseItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ ...data });
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Date is already shown by the group header; rows only need the time.
   let timeStr = 'Unknown';
@@ -61,7 +62,7 @@ export default function ExpenseItem({
       const res = await gasClient.editExpense(editForm as ExpenseItemType);
       if (res.success) {
         setIsEditing(false);
-        onUpdate();
+        onUpdate(editForm as ExpenseItemType);
       } else {
         alert(res.message);
       }
@@ -78,6 +79,7 @@ export default function ExpenseItem({
 
   const handleStartEdit = () => {
     setEditForm({ ...data });
+    setConfirmingDelete(false);
     setIsEditing(true);
   };
 
@@ -88,9 +90,16 @@ export default function ExpenseItem({
 
   const handleDelete = () => {
     if (!canEdit) return;
-    if (confirm(`確定要刪除「${data.item}」嗎？`)) {
-      onDelete(data.rowNumber);
-    }
+    setConfirmingDelete(true);
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmingDelete(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!canEdit) return;
+    onDelete(data.rowNumber);
   };
 
   if (isEditing) {
@@ -181,6 +190,41 @@ export default function ExpenseItem({
           </div>
         </div>
       </form>
+    );
+  }
+
+  if (confirmingDelete) {
+    return (
+      <div className="bg-red-50/70 px-3 py-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-sm text-red-700">確定刪除？</div>
+            <div className="mt-0.5 truncate font-serif text-sm text-ink">
+              {data.item}
+            </div>
+            <div className="mt-0.5 font-serif text-[11px] text-ink/45">
+              {currencySymbol(data.currency)} {data.amount}
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={handleCancelDelete}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 font-display text-xs text-ink/60 transition-colors hover:bg-gray-50"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={!canEdit}
+              className="rounded-lg bg-red-600 px-3 py-2 font-display text-xs text-white shadow-sm transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              刪除
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

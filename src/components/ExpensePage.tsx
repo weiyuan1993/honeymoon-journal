@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { ExpenseItem as ExpenseItemType, ExpenseFormData } from '@/types';
 import { tripConfig, getCurrencySymbol } from '@/config/trip.config';
 import { gasClient } from '@/utils/gasClient';
@@ -7,9 +7,10 @@ import Loading from './Loading';
 
 interface ExpensePageProps {
   canEdit: boolean;
+  isActive: boolean;
 }
 
-export default function ExpensePage({ canEdit }: ExpensePageProps) {
+export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
   const [formData, setFormData] = useState<ExpenseFormData>({
     item: '',
     amount: '',
@@ -25,23 +26,27 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterCurrency, setFilterCurrency] = useState('all');
   const [showAll, setShowAll] = useState(false);
+  const hasLoadedRef = useRef(false);
 
-  const fetchList = async () => {
-    setLoadingList(true);
+  const fetchList = async (showBlockingLoading = !hasLoadedRef.current) => {
+    if (showBlockingLoading) setLoadingList(true);
     try {
       const data = await gasClient.getExpenseData();
       if (data && !('error' in data)) {
         setList(data);
+        hasLoadedRef.current = true;
       }
     } catch (error) {
       console.error('Failed to fetch expenses:', error);
+    } finally {
+      if (showBlockingLoading) setLoadingList(false);
     }
-    setLoadingList(false);
   };
 
   useEffect(() => {
-    fetchList();
-  }, []);
+    if (!isActive) return;
+    fetchList(!hasLoadedRef.current);
+  }, [isActive]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +57,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
       if (res.success) {
         setStatus('success');
         setFormData({ ...formData, item: '', amount: '' });
-        fetchList();
+        fetchList(false);
         setTimeout(() => setStatus('idle'), 2000);
       } else {
         alert(res.message);
@@ -74,11 +79,22 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
         alert(res.message);
         setList(oldList);
       } else {
-        fetchList();
+        fetchList(false);
       }
     } catch (error) {
       setList(oldList);
     }
+  };
+
+  const handleItemUpdate = (updatedItem?: ExpenseItemType) => {
+    if (updatedItem) {
+      setList((current) =>
+        current.map((item) =>
+          item.rowNumber === updatedItem.rowNumber ? updatedItem : item
+        )
+      );
+    }
+    fetchList(false);
   };
 
   // Calculate statistics
@@ -358,7 +374,7 @@ export default function ExpensePage({ canEdit }: ExpensePageProps) {
                     <ExpenseItem
                       key={item.rowNumber}
                       data={item}
-                      onUpdate={fetchList}
+                      onUpdate={handleItemUpdate}
                       onDelete={handleItemDelete}
                       canEdit={canEdit}
                     />

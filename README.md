@@ -103,7 +103,11 @@ npm run build
 
 **方式一：手動部署**
 ```bash
-npm run deploy
+# 只推送程式碼到 Apps Script
+npm run push
+
+# 推送並更新既有 Web App deployment
+DEPLOYMENT_ID=<your-deployment-id> npm run deploy
 ```
 
 **方式二：Git 自動部署**
@@ -114,6 +118,13 @@ git push
 ```
 
 Push 到 `main` 分支會自動觸發 GitHub Actions 執行建置與部署。
+
+Web App deployment 使用已登入的 Google 使用者身分執行：
+
+- `executeAs`: `USER_ACCESSING`
+- `access`: `ANYONE`
+
+使用者需要登入 Google；可編輯者 email 需加入 Apps Script `AUTHORIZED_EDITORS` Script Property。
 
 ## Google Sheets 結構
 

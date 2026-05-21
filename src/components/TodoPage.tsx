@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TodoItem } from '@/types';
 import { gasClient } from '@/utils/gasClient';
 import Loading from './Loading';
@@ -9,6 +9,7 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
 interface TodoPageProps {
   canEdit: boolean;
+  isActive: boolean;
 }
 
 interface HtmlTextProps {
@@ -25,26 +26,30 @@ function HtmlText({ html, className = '' }: HtmlTextProps) {
   );
 }
 
-export default function TodoPage({ canEdit }: TodoPageProps) {
+export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<TodoFilter>('all');
   const [updatingRows, setUpdatingRows] = useState<Set<number>>(new Set());
+  const hasLoadedRef = useRef(false);
 
-  const fetchTodos = async () => {
-    setLoading(true);
+  const fetchTodos = async (showBlockingLoading = !hasLoadedRef.current) => {
+    if (showBlockingLoading) setLoading(true);
     try {
       const data = await gasClient.getTodoData();
       setTodos(data || []);
+      hasLoadedRef.current = true;
     } catch (error) {
       console.error('Failed to fetch todos:', error);
+    } finally {
+      if (showBlockingLoading) setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    fetchTodos();
-  }, []);
+    if (!isActive) return;
+    fetchTodos(!hasLoadedRef.current);
+  }, [isActive]);
 
   const stats = useMemo(() => {
     const done = todos.filter((todo) => todo.done).length;

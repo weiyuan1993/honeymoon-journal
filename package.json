@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build && node scripts/build-gas.js",
     "preview": "vite preview",
-    "deploy": "npm run build && clasp push --force"
+    "push": "npm run build && clasp push --force",
+    "deploy": "npm run push && clasp deploy -i \"$DEPLOYMENT_ID\" -d \"Manual deploy\""
   },
   "keywords": [],
   "author": "",

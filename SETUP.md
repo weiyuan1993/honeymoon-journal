@@ -124,8 +124,19 @@ This will create a new `.clasp.json` file with your project's `scriptId`.
 ### 5. Deploy
 
 ```bash
-npm run deploy
+# Push only (does not update the live web app deployment)
+npm run push
+
+# Push and update the existing web app deployment
+DEPLOYMENT_ID=<your-deployment-id> npm run deploy
 ```
+
+The web app manifest is configured to run as the signed-in Google user:
+
+- `executeAs`: `USER_ACCESSING`
+- `access`: `ANYONE`
+
+This requires visitors to sign in with Google. Add every editor's email to the `AUTHORIZED_EDITORS` Script Property so edit controls work for that specific account.
 
 ### 6. Set Up Auto-Deploy (Optional)
 
@@ -173,8 +184,11 @@ Opens http://localhost:5173 with mock data.
 ## Deployment Commands
 
 ```bash
-# Build and push to GAS
-npm run deploy
+# Build and push to GAS only
+npm run push
+
+# Build, push, and update the live web app deployment
+DEPLOYMENT_ID=<your-deployment-id> npm run deploy
 
 # Or via git push (if CI/CD configured)
 git add .

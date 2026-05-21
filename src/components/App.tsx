@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type {
   ItineraryItem,
+  ItineraryFormData,
   NavigationData,
   AttractionDetails,
   FoodRecommendations,
@@ -17,20 +18,37 @@ import TodoPage from './TodoPage';
 import Loading from './Loading';
 import TripSecretaryModal from './TripSecretaryModal';
 
-type TabType = 'itinerary' | 'todo' | 'expense' | 'journey';
+const TAB_IDS = {
+  JOURNEY: 'journey',
+  ITINERARY: 'itinerary',
+  EXPENSE: 'expense',
+  TODO: 'todo',
+} as const;
 
-const bottomTabs: Array<{ id: TabType; label: string }> = [
-  { id: 'journey', label: 'Journey' },
-  { id: 'itinerary', label: 'Itinerary' },
-  { id: 'expense', label: 'Expenses' },
-  { id: 'todo', label: 'Todo' },
-];
+type TabType = (typeof TAB_IDS)[keyof typeof TAB_IDS];
+
+const DEFAULT_TAB: TabType = TAB_IDS.ITINERARY;
+const ACTIVE_TAB_STORAGE_KEY = 'activeTab';
+const HEADER_COMPACT_SCROLL_Y = 64;
+const HEADER_EXPAND_SCROLL_Y = 24;
+
+const bottomTabs = [
+  { id: TAB_IDS.JOURNEY, label: 'Journey' },
+  { id: TAB_IDS.ITINERARY, label: 'Itinerary' },
+  { id: TAB_IDS.EXPENSE, label: 'Expenses' },
+  { id: TAB_IDS.TODO, label: 'Todo' },
+] satisfies Array<{ id: TabType; label: string }>;
+
+const validTabs = new Set<TabType>(bottomTabs.map((item) => item.id));
+
+const isTabType = (value: string | null): value is TabType =>
+  !!value && validTabs.has(value as TabType);
 
 function TabIcon({ tab }: { tab: TabType }) {
   const iconClass = 'h-5 w-5';
 
   switch (tab) {
-    case 'journey':
+    case TAB_IDS.JOURNEY:
       return (
         <svg
           className={iconClass}
@@ -47,7 +65,7 @@ function TabIcon({ tab }: { tab: TabType }) {
           <path d="M8 11h6" />
         </svg>
       );
-    case 'itinerary':
+    case TAB_IDS.ITINERARY:
       return (
         <svg
           className={iconClass}
@@ -68,7 +86,7 @@ function TabIcon({ tab }: { tab: TabType }) {
           <path d="M16 13h.01" />
         </svg>
       );
-    case 'todo':
+    case TAB_IDS.TODO:
       return (
         <svg
           className={iconClass}
@@ -84,7 +102,7 @@ function TabIcon({ tab }: { tab: TabType }) {
           <path d="M5.75 4h12.5A1.75 1.75 0 0 1 20 5.75v12.5A1.75 1.75 0 0 1 18.25 20H5.75A1.75 1.75 0 0 1 4 18.25V5.75A1.75 1.75 0 0 1 5.75 4Z" />
         </svg>
       );
-    case 'expense':
+    case TAB_IDS.EXPENSE:
       return (
         <svg
           className={iconClass}
@@ -108,29 +126,19 @@ function TabIcon({ tab }: { tab: TabType }) {
 const getInitialTab = (): TabType => {
   // Try URL hash first (for local dev)
   const hash = window.location.hash.replace('#', '');
-  if (
-    hash === 'itinerary' ||
-    hash === 'todo' ||
-    hash === 'expense' ||
-    hash === 'journey'
-  ) {
+  if (isTabType(hash)) {
     return hash;
   }
   // Then try localStorage (for GAS)
   try {
-    const saved = localStorage.getItem('activeTab');
-    if (
-      saved === 'itinerary' ||
-      saved === 'todo' ||
-      saved === 'expense' ||
-      saved === 'journey'
-    ) {
+    const saved = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+    if (isTabType(saved)) {
       return saved;
     }
   } catch {
     // localStorage not available
   }
-  return 'journey'; // default tab
+  return DEFAULT_TAB;
 };
 
 export default function App() {
@@ -154,12 +162,22 @@ export default function App() {
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
   const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(
+    () => new Set([getInitialTab()])
+  );
 
   // Sync tab with URL hash and localStorage
   useEffect(() => {
+    setVisitedTabs((current) => {
+      if (current.has(tab)) return current;
+      const next = new Set(current);
+      next.add(tab);
+      return next;
+    });
+
     // Save to localStorage (works in GAS)
     try {
-      localStorage.setItem('activeTab', tab);
+      localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
     } catch {
       // localStorage not available
     }
@@ -180,21 +198,29 @@ export default function App() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      const scrollY = window.scrollY;
+      setIsScrolled((current) => {
+        const next = current
+          ? scrollY > HEADER_EXPAND_SCROLL_Y
+          : scrollY > HEADER_COMPACT_SCROLL_Y;
+        return current === next ? current : next;
+      });
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const fetchItinerary = async () => {
-    setLoadingItin(true);
+  const fetchItinerary = async (showBlockingLoading = true) => {
+    if (showBlockingLoading) setLoadingItin(true);
     try {
       const data = await gasClient.getItineraryData();
       setItinerary(data);
     } catch (error) {
       console.error('Failed to fetch itinerary:', error);
+    } finally {
+      if (showBlockingLoading) setLoadingItin(false);
     }
-    setLoadingItin(false);
   };
 
   const fetchNavigationData = async () => {
@@ -253,20 +279,27 @@ export default function App() {
 
   useEffect(() => {
     // Journey page also needs itinerary data for city segments
-    if ((tab === 'itinerary' || tab === 'journey') && itinerary.length === 0) {
+    if (
+      (tab === TAB_IDS.ITINERARY || tab === TAB_IDS.JOURNEY) &&
+      itinerary.length === 0
+    ) {
       fetchItinerary();
     }
   }, [tab, itinerary.length]);
 
   useEffect(() => {
-    if (tab === 'itinerary' && tickets.length === 0) {
+    if (tab === TAB_IDS.ITINERARY && tickets.length === 0) {
       fetchTicketData();
     }
   }, [tab, tickets.length]);
 
   // Auto-scroll to today's itinerary card (only once on first load)
   useEffect(() => {
-    if (tab === 'itinerary' && itinerary.length > 0 && !hasAutoScrolled) {
+    if (
+      tab === TAB_IDS.ITINERARY &&
+      itinerary.length > 0 &&
+      !hasAutoScrolled
+    ) {
       const today = new Date();
       const todayStr = `${today.getMonth() + 1}/${today.getDate()}`;
       const todayItem = itinerary.find((item) => item.date === todayStr);
@@ -322,6 +355,26 @@ export default function App() {
       const el = document.getElementById(`day-${targetItem.day}`);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleItineraryUpdate = (updatedItem?: ItineraryFormData) => {
+    if (updatedItem) {
+      setItinerary((current) =>
+        current.map((item) =>
+          item.rowNumber === updatedItem.rowNumber
+            ? {
+                ...item,
+                city: updatedItem.city,
+                content: updatedItem.content,
+                transport: updatedItem.transport,
+                ticket: updatedItem.ticket,
+                link: updatedItem.link,
+              }
+            : item
+        )
+      );
+    }
+    fetchItinerary(false);
   };
 
   return (
@@ -428,7 +481,7 @@ export default function App() {
         </div>
 
         {/* Navigation bar */}
-        {tab === 'itinerary' && cityList.length > 0 && (
+        {tab === TAB_IDS.ITINERARY && cityList.length > 0 && (
           <div className="liquid-subnav border-t border-gold/20 overflow-x-auto no-scrollbar py-1.5 px-4 mt-0.5">
             <div className="flex gap-2 whitespace-nowrap min-w-max px-2">
               <span className="font-display text-xs self-center text-gold mr-1">
@@ -448,8 +501,8 @@ export default function App() {
         )}
       </header>
 
-      <main className={tab === 'journey' ? 'mt-2' : 'max-w-xl mx-auto p-4 mt-2'}>
-        {tab === 'itinerary' && (
+      <main className={tab === TAB_IDS.JOURNEY ? 'mt-2' : 'max-w-xl mx-auto p-4 mt-2'}>
+        {tab === TAB_IDS.ITINERARY && (
           <div className="animate-fade-in-up">
             {loadingItin ? (
               <Loading />
@@ -463,7 +516,7 @@ export default function App() {
                   key={idx}
                   item={item}
                   id={`day-${item.day}`}
-                  onUpdate={fetchItinerary}
+                  onUpdate={handleItineraryUpdate}
                   navigationData={navigationData}
                   attractionDetails={attractionDetails}
                   foodRecommendations={foodRecommendations}
@@ -475,17 +528,29 @@ export default function App() {
             )}
           </div>
         )}
-        {tab === 'expense' && (
-          <div className="animate-fade-in-up">
-            <ExpensePage canEdit={userPermission.canEdit} />
+        {visitedTabs.has(TAB_IDS.EXPENSE) && (
+          <div
+            className={tab === TAB_IDS.EXPENSE ? 'animate-fade-in-up' : 'hidden'}
+            aria-hidden={tab !== TAB_IDS.EXPENSE}
+          >
+            <ExpensePage
+              canEdit={userPermission.canEdit}
+              isActive={tab === TAB_IDS.EXPENSE}
+            />
           </div>
         )}
-        {tab === 'todo' && (
-          <div className="animate-fade-in-up">
-            <TodoPage canEdit={userPermission.canEdit} />
+        {visitedTabs.has(TAB_IDS.TODO) && (
+          <div
+            className={tab === TAB_IDS.TODO ? 'animate-fade-in-up' : 'hidden'}
+            aria-hidden={tab !== TAB_IDS.TODO}
+          >
+            <TodoPage
+              canEdit={userPermission.canEdit}
+              isActive={tab === TAB_IDS.TODO}
+            />
           </div>
         )}
-        {tab === 'journey' && (
+        {tab === TAB_IDS.JOURNEY && (
           <div className="animate-fade-in-up w-full">
             {loadingItin ? (
               <div className="flex items-center justify-center min-h-[60vh]">
