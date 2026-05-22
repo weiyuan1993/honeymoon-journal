@@ -382,10 +382,10 @@ export default function App() {
       {/* Header */}
       <header className={`sticky top-0 z-50 liquid-shell-header backdrop-blur-sm border-b border-gold/25 transition-all duration-300 ${
         isScrolled
-          ? 'liquid-shell-header-compact shadow-sm'
-          : 'shadow-md'
+          ? 'liquid-shell-header-compact'
+          : ''
       }`}>
-        <div className={`relative flex flex-col items-center justify-center px-4 transition-all duration-300 ${
+        <div className={`liquid-main-header relative flex flex-col items-center justify-center px-4 transition-all duration-300 ${
           isScrolled ? 'py-1.5' : 'py-2'
         }`}>
           {/* Subtitle - hidden when scrolled */}
@@ -413,7 +413,9 @@ export default function App() {
           {/* Menu button */}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gold/70 hover:text-gold transition-colors"
+            className={`absolute right-3 top-1/2 -translate-y-1/2 text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:text-ink ${
+              isScrolled ? 'p-1' : 'p-2'
+            }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -482,7 +484,7 @@ export default function App() {
 
         {/* Navigation bar */}
         {tab === TAB_IDS.ITINERARY && cityList.length > 0 && (
-          <div className="liquid-subnav border-t border-gold/20 overflow-x-auto no-scrollbar py-1.5 px-4 mt-0.5">
+          <div className="liquid-subnav overflow-x-auto no-scrollbar py-1.5 px-4">
             <div className="flex gap-2 whitespace-nowrap min-w-max px-2">
               <span className="font-display text-xs self-center text-gold mr-1">
                 JUMP TO:
