@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type {
   ItineraryItem,
   ItineraryFormData,
@@ -26,6 +26,13 @@ const TAB_IDS = {
 } as const;
 
 type TabType = (typeof TAB_IDS)[keyof typeof TAB_IDS];
+type LazyDataKey =
+  | 'itinerary'
+  | 'navigation'
+  | 'tickets'
+  | 'attractionDetails'
+  | 'foodRecommendations'
+  | 'journeyContent';
 
 const DEFAULT_TAB: TabType = TAB_IDS.ITINERARY;
 const ACTIVE_TAB_STORAGE_KEY = 'activeTab';
@@ -165,6 +172,8 @@ export default function App() {
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(
     () => new Set([getInitialTab()])
   );
+  const loadedDataRef = useRef<Set<LazyDataKey>>(new Set());
+  const loadingDataRef = useRef<Set<LazyDataKey>>(new Set());
 
   // Sync tab with URL hash and localStorage
   useEffect(() => {
@@ -216,6 +225,7 @@ export default function App() {
     try {
       const data = await gasClient.getItineraryData();
       setItinerary(data);
+      loadedDataRef.current.add('itinerary');
     } catch (error) {
       console.error('Failed to fetch itinerary:', error);
     } finally {
@@ -227,6 +237,7 @@ export default function App() {
     try {
       const data = await gasClient.getNavigationData();
       setNavigationData(data || {});
+      loadedDataRef.current.add('navigation');
     } catch (error) {
       console.error('Failed to fetch navigation data:', error);
     }
@@ -236,6 +247,7 @@ export default function App() {
     try {
       const data = await gasClient.getTicketData();
       setTickets(data || []);
+      loadedDataRef.current.add('tickets');
     } catch (error) {
       console.error('Failed to fetch ticket data:', error);
     }
@@ -245,6 +257,7 @@ export default function App() {
     try {
       const data = await gasClient.getAttractionDetails();
       setAttractionDetails(data || {});
+      loadedDataRef.current.add('attractionDetails');
     } catch (error) {
       console.error('Failed to fetch attraction details:', error);
     }
@@ -254,6 +267,7 @@ export default function App() {
     try {
       const data = await gasClient.getFoodRecommendations();
       setFoodRecommendations(data || {});
+      loadedDataRef.current.add('foodRecommendations');
     } catch (error) {
       console.error('Failed to fetch food recommendations:', error);
     }
@@ -272,26 +286,44 @@ export default function App() {
     try {
       const data = await gasClient.getJourneyContent();
       if (data && data.intro) setJourneyContent(data);
+      loadedDataRef.current.add('journeyContent');
     } catch (error) {
       console.error('Failed to fetch journey content:', error);
     }
   };
 
-  useEffect(() => {
-    // Journey page also needs itinerary data for city segments
-    if (
-      (tab === TAB_IDS.ITINERARY || tab === TAB_IDS.JOURNEY) &&
-      itinerary.length === 0
-    ) {
-      fetchItinerary();
+  const loadOnce = async (key: LazyDataKey, loader: () => Promise<void>) => {
+    if (loadedDataRef.current.has(key) || loadingDataRef.current.has(key)) {
+      return;
     }
-  }, [tab, itinerary.length]);
+    loadingDataRef.current.add(key);
+    try {
+      await loader();
+    } finally {
+      loadingDataRef.current.delete(key);
+    }
+  };
 
   useEffect(() => {
-    if (tab === TAB_IDS.ITINERARY && tickets.length === 0) {
-      fetchTicketData();
-    }
-  }, [tab, tickets.length]);
+    if (tab !== TAB_IDS.ITINERARY) return;
+
+    loadOnce('itinerary', () => fetchItinerary());
+    loadOnce('navigation', fetchNavigationData);
+    loadOnce('tickets', fetchTicketData);
+    loadOnce('attractionDetails', fetchAttractionDetails);
+    loadOnce('foodRecommendations', fetchFoodRecommendations);
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab !== TAB_IDS.JOURNEY) return;
+
+    loadOnce('itinerary', () => fetchItinerary());
+    loadOnce('journeyContent', fetchJourneyContent);
+  }, [tab]);
+
+  useEffect(() => {
+    fetchUserPermission();
+  }, []);
 
   // Auto-scroll to today's itinerary card (only once on first load)
   useEffect(() => {
@@ -313,15 +345,6 @@ export default function App() {
       }
     }
   }, [itinerary.length, tab, hasAutoScrolled]);
-
-  useEffect(() => {
-    fetchNavigationData();
-    fetchTicketData();
-    fetchAttractionDetails();
-    fetchFoodRecommendations();
-    fetchUserPermission();
-    fetchJourneyContent();
-  }, []);
 
   const cityList = useMemo(() => {
     const cities: string[] = [];
