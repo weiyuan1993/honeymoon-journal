@@ -40,7 +40,7 @@ export default function MapModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 lg:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-3 lg:p-6"
       onClick={onClose}
     >
       {/* Background overlay */}
@@ -48,7 +48,7 @@ export default function MapModal({
 
       {/* Modal content */}
       <div
-        className="relative bg-paper border border-gold/60 shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl flex flex-col lg:h-[92vh] lg:w-[96vw] lg:max-w-none lg:max-h-none"
+        className="relative flex h-[92dvh] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-2xl flex-col overflow-hidden rounded-xl border border-gold/60 bg-paper shadow-2xl sm:h-[88vh] sm:max-h-[88vh] sm:w-full sm:rounded-2xl lg:h-[92vh] lg:w-[96vw] lg:max-w-none lg:max-h-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - compact version */}
