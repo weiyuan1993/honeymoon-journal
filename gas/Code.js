@@ -6,6 +6,9 @@ var CONFIG = {
   // App title displayed in browser tab
   pageTitle: 'Vic & Dora in Europe',
 
+  // Gemini model used by AI features
+  geminiModel: 'gemini-3.1-flash-lite',
+
   // Google Sheet tab names (must match your spreadsheet)
   sheetNames: {
     itinerary: '行程',
@@ -19,6 +22,13 @@ var CONFIG = {
     chat: 'AI秘書對話'
   }
 };
+
+function getGeminiGenerateContentUrl(apiKey) {
+  return 'https://generativelanguage.googleapis.com/v1beta/models/' +
+    CONFIG.geminiModel +
+    ':generateContent?key=' +
+    encodeURIComponent(apiKey);
+}
 
 // === Script Properties Setup ===
 // Configure in GAS Editor: Project Settings > Script Properties
@@ -517,7 +527,7 @@ function generateAttractionStory(dayKey, city, itineraryContent) {
 
   try {
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      getGeminiGenerateContentUrl(apiKey),
       {
         method: 'post',
         contentType: 'application/json',
@@ -626,7 +636,7 @@ function generateFoodRecommendations(dayKey, city, itineraryContent, priceLevel)
 
   try {
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      getGeminiGenerateContentUrl(apiKey),
       {
         method: 'post',
         contentType: 'application/json',
@@ -749,7 +759,7 @@ function suggestItinerary(city, date, preferences) {
 
   try {
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      getGeminiGenerateContentUrl(apiKey),
       {
         method: 'post',
         contentType: 'application/json',
@@ -924,7 +934,7 @@ function generateJourneyIntro(itinerary) {
 
   try {
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      getGeminiGenerateContentUrl(apiKey),
       {
         method: 'post',
         contentType: 'application/json',
@@ -1117,7 +1127,7 @@ function chatWithSecretary(question, history) {
 
   try {
     var response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      getGeminiGenerateContentUrl(apiKey),
       {
         method: 'post',
         contentType: 'application/json',
