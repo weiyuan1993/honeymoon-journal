@@ -7,7 +7,7 @@ var CONFIG = {
   pageTitle: 'Vic & Dora in Europe',
 
   // Gemini model used by AI features
-  geminiModel: 'gemini-3.1-flash-lite',
+  geminiModel: 'gemini-2.5-flash-lite',
 
   // Google Sheet tab names (must match your spreadsheet)
   sheetNames: {
