@@ -577,15 +577,16 @@ export const gasClient = {
     ),
 
   // Chat methods
-  chatWithSecretary: (question: string, history: ChatMessage[]): Promise<ChatResponse> =>
+  chatWithSecretary: (question: string, history: ChatMessage[], useSearch = false): Promise<ChatResponse> =>
     callGAS(
       'chatWithSecretary',
       {
         success: true,
-        answer: `[Mock] 感謝您的提問！關於「${question}」，根據您的行程安排，我建議您可以參考當日的景點規劃。如果需要更詳細的資訊，請告訴我您想了解哪一天的行程。`,
+        answer: `[Mock] 感謝您的提問！關於「${question}」，${useSearch ? '我會參考即時搜尋結果，並' : ''}根據您的行程安排，我建議您可以參考當日的景點規劃。如果需要更詳細的資訊，請告訴我您想了解哪一天的行程。`,
       },
       question,
-      history
+      history,
+      useSearch
     ),
 
   getChatHistory: (): Promise<ChatHistoryItem[]> =>

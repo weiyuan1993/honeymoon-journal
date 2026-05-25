@@ -184,7 +184,7 @@ interface GoogleScriptRun {
   getJourneyContent(): void;
   generateJourneyIntro(itinerary: ItineraryItem[]): void;
   // Chat methods
-  chatWithSecretary(question: string, history: ChatMessage[]): void;
+  chatWithSecretary(question: string, history: ChatMessage[], useSearch?: boolean): void;
   getChatHistory(): void;
   deleteChatHistory(rowNumber: number): void;
   clearChatHistory(): void;

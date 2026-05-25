@@ -6,8 +6,9 @@ var CONFIG = {
   // App title displayed in browser tab
   pageTitle: 'Vic & Dora in Europe',
 
-  // Gemini model used by AI features
-  geminiModel: 'gemini-2.5-flash-lite',
+  // Gemini models used by AI features
+  geminiTextModel: 'gemini-3.1-flash-lite',
+  geminiSearchModel: 'gemini-2.5-flash-lite',
 
   // Google Sheet tab names (must match your spreadsheet)
   sheetNames: {
@@ -23,9 +24,9 @@ var CONFIG = {
   }
 };
 
-function getGeminiGenerateContentUrl(apiKey) {
+function getGeminiGenerateContentUrl(apiKey, model) {
   return 'https://generativelanguage.googleapis.com/v1beta/models/' +
-    CONFIG.geminiModel +
+    (model || CONFIG.geminiTextModel) +
     ':generateContent?key=' +
     encodeURIComponent(apiKey);
 }
@@ -1078,7 +1079,7 @@ function buildTripContext() {
 }
 
 // AI 秘書對話主函數
-function chatWithSecretary(question, history) {
+function chatWithSecretary(question, history, useSearch) {
   // 權限檢查
   if (!isAuthorizedEditor()) {
     return { success: false, message: '您沒有權限使用此功能' };
@@ -1093,6 +1094,8 @@ function chatWithSecretary(question, history) {
   // 建構行程上下文
   var tripContext = buildTripContext();
 
+  var searchEnabled = useSearch === true;
+
   // 建構系統提示
   var systemPrompt = '你是一位專業且貼心的蜜月旅程秘書，名叫「旅程秘書」。\n\n' +
     '你的任務是回答關於這趟蜜月旅行的所有問題。以下是完整的行程資料：\n\n' +
@@ -1104,7 +1107,9 @@ function chatWithSecretary(question, history) {
     '4. 如果問題與行程無關，請禮貌地引導回行程相關話題\n' +
     '5. 可以根據行程資料提供建議，但不要編造不存在的內容\n' +
     '6. 語氣親切溫暖，像是在幫助好朋友規劃旅行\n' +
-    '7. 如果被問到即時資訊（如天氣、匯率），請利用你的網路搜尋能力查詢最新資料';
+    (searchEnabled
+      ? '7. 已啟用網路搜尋；如果被問到即時資訊（如天氣、匯率、營業時間、交通異動），請利用搜尋能力查詢最新資料'
+      : '7. 未啟用網路搜尋；如果被問到即時資訊（如天氣、匯率、營業時間、交通異動），請提醒使用者開啟搜尋模式以查詢最新資料');
 
   // 建構對話歷史
   var contents = [];
@@ -1126,24 +1131,29 @@ function chatWithSecretary(question, history) {
   });
 
   try {
+    var requestPayload = {
+      system_instruction: {
+        parts: [{ text: systemPrompt }]
+      },
+      contents: contents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048
+      }
+    };
+
+    if (searchEnabled) {
+      requestPayload.tools = [{
+        google_search: {}
+      }];
+    }
+
     var response = UrlFetchApp.fetch(
-      getGeminiGenerateContentUrl(apiKey),
+      getGeminiGenerateContentUrl(apiKey, searchEnabled ? CONFIG.geminiSearchModel : CONFIG.geminiTextModel),
       {
         method: 'post',
         contentType: 'application/json',
-        payload: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          contents: contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048
-          },
-          tools: [{
-            google_search: {}
-          }]
-        }),
+        payload: JSON.stringify(requestPayload),
         muteHttpExceptions: true
       }
     );

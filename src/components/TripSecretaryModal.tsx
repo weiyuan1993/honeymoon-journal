@@ -21,6 +21,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
     { role: 'assistant', content: WELCOME_MESSAGE },
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [useSearch, setUseSearch] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -102,7 +103,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
         content: msg.content,
       }));
 
-      const response = await gasClient.chatWithSecretary(question, history);
+      const response = await gasClient.chatWithSecretary(question, history, useSearch);
 
       if (response.success && response.answer) {
         const assistantMessage: ChatMessage = { role: 'assistant', content: response.answer };
@@ -276,6 +277,31 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
               className="min-w-0 flex-1 px-4 py-2 bg-gray-50 border border-subtle rounded-full text-[16px] leading-6 font-serif text-ink placeholder:text-gray-400 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30"
               disabled={isLoading || isLoadingHistory}
             />
+            <button
+              type="button"
+              onClick={() => setUseSearch(prev => !prev)}
+              disabled={isLoading || isLoadingHistory}
+              aria-label={useSearch ? '關閉網路搜尋' : '啟用網路搜尋'}
+              aria-pressed={useSearch}
+              title={useSearch ? '搜尋模式已啟用' : '啟用網路搜尋'}
+              className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-full border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                useSearch
+                  ? 'border-gold bg-gold/15 text-gold shadow-sm ring-2 ring-gold/20'
+                  : 'border-subtle bg-gray-50 text-gray-400 hover:border-gold/50 hover:text-gold'
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.7}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a13.4 13.4 0 000 18M12.5 3a13.4 13.4 0 010 18" />
+              </svg>
+            </button>
             <button
               onClick={() => handleSend()}
               disabled={!inputValue.trim() || isLoading || isLoadingHistory}
