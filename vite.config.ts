@@ -5,6 +5,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: 'src',
+  publicDir: resolve(__dirname, 'public'),
   plugins: [
     react(),
     viteSingleFile({

@@ -10,17 +10,21 @@ import type {
   TicketItem,
 } from '@/types';
 import { tripConfig } from '@/config/trip.config';
-import { gasClient } from '@/utils/gasClient';
+import { gasClient, isGASEnvironment } from '@/utils/gasClient';
 import ItineraryCard from './ItineraryCard';
 import ExpensePage from './ExpensePage';
 import JourneyPage from './JourneyPage';
 import TodoPage from './TodoPage';
 import Loading from './Loading';
 import TripSecretaryModal from './TripSecretaryModal';
+import TripDashboard from './TripDashboard';
+import TicketVaultPage from './TicketVaultPage';
 
 const TAB_IDS = {
+  DASHBOARD: 'dashboard',
   JOURNEY: 'journey',
   ITINERARY: 'itinerary',
+  TICKETS: 'tickets',
   EXPENSE: 'expense',
   TODO: 'todo',
 } as const;
@@ -34,16 +38,17 @@ type LazyDataKey =
   | 'foodRecommendations'
   | 'journeyContent';
 
-const DEFAULT_TAB: TabType = TAB_IDS.ITINERARY;
+const DEFAULT_TAB: TabType = TAB_IDS.DASHBOARD;
 const ACTIVE_TAB_STORAGE_KEY = 'activeTab';
 const HEADER_COMPACT_SCROLL_Y = 64;
 const HEADER_EXPAND_SCROLL_Y = 24;
 
 const bottomTabs = [
-  { id: TAB_IDS.JOURNEY, label: 'Journey' },
-  { id: TAB_IDS.ITINERARY, label: 'Itinerary' },
-  { id: TAB_IDS.EXPENSE, label: 'Expenses' },
-  { id: TAB_IDS.TODO, label: 'Todo' },
+  { id: TAB_IDS.DASHBOARD, label: '總覽' },
+  { id: TAB_IDS.ITINERARY, label: '行程' },
+  { id: TAB_IDS.TICKETS, label: '票券' },
+  { id: TAB_IDS.EXPENSE, label: '花費' },
+  { id: TAB_IDS.TODO, label: '待辦' },
 ] satisfies Array<{ id: TabType; label: string }>;
 
 const validTabs = new Set<TabType>(bottomTabs.map((item) => item.id));
@@ -55,6 +60,12 @@ function TabIcon({ tab }: { tab: TabType }) {
   const iconClass = 'h-5 w-5';
 
   switch (tab) {
+    case TAB_IDS.DASHBOARD:
+      return (
+        <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+        </svg>
+      );
     case TAB_IDS.JOURNEY:
       return (
         <svg
@@ -91,6 +102,13 @@ function TabIcon({ tab }: { tab: TabType }) {
           <path d="M8 13h.01" />
           <path d="M12 13h.01" />
           <path d="M16 13h.01" />
+        </svg>
+      );
+    case TAB_IDS.TICKETS:
+      return (
+        <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v3a2 2 0 0 0 0 4v3a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-3a2 2 0 0 0 0-4Z" />
+          <path d="M12 7v10" />
         </svg>
       );
     case TAB_IDS.TODO:
@@ -305,13 +323,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (tab !== TAB_IDS.ITINERARY) return;
+    if (tab !== TAB_IDS.DASHBOARD && tab !== TAB_IDS.ITINERARY && tab !== TAB_IDS.TICKETS) return;
 
-    loadOnce('itinerary', () => fetchItinerary());
-    loadOnce('navigation', fetchNavigationData);
+    loadOnce('itinerary', () => fetchItinerary(tab === TAB_IDS.ITINERARY));
     loadOnce('tickets', fetchTicketData);
-    loadOnce('attractionDetails', fetchAttractionDetails);
-    loadOnce('foodRecommendations', fetchFoodRecommendations);
+    if (tab === TAB_IDS.ITINERARY) {
+      loadOnce('navigation', fetchNavigationData);
+      loadOnce('attractionDetails', fetchAttractionDetails);
+      loadOnce('foodRecommendations', fetchFoodRecommendations);
+    }
   }, [tab]);
 
   useEffect(() => {
@@ -526,7 +546,10 @@ export default function App() {
         )}
       </header>
 
-      <main className={tab === TAB_IDS.JOURNEY ? 'mt-2' : 'max-w-xl mx-auto p-4 mt-2'}>
+      <main className={tab === TAB_IDS.JOURNEY ? 'mt-2' : tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.TICKETS ? 'mt-2' : 'max-w-6xl mx-auto p-4 mt-2'}>
+        {tab === TAB_IDS.DASHBOARD && (
+          loadingItin ? <Loading /> : <TripDashboard itinerary={itinerary} tickets={tickets} onOpenItinerary={() => setTab(TAB_IDS.ITINERARY)} onOpenTickets={() => setTab(TAB_IDS.TICKETS)} />
+        )}
         {tab === TAB_IDS.ITINERARY && (
           <div className="animate-fade-in-up">
             {loadingItin ? (
@@ -552,6 +575,9 @@ export default function App() {
               ))
             )}
           </div>
+        )}
+        {tab === TAB_IDS.TICKETS && (
+          <TicketVaultPage tickets={tickets} canViewTickets={userPermission.canEdit || !isGASEnvironment} />
         )}
         {visitedTabs.has(TAB_IDS.EXPENSE) && (
           <div

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && node scripts/build-gas.js",
+    "build": "tsc && vite build && node scripts/build-gas.js && node scripts/build-sites.js",
     "preview": "vite preview",
     "push": "npm run build && clasp push --force",
     "deploy": "npm run push && clasp deploy -i \"$DEPLOYMENT_ID\" -d \"Manual deploy\""
