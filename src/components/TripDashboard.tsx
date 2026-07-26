@@ -10,6 +10,12 @@ interface TripDashboardProps {
 
 const stripHtml = (value: string) => value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
+const getPrimaryCityName = (value: string) => {
+  const primaryCity = value.split(/[→↔/]/)[0].trim();
+  const chineseName = primaryCity.replace(/[a-zA-Z0-9]/g, '').replace(/\s+/g, '').trim();
+  return chineseName || primaryCity;
+};
+
 const formatDate = (value: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -23,7 +29,7 @@ export default function TripDashboard({
   onOpenTickets,
 }: TripDashboardProps) {
   const cities = useMemo(() => {
-    const values = itinerary.map((item) => item.city.replace(/→.*/, '').trim()).filter(Boolean);
+    const values = itinerary.map((item) => getPrimaryCityName(item.city)).filter(Boolean);
     return Array.from(new Set(values));
   }, [itinerary]);
 
