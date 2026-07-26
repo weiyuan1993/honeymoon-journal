@@ -366,47 +366,43 @@ const mockTickets: TicketItem[] = [
 const mockNavigation: NavigationData = {
   'Day 1': {
     attractions: [
-      { name: 'Heathrow Airport', lat: 51.47, lng: -0.4543 },
-      { name: 'Charing Cross', lat: 51.5074, lng: -0.1232 },
+      { name: 'Heathrow Airport', query: 'Heathrow Airport, London' },
+      { name: 'Charing Cross', query: 'Charing Cross Station, London' },
     ],
-    center: [51.5074, -0.1232],
-    zoom: 12,
   },
   'Day 2': {
     attractions: [
-      { name: 'Buckingham Palace', lat: 51.5014, lng: -0.1419 },
-      { name: 'Westminster Abbey', lat: 51.4993, lng: -0.1273 },
-      { name: 'Big Ben', lat: 51.5007, lng: -0.1246 },
+      { name: 'Buckingham Palace', query: 'Buckingham Palace, London' },
+      { name: 'Westminster Abbey', query: 'Westminster Abbey, London' },
+      { name: 'Big Ben', query: 'Big Ben, London' },
     ],
-    center: [51.5007, -0.1300],
-    zoom: 13,
   },
   'Day 4': {
     attractions: [
-      { name: 'Louvre Museum', lat: 48.8606, lng: 2.3376 },
-      { name: 'Musee de l Orangerie', lat: 48.8638, lng: 2.3227 },
-      { name: 'Eiffel Tower', lat: 48.8584, lng: 2.2945 },
+      { name: 'Louvre Museum', query: 'Musée du Louvre, Paris' },
+      {
+        name: 'Musee de l Orangerie',
+        query: "Musée de l'Orangerie, Paris",
+      },
+      { name: 'Eiffel Tower', query: 'Eiffel Tower, Paris' },
     ],
-    center: [48.8606, 2.3376],
-    zoom: 13,
   },
   'Day 6': {
     attractions: [
-      { name: 'Chapel Bridge', lat: 47.0517, lng: 8.3073 },
-      { name: 'Lake Lucerne Pier', lat: 47.0502, lng: 8.3100 },
-      { name: 'Mount Rigi', lat: 47.0567, lng: 8.4852 },
+      { name: 'Chapel Bridge', query: 'Chapel Bridge, Lucerne' },
+      { name: 'Lake Lucerne Pier', query: 'Pier 1, Lucerne' },
+      { name: 'Mount Rigi', query: 'Mount Rigi, Switzerland' },
     ],
-    center: [47.0517, 8.3073],
-    zoom: 12,
   },
   'Day 8': {
     attractions: [
-      { name: 'Milano Centrale', lat: 45.4863, lng: 9.2044 },
-      { name: 'Duomo di Milano', lat: 45.4642, lng: 9.1916 },
-      { name: 'Galleria Vittorio Emanuele II', lat: 45.4658, lng: 9.1900 },
+      { name: 'Milano Centrale', query: 'Milano Centrale' },
+      { name: 'Duomo di Milano', query: 'Duomo di Milano' },
+      {
+        name: 'Galleria Vittorio Emanuele II',
+        query: 'Galleria Vittorio Emanuele II, Milano',
+      },
     ],
-    center: [45.4642, 9.1916],
-    zoom: 13,
   },
 };
 

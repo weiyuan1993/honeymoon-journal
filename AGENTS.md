@@ -74,7 +74,7 @@ Use MCP to inspect the live spreadsheet because planning tabs may evolve over ti
 | 攜帶 | Packing notes; inspect live columns with MCP |
 | 參考資料 | Research links and notes; inspect live columns with MCP |
 | 景點規劃 | Day, Title, Content |
-| 導航 | Day, Name, Latitude, Longitude |
+| 導航 | Day, Name, Google Maps Query |
 | 美食推薦 | Day, City, PriceLevel, Content, UpdatedAt |
 | 旅程介紹 | Type (intro/city:name/closing), Content, UpdatedAt |
 | AI秘書對話 | Timestamp, Question, Answer |

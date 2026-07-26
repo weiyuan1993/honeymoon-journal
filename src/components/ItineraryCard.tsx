@@ -54,9 +54,9 @@ export default function ItineraryCard({
   // Check if there's detail data for this day
   const detailData = attractionDetails && attractionDetails[item.day];
 
-  // Check if there's coordinate data for this day
-  const coordData = navigationData && navigationData[item.day];
-  const hasCoordinates = !!coordData;
+  // Check if there are Google Maps destinations for this day
+  const dayNavigation = navigationData && navigationData[item.day];
+  const hasNavigation = !!dayNavigation;
 
   // Check if there's food data for this day
   const foodData = foodRecommendations && foodRecommendations[item.day];
@@ -343,7 +343,7 @@ export default function ItineraryCard({
             </svg>
             規劃
           </button>
-          {hasCoordinates && (
+          {hasNavigation && (
             <button
               onClick={() => setShowMap(true)}
               className="flex-1 py-2 px-3 bg-forest/10 hover:bg-forest/20 text-forest font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"
@@ -381,7 +381,7 @@ export default function ItineraryCard({
         onClose={() => setShowMap(false)}
         dayKey={item.day}
         city={item.city}
-        coordData={coordData}
+        navigationData={dayNavigation}
       />
 
       {/* Food Modal */}

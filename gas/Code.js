@@ -417,7 +417,7 @@ function getAttractionDetails() {
   }
 }
 
-// 取得導航資料 (景點座標)
+// 取得導航資料 (Google Maps 景點查詢)
 function getNavigationData() {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetNames.navigation);
@@ -425,18 +425,17 @@ function getNavigationData() {
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return {};
 
-    // 讀取 A~D 欄 (Day, 景點名稱, 緯度, 經度)
-    var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    // 讀取 A~C 欄 (Day, 景點名稱, Google Maps 查詢)
+    var data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
 
     // 整理成以 Day 為 key 的物件
     var result = {};
     data.forEach(function(row) {
-      var day = row[0];        // Day 1, Day 2, ...
-      var name = row[1];       // 景點名稱
-      var lat = parseFloat(row[2]);  // 緯度
-      var lng = parseFloat(row[3]);  // 經度
+      var day = row[0];    // Day 1, Day 2, ...
+      var name = row[1];   // 顯示名稱
+      var query = row[2];  // Google Maps 景點名稱、地址或搜尋字串
 
-      if (!day || !name || isNaN(lat) || isNaN(lng)) return;
+      if (!day || !name || !query) return;
 
       if (!result[day]) {
         result[day] = {
@@ -446,43 +445,8 @@ function getNavigationData() {
 
       result[day].attractions.push({
         name: name,
-        lat: lat,
-        lng: lng
+        query: query
       });
-    });
-
-    // 計算每天的中心點和建議縮放級別
-    Object.keys(result).forEach(function(day) {
-      var attrs = result[day].attractions;
-      if (attrs.length === 0) return;
-
-      // 計算中心點 (所有景點的平均)
-      var sumLat = 0, sumLng = 0;
-      attrs.forEach(function(a) {
-        sumLat += a.lat;
-        sumLng += a.lng;
-      });
-      result[day].center = [sumLat / attrs.length, sumLng / attrs.length];
-
-      // 根據景點數量和分布決定縮放級別
-      if (attrs.length === 1) {
-        result[day].zoom = 15;
-      } else {
-        // 計算景點間的最大距離來決定縮放
-        var maxDist = 0;
-        attrs.forEach(function(a1) {
-          attrs.forEach(function(a2) {
-            var dist = Math.sqrt(Math.pow(a1.lat - a2.lat, 2) + Math.pow(a1.lng - a2.lng, 2));
-            if (dist > maxDist) maxDist = dist;
-          });
-        });
-        // 根據距離設定縮放級別
-        if (maxDist > 0.5) result[day].zoom = 11;
-        else if (maxDist > 0.2) result[day].zoom = 12;
-        else if (maxDist > 0.1) result[day].zoom = 13;
-        else if (maxDist > 0.05) result[day].zoom = 14;
-        else result[day].zoom = 15;
-      }
     });
 
     return result;

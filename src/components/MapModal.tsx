@@ -6,7 +6,7 @@ interface MapModalProps {
   onClose: () => void;
   dayKey: string;
   city: string;
-  coordData: DayNavigationData | undefined;
+  navigationData: DayNavigationData | undefined;
 }
 
 export default function MapModal({
@@ -14,7 +14,7 @@ export default function MapModal({
   onClose,
   dayKey,
   city,
-  coordData,
+  navigationData,
 }: MapModalProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -33,10 +33,12 @@ export default function MapModal({
     };
   }, [isOpen]);
 
-  if (!isOpen || !coordData) return null;
+  if (!isOpen || !navigationData) return null;
 
-  const selectedAttr = coordData.attractions[selectedIndex];
-  const mapEmbedUrl = `https://maps.google.com/maps?q=${selectedAttr.lat},${selectedAttr.lng}&z=16&output=embed`;
+  const selectedAttr = navigationData.attractions[selectedIndex];
+  const encodedQuery = encodeURIComponent(selectedAttr.query);
+  const mapEmbedUrl = `https://maps.google.com/maps?q=${encodedQuery}&z=16&output=embed`;
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedQuery}&dir_action=navigate`;
 
   return (
     <div
@@ -91,7 +93,7 @@ export default function MapModal({
         {/* Attraction list - clickable to switch */}
         <div className="px-4 py-3 bg-white border-t border-subtle overflow-x-auto no-scrollbar">
           <div className="flex gap-2.5 whitespace-nowrap pb-1">
-            {coordData.attractions.map((attr, index) => (
+            {navigationData.attractions.map((attr, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedIndex(index)}
@@ -119,7 +121,7 @@ export default function MapModal({
         {/* Bottom navigation button */}
         <div className="px-3 py-2 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
           <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${selectedAttr.lat},${selectedAttr.lng}`}
+            href={directionsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-2 bg-forest text-white font-display text-sm tracking-wider hover:bg-green-800 transition-colors rounded-lg"

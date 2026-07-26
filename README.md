@@ -153,8 +153,8 @@ Web App deployment 使用已登入的 Google 使用者身分執行：
 |-----|-------|---------|
 
 ### 導航 (Navigation)
-| Day | Name | Latitude | Longitude |
-|-----|------|----------|-----------|
+| Day | Name | Google Maps Query |
+|-----|------|-------------------|
 
 ### 美食推薦 (Food Recommendations)
 | Day | City | PriceLevel | Content | UpdatedAt |

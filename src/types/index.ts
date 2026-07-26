@@ -66,14 +66,11 @@ export interface TicketItem {
 // Navigation types
 export interface Attraction {
   name: string;
-  lat: number;
-  lng: number;
+  query: string;
 }
 
 export interface DayNavigationData {
   attractions: Attraction[];
-  center?: [number, number];
-  zoom?: number;
 }
 
 export type NavigationData = Record<string, DayNavigationData>;
