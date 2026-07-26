@@ -38,7 +38,7 @@ export default function MapModal({
   const selectedAttr = navigationData.attractions[selectedIndex];
   const encodedQuery = encodeURIComponent(selectedAttr.query);
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodedQuery}&z=16&output=embed`;
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedQuery}&dir_action=navigate`;
+  const placeUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
 
   return (
     <div
@@ -118,10 +118,10 @@ export default function MapModal({
           </div>
         </div>
 
-        {/* Bottom navigation button */}
+        {/* Bottom Google Maps button */}
         <div className="px-3 py-2 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
           <a
-            href={directionsUrl}
+            href={placeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-2 bg-forest text-white font-display text-sm tracking-wider hover:bg-green-800 transition-colors rounded-lg"
@@ -140,7 +140,7 @@ export default function MapModal({
                 d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"
               />
             </svg>
-            導航至 {selectedAttr.name}
+            在 Google Maps 查看 {selectedAttr.name}
           </a>
         </div>
       </div>
