@@ -36,8 +36,6 @@ interface WorkerEnv extends AuthBindings, SheetsEnv, GeminiEnv {
   ASSETS: {
     fetch(request: Request): Promise<Response>;
   };
-  APP_ENV?: string;
-  PREVIEW_READ_ONLY?: string;
   GOOGLE_TICKET_FOLDER_URL?: string;
 }
 
@@ -113,16 +111,6 @@ async function handleRpc(
     }
   }
   if (route.method === 'POST') assertSameOriginMutation(request, env.APP_ORIGIN);
-  if (
-    env.PREVIEW_READ_ONLY === 'true' &&
-    (route.capability === 'private:write' || route.capability === 'private:ai')
-  ) {
-    throw new ApiError(
-      503,
-      'PREVIEW_READ_ONLY',
-      'This preview is read-only until a staging spreadsheet is configured.'
-    );
-  }
 
   const cacheKey = new Request(request.url, { method: 'GET' });
   const publicCache = await caches.open('honeymoon-public-v1');

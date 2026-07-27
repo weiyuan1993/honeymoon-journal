@@ -4,7 +4,7 @@ This file provides guidance to coding agents, including Codex, when working in t
 
 ## Project Overview
 
-A travel journal web app for honeymoon trip planning. Built as a Google Apps Script web app with React frontend and Google Sheets as the database. Designed as a reusable template.
+A travel journal web app for honeymoon trip planning. The production runtime is a Cloudflare Worker with a React frontend and Google Sheets as the database. The former Google Apps Script deployment is retained as a temporary rollback path. Designed as a reusable template.
 
 ## Primary Travel Data Source
 
@@ -27,41 +27,52 @@ When working with travel information:
 
 ```bash
 npm run dev      # Local development with mock data (http://localhost:5173)
-npm run build    # Build for production (outputs to dist/)
-npm run deploy   # Build and push to Google Apps Script
+npm run build:cloudflare # Type-check and build the Cloudflare production artifact
+npm run dev:cloudflare   # Build and run the Worker locally
+npm run build            # Build the legacy GAS rollback artifact
+npm run deploy           # Manually deploy the legacy GAS rollback
 ```
 
-Auto-deploy: Push to `main` triggers GitHub Actions to build and deploy.
+Auto-deploy: Cloudflare Workers Builds deploys the configured production branch to `honeymoon-journal`. During migration that branch is `codex/cloudflare-sheets-api`; switch it to `main` after merge. Pushes to `main` also continue to deploy the GAS rollback through GitHub Actions until that legacy deployment is retired.
 
 ## Architecture
 
 ### Frontend (src/)
 - **React 19 + TypeScript + Tailwind CSS v4** single-page application
-- Built with Vite, bundled into single HTML file via `vite-plugin-singlefile`
-- `gasClient.ts` wraps all GAS API calls with mock data fallback for local dev
+- Built with Vite
+- `gasClient.ts` selects the Cloudflare `/api/*` transport in production, the GAS transport on the rollback deployment, and mock data for local Vite development
 
-### Backend (gas/)
-- **Code.js**: Google Apps Script server functions called via `google.script.run`
+### Production backend (worker/)
+- Cloudflare Worker serves the SPA and `/api/*` from one origin
+- Uses Google Sheets API through a service account
+- Uses Google OAuth ID tokens plus signed session cookies for Vic and Dora
+- Enforces public read-only access and editor-only tickets, writes, and AI operations
+- Integrates Google Gemini API and preserves Sheet-backed AI caches
+
+### Rollback backend (gas/)
+- **Code.js**: retained Google Apps Script server functions called via `google.script.run`
 - Reads/writes to Google Sheets tabs: 行程, 記帳, 景點規劃, 導航, 美食推薦, 旅程介紹, AI秘書對話
 - Integrates Google Gemini API for AI features (景點故事, 美食推薦, 旅程介紹, AI秘書對話)
 
 ### Data Flow
 ```
-React Components → gasClient.ts → google.script.run → Code.js → Google Sheets
-                     ↓ (dev mode)
-                  Mock data
+React Components → gasClient.ts → /api/* → Cloudflare Worker → Google Sheets API
+                     ├─ GAS rollback → google.script.run → Code.js
+                     └─ local Vite development → mock data
 ```
 
 ### Key Files to Modify for New Trips
 | File | Purpose |
 |------|---------|
 | `src/config/trip.config.ts` | App title, currencies, categories, external links |
-| `gas/Code.js` CONFIG object | Page title, sheet names |
-| Script Properties | AUTHORIZED_EDITORS, GEMINI_API_KEY (set in GAS editor) |
+| `worker/tripRepository.ts` | Production Sheet names and data mapping |
+| `wrangler.jsonc` | Production Worker name, assets, and non-secret variables |
+| Cloudflare Worker secrets | Sheet, OAuth, editor, session, ticket, and Gemini credentials |
+| `gas/Code.js` CONFIG object | Legacy rollback page title and sheet names |
 
 ## Google Sheets Structure
 
-Use MCP to inspect the live spreadsheet because planning tabs may evolve over time. The web app runtime uses the tab names configured in `gas/Code.js`, while broader trip planning also uses additional tabs.
+Use MCP to inspect the live spreadsheet because planning tabs may evolve over time. The production web runtime uses the tab names configured in `worker/tripRepository.ts`; the rollback runtime uses `gas/Code.js`. Broader trip planning also uses additional tabs.
 
 | Tab | Columns |
 |-----|---------|
@@ -81,11 +92,14 @@ Use MCP to inspect the live spreadsheet because planning tabs may evolve over ti
 
 ## Important Patterns
 
-- Rich text hyperlinks in sheets preserved via `getRichTextValues()` → `convertRichTextToHtml()`
-- Permission control: `isAuthorizedEditor()` checks against AUTHORIZED_EDITORS Script Property
+- Cloudflare authorization checks every non-public RPC operation against the signed editor session
+- Public Sheet reads are cached; successful mutations invalidate the related public cache
+- The GAS rollback preserves rich text hyperlinks via `getRichTextValues()` → `convertRichTextToHtml()`
 - AI content auto-saves to sheets for caching
-- Types in `src/types/index.ts` must match GAS function signatures
+- Types in `src/types/index.ts` must match both Worker and GAS rollback responses
 
 ## Deployment
 
-Requires `clasp` CLI authenticated. GitHub Actions uses `CLASPRC_JSON` and `DEPLOYMENT_ID` secrets.
+Production uses Cloudflare Workers Builds with `npm run build:cloudflare` and `npx wrangler deploy`. Runtime credentials are encrypted Worker secrets and must never be committed. See `docs/deployment-cloudflare.md`.
+
+The GAS rollback requires authenticated `clasp`; its GitHub Actions workflow uses `CLASPRC_JSON` and `DEPLOYMENT_ID` secrets.

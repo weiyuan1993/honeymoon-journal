@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../index';
 import { createSessionToken } from '../auth';
+import { GeminiClient } from '../gemini';
+import { TripRepository } from '../tripRepository';
 
 const env = {
   ASSETS: { fetch: async () => new Response('asset') },
@@ -14,6 +16,21 @@ const env = {
 };
 
 describe('worker privacy boundary', () => {
+  beforeEach(() => {
+    vi.stubGlobal('caches', {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn().mockResolvedValue(undefined),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(true),
+      }),
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('does not return ticket metadata to anonymous callers', async () => {
     const response = await worker.fetch(
       new Request('https://trip.example/api/rpc/getTicketData'),
@@ -73,6 +90,91 @@ describe('worker privacy boundary', () => {
     );
     await expect(sessionResponse.json()).resolves.toEqual({
       data: { email: null, canEdit: false },
+    });
+  });
+
+  it.each(['updateTodoStatus', 'suggestItinerary'])(
+    'rejects anonymous access to %s',
+    async (operation) => {
+      const response = await worker.fetch(
+        new Request(`https://trip.example/api/rpc/${operation}`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            origin: 'https://trip.example',
+          },
+          body: JSON.stringify({ args: [] }),
+        }),
+        env
+      );
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toMatchObject({
+        error: { code: 'AUTHENTICATION_REQUIRED' },
+      });
+    }
+  );
+
+  it('allows an authorized editor to update a todo', async () => {
+    vi.spyOn(TripRepository.prototype, 'updateTodoStatus').mockResolvedValue({
+      success: true,
+      message: '待辦狀態已更新',
+    });
+    const token = await createSessionToken(
+      {
+        sub: 'google-user-1',
+        email: 'vic@example.com',
+        role: 'editor',
+      },
+      env.SESSION_SECRET
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/updateTodoStatus', {
+        method: 'POST',
+        headers: {
+          cookie: `honeymoon_session=${token}`,
+          'content-type': 'application/json',
+          origin: 'https://trip.example',
+        },
+        body: JSON.stringify({ args: [2, true, 'Book train'] }),
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: { success: true, message: '待辦狀態已更新' },
+    });
+  });
+
+  it('allows an authorized editor to use an AI operation', async () => {
+    vi.spyOn(GeminiClient.prototype, 'generate').mockResolvedValue('Paris plan');
+    const token = await createSessionToken(
+      {
+        sub: 'google-user-1',
+        email: 'vic@example.com',
+        role: 'editor',
+      },
+      env.SESSION_SECRET
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/suggestItinerary', {
+        method: 'POST',
+        headers: {
+          cookie: `honeymoon_session=${token}`,
+          'content-type': 'application/json',
+          origin: 'https://trip.example',
+        },
+        body: JSON.stringify({ args: ['Paris'] }),
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: { success: true, content: 'Paris plan' },
     });
   });
 });

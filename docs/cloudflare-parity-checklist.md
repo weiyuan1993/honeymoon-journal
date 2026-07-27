@@ -1,6 +1,6 @@
 # Cloudflare parity and cutover checklist
 
-Record evidence against the preview Worker. Leave blocked real-environment items
+Record evidence against the production Worker. Leave blocked real-environment items
 unchecked with a short reason; do not mark them passed from local mocks.
 
 ## Build and deployment isolation
@@ -9,20 +9,20 @@ unchecked with a short reason; do not mark them passed from local mocks.
 - [ ] `npm test -- --run` exits 0.
 - [ ] `npm run build` exits 0 and still produces the GAS artifact.
 - [ ] `npm run build:cloudflare` exits 0 and produces `dist/index.html`.
-- [ ] A push to `codex/cloudflare-sheets-api` uploads a Worker Preview version.
-- [ ] The Workers Builds log contains no `clasp`, production Worker deploy, custom
-      domain, or route mutation.
+- [ ] A push to `codex/cloudflare-sheets-api` deploys the production Worker.
+- [ ] The Workers Builds log contains no `clasp`, custom domain, or route
+      mutation.
 - [ ] `.github/workflows/deploy.yml` is unchanged.
-- [ ] Preview reports write-enabled mode only for authenticated, authorized
+- [ ] Production reports write-enabled mode only for authenticated, authorized
       editors.
-- [ ] Every preview mutation changes only the intended production Sheet row.
+- [ ] Every validation mutation changes only the intended production Sheet row.
 
 Evidence:
 
 ```text
 Date:
 Commit:
-Preview URL:
+Production URL:
 Workers Build:
 Notes:
 ```
@@ -83,7 +83,7 @@ step.
 - [ ] AI secretary chat and optional search grounding match current behavior.
 - [ ] Chat history read, delete, and clear match GAS.
 - [ ] Gemini success plus Sheet failure is reported as generated but unsaved.
-- [ ] Preview write tests changed only the intended production rows.
+- [ ] Validation writes changed only the intended production rows.
 
 Evidence:
 
@@ -101,21 +101,21 @@ Test the Worker URL, not Vite mocks.
 
 - [ ] Desktop Chrome: public navigation and all tabs.
 - [ ] Mobile viewport: public navigation, modals, cards, and overflow.
-- [ ] Vic signs in, sees private controls, previews a ticket, then signs out.
-- [ ] Dora signs in, sees private controls, previews a ticket, then signs out.
+- [ ] Vic signs in, sees private controls, opens a ticket, then signs out.
+- [ ] Dora signs in, sees private controls, opens a ticket, then signs out.
 - [ ] Account switching does not retain the prior account's private state.
 - [ ] Expired session recovers to public mode with a clear message.
 - [ ] Direct navigation to an SPA route returns the application, not a 404.
 - [ ] An unknown `/api/*` path returns an API error, not `index.html`.
 - [ ] Drive independently rejects a non-authorized Google account.
 
-## Cutover gate
+## Production acceptance gate
 
 All items below require explicit user approval.
 
 - [ ] Every unchecked item above has an accepted explanation.
 - [ ] Production Worker secrets and OAuth origin are configured.
-- [ ] Production version Preview URL passes the authorization matrix.
+- [ ] Production URL passes the authorization matrix.
 - [ ] The `main` Cloudflare Workers Builds production configuration was reviewed.
 - [ ] The still-live GAS URL was recorded and tested as rollback.
 - [ ] The production routing/link switch was approved.

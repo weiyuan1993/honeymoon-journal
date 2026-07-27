@@ -2,7 +2,7 @@
 
 ![Cover](assets/images/cover.png)
 
-歐洲蜜月旅行日誌 Web App，資料儲存於 Google Sheets。目前 production 仍由 Google Apps Script 提供；`codex/cloudflare-sheets-api` 分支正在平行驗證 Cloudflare Worker + Google Sheets API 架構。
+歐洲蜜月旅行日誌 Web App，資料儲存於 Google Sheets。目前 production 由 Cloudflare Worker + Google Sheets API 提供；Google Apps Script 暫時保留作為 rollback。
 
 > **Template 專案**：此專案可作為 template 重複使用，建立其他旅遊日誌。詳見 [SETUP.md](SETUP.md)。
 
@@ -24,7 +24,7 @@
 |------|------|
 | 前端 | React 19 + TypeScript + Tailwind CSS v4 |
 | 建置 | Vite + vite-plugin-singlefile |
-| 後端 | Cloudflare Worker（新架構）／Google Apps Script（production rollback） |
+| 後端 | Cloudflare Worker（production）／Google Apps Script（rollback） |
 | 資料庫 | Google Sheets |
 | 部署 | Wrangler／clasp + GitHub Actions |
 
@@ -46,7 +46,7 @@
 │   │   ├── TodoPage.tsx
 │   │   └── Loading.tsx
 │   ├── utils/
-│   │   └── gasClient.ts   # GAS API 封裝 + 本機 mock
+│   │   └── gasClient.ts   # Worker/GAS API transport + 本機 mock
 │   ├── types/
 │   │   └── index.ts       # TypeScript 型別定義
 │   ├── styles/
@@ -102,7 +102,7 @@ npm run build
 - `Code.js` - 後端程式碼
 - `appsscript.json` - GAS 設定
 
-Cloudflare 版本使用獨立建置，不影響 GAS artifact：
+Cloudflare production 使用獨立建置，不影響 GAS rollback artifact：
 
 ```bash
 npm run type-check
@@ -111,11 +111,11 @@ npm run build:cloudflare
 npm run dev:cloudflare
 ```
 
-Cloudflare secrets、共用正式 Sheet 驗證、cutover 與 rollback 請參考 [部署手冊](docs/deployment-cloudflare.md)。
+Cloudflare secrets、共用正式 Sheet 驗證與 rollback 請參考 [部署手冊](docs/deployment-cloudflare.md)。
 
 ### 部署
 
-**方式一：手動部署**
+**GAS rollback：手動部署**
 ```bash
 # 只推送程式碼到 Apps Script
 npm run push
@@ -124,16 +124,16 @@ npm run push
 DEPLOYMENT_ID=<your-deployment-id> npm run deploy
 ```
 
-**方式二：Git 自動部署**
+**Cloudflare production：Git 自動部署**
 ```bash
 git add .
 git commit -m "描述"
 git push
 ```
 
-Push 到 `main` 分支仍會自動觸發 GitHub Actions 部署 GAS。新架構驗證期間，Cloudflare Workers Builds 會在 feature branch push 後自動上傳 preview，不會切換 production 流量；preview 與 GAS 共用正式 Sheet，授權帳號的寫入會立即反映在正式資料。通過驗收後才會另行切換 `main` 的 production build 設定。
+Push 到 `main` 分支仍會自動觸發 GitHub Actions 部署 GAS。Cloudflare Workers Builds 目前從 `codex/cloudflare-sheets-api` 自動部署唯一的 production Worker；它與 GAS 共用正式 Sheet，授權帳號的寫入會立即反映在正式資料。遷移分支合併後，再將 Cloudflare production branch 切換為 `main`。
 
-Web App deployment 使用已登入的 Google 使用者身分執行：
+GAS rollback Web App deployment 使用已登入的 Google 使用者身分執行：
 
 - `executeAs`: `USER_ACCESSING`
 - `access`: `ANYONE`
