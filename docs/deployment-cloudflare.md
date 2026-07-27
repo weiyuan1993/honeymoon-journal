@@ -13,8 +13,8 @@ cutover is explicitly approved.
   SPA shell.
 - The `preview` Wrangler environment creates a separate
   `honeymoon-journal-preview` Worker.
-- Preview uploads use Worker Versions and an aliased Preview URL. Uploading a
-  version does not change production traffic.
+- Pushes to `codex/cloudflare-sheets-api` deploy directly to the active
+  `honeymoon-journal-preview` Worker and keep the same `workers.dev` URL.
 - `PREVIEW_READ_ONLY` is `false` in the checked-in preview configuration.
 - Preview and GAS use the same production spreadsheet. Authorized preview
   writes therefore change live trip data immediately.
@@ -67,7 +67,8 @@ cryptographically random value for `SESSION_SECRET`.
 Do not upload the downloaded service-account JSON file. Copy only its email and
 private key into encrypted Worker secrets.
 
-Use the stable `branch-preview` alias for Vic/Dora authentication tests.
+Use the stable `honeymoon-journal-preview` Worker URL for Vic/Dora
+authentication tests.
 
 ## Local setup
 
@@ -120,15 +121,15 @@ After bootstrap, open the `honeymoon-journal-preview` Worker in Cloudflare:
 1. Go to **Settings → Builds** and connect this GitHub repository.
 2. Set the production branch to `codex/cloudflare-sheets-api`.
 3. Set the build command to `npm run build:cloudflare`.
-4. Set the deploy command to
-   `npx wrangler versions upload --env preview --preview-alias branch-preview`.
-5. Leave the root directory empty because this repository is the project root.
+4. Set the deploy command to `npx wrangler deploy --env preview`.
+5. Set the root directory to `/` because this repository is the project root.
+6. Disable builds for non-production branches.
 
-Every push to the branch now builds and uploads a new preview version without
-promoting it to production. Cloudflare manages the build token internally, so
-repository code and GitHub pull-request workflows never receive a Cloudflare
-API token. Runtime secrets remain on the Worker and Wrangler configuration
-contains no secret values.
+Every push to the branch now builds and promotes the new version to the active
+`honeymoon-journal-preview` deployment at the same URL. Cloudflare manages the
+build token internally, so repository code and GitHub pull-request workflows
+never receive a Cloudflare API token. Runtime secrets remain on the Worker and
+Wrangler configuration contains no secret values.
 
 Cloudflare Preview URLs are public by default. The app must therefore enforce
 its anonymous/private API boundary even in preview. Optionally enable Cloudflare
