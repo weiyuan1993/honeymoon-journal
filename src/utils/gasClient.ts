@@ -21,18 +21,6 @@ import type {
 // Check if running in Google Apps Script environment
 export const isGASEnvironment = typeof google !== 'undefined' && google?.script?.run;
 
-const workerRoutes: Record<string, string> = {
-  getItineraryData: '/api/itinerary',
-  getTicketData: '/api/tickets',
-  getExpenseData: '/api/expenses',
-  getUserPermission: '/api/permission',
-  getNavigationData: '/api/navigation',
-  getAttractionDetails: '/api/attractions',
-  getFoodRecommendations: '/api/food',
-  getTodoData: '/api/todos',
-  getJourneyContent: '/api/journey',
-};
-
 // Mock data for local development
 const mockItinerary: ItineraryItem[] = [
   {
@@ -456,17 +444,6 @@ function callGAS<T>(
 
       // Call the function with arguments
       (runner as unknown as Record<string, (...args: unknown[]) => void>)[functionName](...args);
-    } else if (import.meta.env.PROD && workerRoutes[functionName] && args.length === 0) {
-      fetch(workerRoutes[functionName])
-        .then(async (response) => {
-          if (!response.ok) {
-            const error = await response.json().catch(() => null) as { message?: string } | null;
-            throw new Error(error?.message || '讀取旅程資料失敗');
-          }
-          return response.json() as Promise<T>;
-        })
-        .then(resolve)
-        .catch(reject);
     } else {
       // Development mode - return mock data after a small delay
       console.log(`[DEV] Mock call to ${functionName}:`, args);

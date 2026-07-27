@@ -10,7 +10,7 @@ import type {
   TicketItem,
 } from '@/types';
 import { tripConfig } from '@/config/trip.config';
-import { gasClient, isGASEnvironment } from '@/utils/gasClient';
+import { gasClient } from '@/utils/gasClient';
 import ItineraryCard from './ItineraryCard';
 import ExpensePage from './ExpensePage';
 import JourneyPage from './JourneyPage';
@@ -577,7 +577,7 @@ export default function App() {
           </div>
         )}
         {tab === TAB_IDS.TICKETS && (
-          <TicketVaultPage tickets={tickets} canViewTickets={userPermission.canEdit || !isGASEnvironment} />
+          <TicketVaultPage tickets={tickets} canViewTickets={userPermission.canEdit} />
         )}
         {visitedTabs.has(TAB_IDS.EXPENSE) && (
           <div
