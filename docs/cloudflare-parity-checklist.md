@@ -13,8 +13,9 @@ unchecked with a short reason; do not mark them passed from local mocks.
 - [ ] The Workers Builds log contains no `clasp`, production Worker deploy, custom
       domain, or route mutation.
 - [ ] `.github/workflows/deploy.yml` is unchanged.
-- [ ] Preview reports read-only mode and rejects every mutation/AI request.
-- [ ] No preview request changes the production spreadsheet.
+- [ ] Preview reports write-enabled mode only for authenticated, authorized
+      editors.
+- [ ] Every preview mutation changes only the intended production Sheet row.
 
 Evidence:
 
@@ -33,8 +34,8 @@ Test both the visible UI and direct `/api/*` requests.
 | State | Public reads | Tickets/Sheet links | Writes | AI/chat/history |
 |---|---|---|---|---|
 | Anonymous | [ ] allowed | [ ] denied/redacted | [ ] denied | [ ] denied |
-| Vic | [ ] allowed | [ ] allowed | [ ] preview read-only | [ ] preview read-only |
-| Dora | [ ] allowed | [ ] allowed | [ ] preview read-only | [ ] preview read-only |
+| Vic | [ ] allowed | [ ] allowed | [ ] allowed | [ ] allowed |
+| Dora | [ ] allowed | [ ] allowed | [ ] allowed | [ ] allowed |
 | Other Google account | [ ] allowed | [ ] denied/redacted | [ ] denied | [ ] denied |
 | Expired/tampered session | [ ] allowed after reset | [ ] denied/redacted | [ ] denied | [ ] denied |
 
@@ -64,11 +65,11 @@ Test both the visible UI and direct `/api/*` requests.
 - [ ] A warm public read reduces Google API calls without serving stale data
       after invalidation.
 
-## Staging write parity
+## Production Sheet write parity
 
-Prerequisite: a copied staging spreadsheet, service-account Editor access,
-separate preview bindings, and an explicitly approved temporary write-enabled
-preview.
+Prerequisite: the production spreadsheet is shared with the service account as
+Editor, and each validation operation has a recorded before value and cleanup
+step.
 
 - [ ] Editing itinerary updates only the intended editable columns.
 - [ ] Completing a todo updates the intended row.
@@ -82,12 +83,12 @@ preview.
 - [ ] AI secretary chat and optional search grounding match current behavior.
 - [ ] Chat history read, delete, and clear match GAS.
 - [ ] Gemini success plus Sheet failure is reported as generated but unsaved.
-- [ ] Preview write tests changed only the staging spreadsheet.
+- [ ] Preview write tests changed only the intended production rows.
 
 Evidence:
 
 ```text
-Staging spreadsheet:
+Production spreadsheet:
 Before snapshot:
 After snapshot:
 Rows exercised:

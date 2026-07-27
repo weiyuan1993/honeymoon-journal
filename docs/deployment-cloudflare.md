@@ -15,7 +15,9 @@ cutover is explicitly approved.
   `honeymoon-journal-preview` Worker.
 - Preview uploads use Worker Versions and an aliased Preview URL. Uploading a
   version does not change production traffic.
-- `PREVIEW_READ_ONLY` is `true` in the checked-in preview configuration.
+- `PREVIEW_READ_ONLY` is `false` in the checked-in preview configuration.
+- Preview and GAS use the same production spreadsheet. Authorized preview
+  writes therefore change live trip data immediately.
 
 The existing `.github/workflows/deploy.yml` is intentionally unchanged and
 continues to deploy `main` to Google Apps Script during validation.
@@ -36,9 +38,10 @@ Preview runtime secrets are stored on the
 - `GOOGLE_CLIENT_ID`
 - `AUTHORIZED_EDITOR_EMAILS`
 - `SESSION_SECRET`
+- `GEMINI_API_KEY`
 
-Production additionally requires `GEMINI_API_KEY`. Preview intentionally does
-not require Gemini while it is read-only.
+`GEMINI_API_KEY` is required because preview exposes AI generation and chat to
+authorized editors.
 
 `GOOGLE_TICKET_FOLDER_URL` is an optional private binding for the editor-only
 shortcut to the ticket folder. Configure it as an encrypted Worker secret when
@@ -52,9 +55,7 @@ cryptographically random value for `SESSION_SECRET`.
 ### Google Cloud
 
 1. Enable Google Sheets API for the service-account project.
-2. Share the target spreadsheet with the service-account email as Viewer for a
-   read-only preview. Use a copied staging spreadsheet and Editor access before
-   enabling any preview writes.
+2. Share the production spreadsheet with the service-account email as Editor.
 3. Create a Google OAuth Web client for editor login.
 4. Add each exact preview origin and, later, the production origin to Authorized
    JavaScript origins. Preview URLs are separate origins.
@@ -99,7 +100,7 @@ Bootstrap the preview Worker and its required runtime secrets from a trusted
 machine:
 
 1. Authenticate with `npx wrangler login`.
-2. Populate `.dev.vars.preview` with the six preview secrets listed above.
+2. Populate `.dev.vars.preview` with the seven preview secrets listed above.
 3. Run:
 
    ```bash
@@ -107,7 +108,8 @@ machine:
    npx wrangler deploy --env preview --secrets-file .dev.vars.preview
    ```
 
-4. Confirm the deployed preview is read-only.
+4. Confirm the deployed preview points to the intended production Sheet and
+   that editor-only write controls require an authorized login.
 5. Delete the local `.dev.vars.preview` when it is no longer needed.
 
 This command deploys only `honeymoon-journal-preview`; it does not deploy the
@@ -133,22 +135,21 @@ its anonymous/private API boundary even in preview. Optionally enable Cloudflare
 Access for the preview URL as an extra test-environment restriction; do not use
 Access on the future public production site.
 
-## Staging validation
+## Shared production Sheet validation
 
-Keep `PREVIEW_READ_ONLY=true` until all anonymous checks in
-`docs/cloudflare-parity-checklist.md` pass. For write and AI validation:
+Preview intentionally uses the same spreadsheet as GAS. Before testing writes:
 
-1. Copy the production spreadsheet.
-2. Share only the copy with service-account Editor access.
-3. Point preview `GOOGLE_SHEET_ID` at the copy.
-4. Add `GEMINI_API_KEY` to preview only when paid AI calls are intentionally
-   being tested.
-5. Change preview read-only mode only in an explicitly reviewed configuration or
-   temporary remote version.
-6. Re-enable read-only mode after the test and verify the production spreadsheet
-   was unchanged.
+1. Confirm `GOOGLE_SHEET_ID` is the production spreadsheet ID.
+2. Confirm the service account has Editor access.
+3. Record the target row and its current values.
+4. Use a reversible test, such as toggling one todo and restoring it immediately.
+5. Verify the exact row after every edit, expense, AI, or chat operation.
+6. Use Google Sheets version history to recover if a validation step changes
+   unexpected data.
 
-Never point a write-enabled preview at the production spreadsheet.
+Do not use destructive bulk operations during preview validation. Clearing all
+chat history and deleting existing expenses should be tested only when the
+affected production data can be safely restored.
 
 ## Production cutover
 
@@ -177,7 +178,7 @@ If Cloudflare fails before or during cutover:
 3. If a custom domain was attached, remove or replace only its Worker route.
 4. If the Worker itself is healthy but the latest version is bad, use Cloudflare
    deployment rollback to restore the prior Worker version.
-5. Verify that the production Sheet has no preview/staging writes.
+5. Verify and revert any unintended preview writes in the production Sheet.
 6. Leave the GAS source and deployment workflow in place until a later,
    separately approved cleanup.
 

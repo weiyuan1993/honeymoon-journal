@@ -111,7 +111,7 @@ npm run build:cloudflare
 npm run dev:cloudflare
 ```
 
-Cloudflare secrets、preview、staging、cutover 與 rollback 請參考 [部署手冊](docs/deployment-cloudflare.md)。
+Cloudflare secrets、共用正式 Sheet 驗證、cutover 與 rollback 請參考 [部署手冊](docs/deployment-cloudflare.md)。
 
 ### 部署
 
@@ -131,7 +131,7 @@ git commit -m "描述"
 git push
 ```
 
-Push 到 `main` 分支仍會自動觸發 GitHub Actions 部署 GAS。新架構驗證期間，Cloudflare Workers Builds 會在 feature branch push 後自動上傳 read-only preview，不會變更 production；通過驗收後才會另行切換 `main` 的 production build 設定。
+Push 到 `main` 分支仍會自動觸發 GitHub Actions 部署 GAS。新架構驗證期間，Cloudflare Workers Builds 會在 feature branch push 後自動上傳 preview，不會切換 production 流量；preview 與 GAS 共用正式 Sheet，授權帳號的寫入會立即反映在正式資料。通過驗收後才會另行切換 `main` 的 production build 設定。
 
 Web App deployment 使用已登入的 Google 使用者身分執行：
 
