@@ -17,12 +17,15 @@ import type {
   ChatHistoryItem,
   ChatResponse,
 } from '@/types';
+import { authClient, callWorker } from '@/utils/apiClient';
+import type { ApiOperation } from '../../shared/apiOperations';
 
 // Check if running in Google Apps Script environment
 export const isGASEnvironment = typeof google !== 'undefined' && google?.script?.run;
+const isWorkerEnvironment = !isGASEnvironment && import.meta.env.PROD;
 
 // Mock data for local development
-const mockItinerary: ItineraryItem[] = [
+const mockItinerary: ItineraryItem[] = import.meta.env.DEV ? [
   {
     rowNumber: 2,
     day: 'Day 1',
@@ -155,7 +158,7 @@ const mockItinerary: ItineraryItem[] = [
     link: 'https://www.italotreno.com/',
     hotel: 'Domus Duomo b&b ★★★',
   },
-];
+] : [];
 
 const mockExpenseTimestamp = (daysAgo: number, hour: number, minute = 0) => {
   const date = new Date();
@@ -164,7 +167,7 @@ const mockExpenseTimestamp = (daysAgo: number, hour: number, minute = 0) => {
   return date.toISOString();
 };
 
-const mockExpenses: ExpenseItem[] = [
+const mockExpenses: ExpenseItem[] = import.meta.env.DEV ? [
   {
     rowNumber: 2,
     timestamp: mockExpenseTimestamp(0, 12, 35),
@@ -253,9 +256,9 @@ const mockExpenses: ExpenseItem[] = [
     currency: 'TWD',
     category: 'Other',
   },
-];
+] : [];
 
-const mockTodos: TodoItem[] = [
+const mockTodos: TodoItem[] = import.meta.env.DEV ? [
   {
     rowNumber: 3,
     section: '最優先（出發前 6-9 個月)',
@@ -280,9 +283,9 @@ const mockTodos: TodoItem[] = [
     deadline: '早鳥較便宜',
     done: false,
   },
-];
+] : [];
 
-const mockTickets: TicketItem[] = [
+const mockTickets: TicketItem[] = import.meta.env.DEV ? [
   {
     rowNumber: 2,
     day: 'Day 5',
@@ -291,8 +294,8 @@ const mockTickets: TicketItem[] = [
     item: 'Eurostar London St Pancras → Paris Gare du Nord',
     type: '交通',
     provider: 'Eurostar',
-    fileUrl: 'https://drive.google.com/file/d/1W8CVYtX0WwrbEBwYNlk3SSTP4tv7Nirh/view?usp=drivesdk',
-    notes: 'Tingyun Yang',
+    fileUrl: 'https://example.com/tickets/eurostar-passenger-a.pdf',
+    notes: '旅客 A',
   },
   {
     rowNumber: 3,
@@ -302,8 +305,8 @@ const mockTickets: TicketItem[] = [
     item: 'Eurostar London St Pancras → Paris Gare du Nord',
     type: '交通',
     provider: 'Eurostar',
-    fileUrl: 'https://drive.google.com/file/d/1BZXbLrin2cfwpi_cQOB0yRokvVhnPBh7/view?usp=drivesdk',
-    notes: 'Weiyuan Lo',
+    fileUrl: 'https://example.com/tickets/eurostar-passenger-b.pdf',
+    notes: '旅客 B',
   },
   {
     rowNumber: 4,
@@ -313,7 +316,7 @@ const mockTickets: TicketItem[] = [
     item: '巴黎迪士尼一日雙園',
     type: '門票',
     provider: 'KKday',
-    fileUrl: 'https://drive.google.com/file/d/1PYzDIXNh0Z8_WNWjdMQFxlNzlfC5HTX7/view?usp=drivesdk',
+    fileUrl: 'https://example.com/tickets/disney.pdf',
     notes: '兩張 NTD 6947',
   },
   {
@@ -324,7 +327,7 @@ const mockTickets: TicketItem[] = [
     item: 'TGV 9203 Paris Gare de Lyon → Luzern',
     type: '交通',
     provider: 'TGV Lyria / SBB',
-    fileUrl: 'https://drive.google.com/file/d/1qLBURZcCkg0mGN2J2eTU4xXBgJJHxf_N/view?usp=drivesdk',
+    fileUrl: 'https://example.com/tickets/tgv.pdf',
     notes: '07:22 → 12:05；Basel SBB 轉車',
   },
   {
@@ -335,7 +338,7 @@ const mockTickets: TicketItem[] = [
     item: 'Italo Milano Centrale → Venezia S. Lucia',
     type: '交通',
     provider: 'Italo',
-    fileUrl: 'https://drive.google.com/file/d/1yQ2WttBoa40m0NOGnJXqAEhONuRYGRn1/view?usp=drivesdk',
+    fileUrl: 'https://example.com/tickets/italo-venice.pdf',
     notes: 'Prima Business，車廂1，座位41、42',
   },
   {
@@ -346,12 +349,12 @@ const mockTickets: TicketItem[] = [
     item: 'Italo Venezia S. Lucia → Firenze S.M. Novella',
     type: '交通',
     provider: 'Italo',
-    fileUrl: 'https://drive.google.com/file/d/1xVSI-pTqTb6SxFJV8g3HHuSfU1XMb3WD/view?usp=drivesdk',
+    fileUrl: 'https://example.com/tickets/italo-florence.pdf',
     notes: 'Prima Business，車廂2，座位6、7',
   },
-];
+] : [];
 
-const mockNavigation: NavigationData = {
+const mockNavigation: NavigationData = import.meta.env.DEV ? {
   'Day 1': {
     attractions: [
       { name: 'Heathrow Airport', query: 'Heathrow Airport, London' },
@@ -392,9 +395,9 @@ const mockNavigation: NavigationData = {
       },
     ],
   },
-};
+} : {};
 
-const mockAttractionDetails: AttractionDetails = {
+const mockAttractionDetails: AttractionDetails = import.meta.env.DEV ? {
   'Day 1': {
     title: '倫敦初印象',
     content: '第一天以抵達與調整時差為主，沿著泰晤士河慢慢進入旅程節奏。',
@@ -407,11 +410,11 @@ const mockAttractionDetails: AttractionDetails = {
     title: '琉森湖與山景',
     content: '琉森適合保留天氣彈性，湖船與山區路線可依能見度調整。',
   },
-};
+} : {};
 
 const mockFoodRecommendations: FoodRecommendations = {};
 
-const mockJourneyContent: JourneyContent = {
+const mockJourneyContent: JourneyContent = import.meta.env.DEV ? {
   intro: '這是一趟橫跨歐陸的浪漫蜜月之旅。從倫敦啟程，穿越巴黎的浪漫、瑞士的壯麗山巒，最終在義大利的陽光下畫下完美句點。三十天的旅程，將帶領我們穿梭於中世紀古城與現代都會之間。',
   cities: {
     '倫敦': '踏上這座霧都，我們將在泰晤士河畔開啟這段蜜月之旅。從白金漢宮的皇家氣派，到大英博物館的千年瑰寶，倫敦以她的優雅與深厚文化底蘊，為我們的旅程揭開序幕。',
@@ -421,21 +424,28 @@ const mockJourneyContent: JourneyContent = {
     '米蘭': '米蘭是從山城進入義大利的第一站。大教堂、拱廊與咖啡館讓旅程轉向陽光、設計與義式生活感。',
   },
   closing: '讓我們攜手踏上這段旅程，在歐洲的土地上，寫下屬於我們的永恆篇章。',
-};
+} : { intro: '', cities: {}, closing: '' };
 
 const mockChatHistory: ChatHistoryItem[] = [];
 
-const mockPermission: UserPermission = {
+const mockPermission: UserPermission = import.meta.env.DEV ? {
   email: 'dev@localhost',
   canEdit: true,
-};
+} : { email: null, canEdit: false };
 
 // Wrapper function for GAS API calls
 function callGAS<T>(
-  functionName: string,
+  functionName: ApiOperation | 'getUserPermission',
   mockResponse: T,
   ...args: unknown[]
 ): Promise<T> {
+  if (isWorkerEnvironment) {
+    if (functionName === 'getUserPermission') {
+      return authClient.session() as Promise<T>;
+    }
+    return callWorker<T>(functionName, args);
+  }
+
   return new Promise((resolve, reject) => {
     if (isGASEnvironment) {
       const runner = google.script.run
@@ -469,12 +479,17 @@ export const gasClient = {
   getTodoData: (): Promise<TodoItem[]> =>
     callGAS('getTodoData', mockTodos),
 
-  updateTodoStatus: (rowNumber: number, done: boolean): Promise<ApiResponse> =>
+  updateTodoStatus: (
+    rowNumber: number,
+    done: boolean,
+    expectedItem?: string
+  ): Promise<ApiResponse> =>
     callGAS(
       'updateTodoStatus',
       { success: true, message: '待辦狀態已更新' },
       rowNumber,
-      done
+      done,
+      expectedItem
     ),
 
   // Expenses
@@ -487,8 +502,16 @@ export const gasClient = {
   editExpense: (data: ExpenseItem): Promise<ApiResponse> =>
     callGAS('editExpense', { success: true, message: '修改成功' }, data),
 
-  deleteExpense: (rowNumber: number): Promise<ApiResponse> =>
-    callGAS('deleteExpense', { success: true, message: '已刪除' }, rowNumber),
+  deleteExpense: (
+    rowNumber: number,
+    expected?: Pick<ExpenseItem, 'timestamp' | 'item'>
+  ): Promise<ApiResponse> =>
+    callGAS(
+      'deleteExpense',
+      { success: true, message: '已刪除' },
+      rowNumber,
+      expected
+    ),
 
   // Navigation & Details
   getNavigationData: (): Promise<NavigationData> =>

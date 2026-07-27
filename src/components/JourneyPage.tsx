@@ -112,6 +112,9 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
       const result = await gasClient.generateJourneyIntro(itinerary);
       if (result.success && result.content) {
         onJourneyContentUpdate(result.content);
+        if (result.persisted === false) {
+          alert(result.message || '內容已生成，但尚未儲存');
+        }
       } else {
         alert(result.message || '生成失敗');
       }

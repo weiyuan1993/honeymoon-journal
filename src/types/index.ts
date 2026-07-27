@@ -1,67 +1,27 @@
 import type { Currency, Category } from '@/config/trip.config';
+import type {
+  ChatMessage,
+  ExpenseFormData as SharedExpenseFormData,
+  ExpenseItem as SharedExpenseItem,
+  ItineraryFormData,
+  ItineraryItem,
+  JourneyContent,
+} from '../../shared/apiTypes';
 
-// Itinerary types
-export interface ItineraryItem {
-  rowNumber: number;
-  day: string;
-  date: string;
-  weekday: string;
-  city: string;
-  content: string;
-  transport: string;
-  ticket: string;
-  link: string;
-  hotel: string;
-}
+export type {
+  ApiResponse,
+  ChatHistoryItem,
+  ChatMessage,
+  ItineraryFormData,
+  ItineraryItem,
+  JourneyContent,
+  TicketItem,
+  TodoItem,
+  UserPermission,
+} from '../../shared/apiTypes';
 
-export interface ItineraryFormData {
-  rowNumber: number;
-  city: string;
-  content: string;
-  transport: string;
-  ticket: string;
-  link: string;
-}
-
-// Expense types - using config-derived types
-export interface ExpenseItem {
-  rowNumber: number;
-  timestamp: string;
-  item: string;
-  amount: number;
-  currency: Currency;
-  category: Category;
-}
-
-export interface ExpenseFormData {
-  item: string;
-  amount: string;
-  currency: Currency;
-  category: Category;
-}
-
-// Todo types
-export interface TodoItem {
-  rowNumber: number;
-  section: string;
-  item: string;
-  detail: string;
-  deadline: string;
-  done: boolean;
-}
-
-// Ticket types
-export interface TicketItem {
-  rowNumber: number;
-  day: string;
-  date: string;
-  city: string;
-  item: string;
-  type: string;
-  provider: string;
-  fileUrl: string;
-  notes: string;
-}
+export type ExpenseItem = SharedExpenseItem<Currency, Category>;
+export type ExpenseFormData = SharedExpenseFormData<Currency, Category>;
 
 // Navigation types
 export interface Attraction {
@@ -87,55 +47,25 @@ export type AttractionDetails = Record<string, AttractionDetail>;
 export type PriceLevel = 'budget' | 'mid' | 'high';
 export type FoodRecommendations = Record<string, Partial<Record<PriceLevel, string>>>;
 
-// User permission types
-export interface UserPermission {
-  email: string | null;
-  canEdit: boolean;
-}
-
-// API response types
-export interface ApiResponse {
-  success: boolean;
-  message: string;
-}
-
-// Journey content types
-export interface JourneyContent {
-  intro: string;
-  cities: Record<string, string>; // cityName -> content
-  closing: string;
-}
-
 // AI response types
 export interface AIGenerateResponse {
   success: boolean;
   content?: string;
+  persisted?: boolean;
   message?: string;
 }
 
 export interface JourneyGenerateResponse {
   success: boolean;
   content?: JourneyContent;
+  persisted?: boolean;
   message?: string;
-}
-
-// Chat types for Trip Secretary
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp?: string;
-}
-
-export interface ChatHistoryItem {
-  rowNumber: number;
-  timestamp: string;
-  question: string;
-  answer: string;
 }
 
 export interface ChatResponse {
   success: boolean;
   answer?: string;
+  persisted?: boolean;
   message?: string;
 }
 
@@ -155,11 +85,14 @@ interface GoogleScriptRun {
   editItinerary(form: ItineraryFormData): void;
   getTicketData(): void;
   getTodoData(): void;
-  updateTodoStatus(rowNumber: number, done: boolean): void;
+  updateTodoStatus(rowNumber: number, done: boolean, expectedItem?: string): void;
   getExpenseData(): void;
   saveExpense(formData: ExpenseFormData): void;
   editExpense(data: ExpenseItem): void;
-  deleteExpense(rowNumber: number): void;
+  deleteExpense(
+    rowNumber: number,
+    expected?: Pick<ExpenseItem, 'timestamp' | 'item'>
+  ): void;
   getNavigationData(): void;
   getAttractionDetails(): void;
   getFoodRecommendations(): void;

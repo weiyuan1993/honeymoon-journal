@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { gasClient } from '@/utils/gasClient';
+import { tokenizeLinkedText } from '@/utils/linkifyText';
 import type { PriceLevel } from '@/types';
 
 interface FoodModalProps {
@@ -18,13 +19,6 @@ const priceLevels: { value: PriceLevel; label: string; emoji: string }[] = [
   { value: 'mid', label: '中價位', emoji: '💰💰' },
   { value: 'high', label: '高價位', emoji: '💰💰💰' },
 ];
-
-// Convert URLs in text to clickable links
-function linkifyContent(text: string): string {
-  // Match URLs (http/https)
-  const urlRegex = /(https?:\/\/[^\s\]]+)/g;
-  return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #c5a059; text-decoration: underline;">查看地圖</a>');
-}
 
 export default function FoodModal({
   isOpen,
@@ -72,10 +66,9 @@ export default function FoodModal({
   const displayContent = generatedContent || savedContent;
   const hasContent = !!displayContent;
 
-  // Convert content with links
-  const contentHtml = useMemo(() => {
-    if (!displayContent) return '';
-    return linkifyContent(displayContent);
+  const contentParts = useMemo(() => {
+    if (!displayContent) return [];
+    return tokenizeLinkedText(displayContent);
   }, [displayContent]);
 
   if (!isOpen) return null;
@@ -96,6 +89,9 @@ export default function FoodModal({
       if (result.success && result.content) {
         setGeneratedContent(result.content);
         onFoodGenerated?.();
+        if (result.persisted === false) {
+          setError(result.message || '內容已生成，但尚未儲存');
+        }
       } else {
         setError(result.message || '生成失敗，請稍後再試');
       }
@@ -189,10 +185,23 @@ export default function FoodModal({
               </button>
             </div>
           ) : hasContent ? (
-            <div
-              className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line"
-              dangerouslySetInnerHTML={{ __html: contentHtml }}
-            />
+            <div className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line">
+              {contentParts.map((part, index) =>
+                part.kind === 'link' ? (
+                  <a
+                    key={`${part.value}-${index}`}
+                    href={part.value}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gold underline"
+                  >
+                    查看地圖
+                  </a>
+                ) : (
+                  part.value
+                )
+              )}
+            </div>
           ) : (
             <div className="text-center py-8">
               <p className="font-serif text-gray-400 text-sm mb-4">

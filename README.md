@@ -2,7 +2,7 @@
 
 ![Cover](assets/images/cover.png)
 
-歐洲蜜月旅行日誌 Web App，使用 Google Apps Script 部署，資料儲存於 Google Sheets。
+歐洲蜜月旅行日誌 Web App，資料儲存於 Google Sheets。目前 production 仍由 Google Apps Script 提供；`codex/cloudflare-sheets-api` 分支正在平行驗證 Cloudflare Worker + Google Sheets API 架構。
 
 > **Template 專案**：此專案可作為 template 重複使用，建立其他旅遊日誌。詳見 [SETUP.md](SETUP.md)。
 
@@ -24,9 +24,9 @@
 |------|------|
 | 前端 | React 19 + TypeScript + Tailwind CSS v4 |
 | 建置 | Vite + vite-plugin-singlefile |
-| 後端 | Google Apps Script |
+| 後端 | Cloudflare Worker（新架構）／Google Apps Script（production rollback） |
 | 資料庫 | Google Sheets |
-| 部署 | clasp + GitHub Actions |
+| 部署 | Wrangler／clasp + GitHub Actions |
 
 ## 專案結構
 
@@ -56,10 +56,13 @@
 ├── gas/
 │   ├── Code.js            # GAS 後端程式碼 (含 CONFIG 設定)
 │   └── appsscript.json    # GAS 專案設定
+├── worker/                # Cloudflare API、Google auth、Sheets/Gemini 整合
 ├── scripts/
 │   └── build-gas.js       # 建置後處理腳本
 ├── dist/                  # 建置輸出 (git ignored)
 ├── vite.config.ts
+├── vite.config.ts
+├── wrangler.jsonc
 ├── tsconfig.json
 ├── package.json
 ├── SETUP.md               # 建立新旅遊的說明
@@ -99,6 +102,17 @@ npm run build
 - `Code.js` - 後端程式碼
 - `appsscript.json` - GAS 設定
 
+Cloudflare 版本使用獨立建置，不影響 GAS artifact：
+
+```bash
+npm run type-check
+npm test -- --run
+npm run build:cloudflare
+npm run dev:cloudflare
+```
+
+Cloudflare secrets、preview、staging、cutover 與 rollback 請參考 [部署手冊](docs/deployment-cloudflare.md)。
+
 ### 部署
 
 **方式一：手動部署**
@@ -117,7 +131,7 @@ git commit -m "描述"
 git push
 ```
 
-Push 到 `main` 分支會自動觸發 GitHub Actions 執行建置與部署。
+Push 到 `main` 分支仍會自動觸發 GitHub Actions 部署 GAS。新架構驗證期間，Cloudflare Workers Builds 會在 feature branch push 後自動上傳 read-only preview，不會變更 production；通過驗收後才會另行切換 `main` 的 production build 設定。
 
 Web App deployment 使用已登入的 Google 使用者身分執行：
 
@@ -146,7 +160,7 @@ Web App deployment 使用已登入的 Google 使用者身分執行：
 | Day | Date | City | Item | Type | Provider | File URL | Notes |
 |-----|------|------|------|------|----------|----------|-------|
 
-`Day` 必須對應「行程」分頁的 Day（例如 `Day 8`）。當該天有票券資料時，行程卡右上角票券按鈕會開啟當日票券 Modal。已授權編輯者可以預覽 PDF 與開啟 Drive 檔案；訪客只會看到票券清單，不會載入實際檔案內容。
+`Day` 必須對應「行程」分頁的 Day（例如 `Day 8`）。當該天有票券資料時，行程卡右上角票券按鈕會開啟當日票券 Modal。Cloudflare 版本只有已授權的 Vic／Dora 帳號能從 API 載入票券清單、PDF URL 與 Drive 檔案；訪客不會收到票券資料。
 
 ### 景點介紹 (Attraction Details)
 | Day | Title | Content |
@@ -172,7 +186,7 @@ Web App deployment 使用已登入的 Google 使用者身分執行：
 - **交通規劃**：景點間的移動建議與時間安排
 - **旅遊小提醒**：當地習俗、注意事項
 
-生成的內容會自動儲存至 Google Sheet「景點介紹」分頁，下次開啟直接顯示。
+生成的內容會自動儲存至 Google Sheet「景點規劃」分頁，下次開啟直接顯示。
 
 ### AI 美食推薦
 

@@ -39,6 +39,7 @@ export default function ItineraryCard({
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<ItineraryFormData>({
     rowNumber: item.rowNumber,
+    expectedDay: item.day,
     city: item.city,
     content: item.content,
     transport: item.transport,
@@ -66,6 +67,7 @@ export default function ItineraryCard({
   useEffect(() => {
     setFormData({
       rowNumber: item.rowNumber,
+      expectedDay: item.day,
       city: item.city,
       content: item.content,
       transport: item.transport,
@@ -100,6 +102,7 @@ export default function ItineraryCard({
   const handleCancel = () => {
     setFormData({
       rowNumber: item.rowNumber,
+      expectedDay: item.day,
       city: item.city,
       content: item.content,
       transport: item.transport,

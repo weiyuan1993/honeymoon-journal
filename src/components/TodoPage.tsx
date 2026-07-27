@@ -112,7 +112,11 @@ export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
     setTodoDone(todo.rowNumber, done);
 
     try {
-      const res = await gasClient.updateTodoStatus(todo.rowNumber, done);
+      const res = await gasClient.updateTodoStatus(
+        todo.rowNumber,
+        done,
+        todo.item.replace(/<[^>]*>/g, '')
+      );
       if (!res.success) {
         setTodoDone(todo.rowNumber, previousDone);
         alert(res.message);

@@ -19,6 +19,24 @@ export default function TicketVaultPage({ tickets, canViewTickets }: TicketVault
   ), [tickets, query]);
   const selectedTicket = filteredTickets.find((ticket) => ticket.rowNumber === selectedId) || filteredTickets[0];
 
+  if (!canViewTickets) {
+    return (
+      <div className="ticket-vault animate-fade-in-up">
+        <div className="ticket-vault-heading">
+          <div>
+            <p className="eyebrow">TRAVEL DOCUMENTS</p>
+            <h2>票券庫</h2>
+            <p>票券資訊只開放給授權帳號，請從右上角選單登入。</p>
+          </div>
+        </div>
+        <div className="ticket-private">
+          <strong>票券資料受到保護</strong>
+          <p>登入 Vic 或 Dora 的授權 Google 帳號後，才能載入票券清單與 Drive 文件。</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="ticket-vault animate-fade-in-up">
       <div className="ticket-vault-heading">
@@ -41,10 +59,10 @@ export default function TicketVaultPage({ tickets, canViewTickets }: TicketVault
             <h3>{selectedTicket.item}</h3>
             <p className="ticket-provider">{selectedTicket.type} · {selectedTicket.provider}</p>
             {selectedTicket.notes && <p className="ticket-notes">{selectedTicket.notes}</p>}
-            {canViewTickets ? <>
+            <>
               <a href={selectedTicket.fileUrl} target="_blank" rel="noopener noreferrer" className="ticket-open-link">在 Drive 開啟 ↗</a>
               <iframe title={`${selectedTicket.item} 預覽`} src={getDrivePreviewUrl(selectedTicket.fileUrl)} className="ticket-frame" allow="autoplay" />
-            </> : <div className="ticket-private"><strong>文件內容受到保護</strong><p>目前可確認票券資訊；登入授權帳號後即可預覽及開啟檔案。</p></div>}
+            </>
           </> : <p className="empty-copy">選擇左側票券查看資訊。</p>}
         </aside>
       </div>

@@ -107,7 +107,13 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
 
       if (response.success && response.answer) {
         const assistantMessage: ChatMessage = { role: 'assistant', content: response.answer };
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages(prev => [
+          ...prev,
+          assistantMessage,
+          ...(response.persisted === false
+            ? [{ role: 'assistant' as const, content: response.message || '回答尚未儲存' }]
+            : []),
+        ]);
       } else {
         const errorMessage: ChatMessage = {
           role: 'assistant',

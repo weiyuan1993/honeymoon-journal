@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type {
   ItineraryItem,
   ItineraryFormData,
@@ -10,7 +10,7 @@ import type {
   TicketItem,
 } from '@/types';
 import { tripConfig } from '@/config/trip.config';
-import { gasClient } from '@/utils/gasClient';
+import { gasClient, isGASEnvironment } from '@/utils/gasClient';
 import ItineraryCard from './ItineraryCard';
 import ExpensePage from './ExpensePage';
 import JourneyPage from './JourneyPage';
@@ -19,6 +19,7 @@ import Loading from './Loading';
 import TripSecretaryModal from './TripSecretaryModal';
 import TripDashboard from './TripDashboard';
 import TicketVaultPage from './TicketVaultPage';
+import AuthButton from './AuthButton';
 
 const TAB_IDS = {
   DASHBOARD: 'dashboard',
@@ -192,6 +193,7 @@ export default function App() {
   );
   const loadedDataRef = useRef<Set<LazyDataKey>>(new Set());
   const loadingDataRef = useRef<Set<LazyDataKey>>(new Set());
+  const authEpochRef = useRef(0);
 
   // Sync tab with URL hash and localStorage
   useEffect(() => {
@@ -262,8 +264,10 @@ export default function App() {
   };
 
   const fetchTicketData = async () => {
+    const authEpoch = authEpochRef.current;
     try {
       const data = await gasClient.getTicketData();
+      if (authEpoch !== authEpochRef.current) return;
       setTickets(data || []);
       loadedDataRef.current.add('tickets');
     } catch (error) {
@@ -294,11 +298,31 @@ export default function App() {
   const fetchUserPermission = async () => {
     try {
       const data = await gasClient.getUserPermission();
-      setUserPermission(data || { email: null, canEdit: false });
+      handlePermissionChange(data || { email: null, canEdit: false });
     } catch (error) {
       console.error('Failed to fetch user permission:', error);
     }
   };
+
+  const handlePermissionChange = useCallback((permission: UserPermission) => {
+    authEpochRef.current += 1;
+    setUserPermission(permission);
+    if (!permission.canEdit) {
+      setTickets([]);
+      loadedDataRef.current.delete('tickets');
+      setIsChatOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      handlePermissionChange({ email: null, canEdit: false });
+    };
+    window.addEventListener('honeymoon:session-expired', handleExpiredSession);
+    return () => {
+      window.removeEventListener('honeymoon:session-expired', handleExpiredSession);
+    };
+  }, [handlePermissionChange]);
 
   const fetchJourneyContent = async () => {
     try {
@@ -326,13 +350,22 @@ export default function App() {
     if (tab !== TAB_IDS.DASHBOARD && tab !== TAB_IDS.ITINERARY && tab !== TAB_IDS.TICKETS) return;
 
     loadOnce('itinerary', () => fetchItinerary(tab === TAB_IDS.ITINERARY));
-    loadOnce('tickets', fetchTicketData);
+    if (userPermission.canEdit) {
+      loadOnce('tickets', fetchTicketData);
+    }
     if (tab === TAB_IDS.ITINERARY) {
       loadOnce('navigation', fetchNavigationData);
       loadOnce('attractionDetails', fetchAttractionDetails);
       loadOnce('foodRecommendations', fetchFoodRecommendations);
     }
-  }, [tab]);
+  }, [tab, userPermission.canEdit]);
+
+  useEffect(() => {
+    if (!userPermission.canEdit) return;
+    if (tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.ITINERARY || tab === TAB_IDS.TICKETS) {
+      loadOnce('tickets', fetchTicketData);
+    }
+  }, [userPermission.canEdit, tab]);
 
   useEffect(() => {
     if (tab !== TAB_IDS.JOURNEY) return;
@@ -470,18 +503,20 @@ export default function App() {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
               <div className="absolute right-3 top-full mt-1 z-50 bg-white/95 backdrop-blur-sm border border-gold/20 rounded shadow-xl py-1.5 min-w-[180px]">
-                <a
-                  href={tripConfig.links.googleSheet}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
-                  onClick={() => setShowMenu(false)}
-                >
-                  <svg className="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/>
-                  </svg>
-                  Google Sheet
-                </a>
+                {userPermission.privateLinks?.googleSheet && (
+                  <a
+                    href={userPermission.privateLinks.googleSheet}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <svg className="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/>
+                    </svg>
+                    Google Sheet
+                  </a>
+                )}
                 <a
                   href={tripConfig.links.googleMap}
                   target="_blank"
@@ -495,18 +530,20 @@ export default function App() {
                   </svg>
                   Google Map
                 </a>
-                <a
-                  href={tripConfig.links.ticketFolder}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
-                  onClick={() => setShowMenu(false)}
-                >
-                  <svg className="w-4 h-4 text-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
-                  </svg>
-                  Tickets
-                </a>
+                {userPermission.privateLinks?.ticketFolder && (
+                  <a
+                    href={userPermission.privateLinks.ticketFolder}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <svg className="w-4 h-4 text-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+                    </svg>
+                    Tickets
+                  </a>
+                )}
                 <div className="mx-3 my-1 h-px bg-gold/10" />
                 <a
                   href={tripConfig.links.github}
@@ -520,6 +557,15 @@ export default function App() {
                   </svg>
                   GitHub
                 </a>
+                {!isGASEnvironment && (
+                  <>
+                    <div className="mx-3 my-1 h-px bg-gold/10" />
+                    <AuthButton
+                      permission={userPermission}
+                      onChange={handlePermissionChange}
+                    />
+                  </>
+                )}
               </div>
             </>
           )}
@@ -548,7 +594,7 @@ export default function App() {
 
       <main className={tab === TAB_IDS.JOURNEY ? 'mt-2' : tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.TICKETS ? 'mt-2' : 'max-w-6xl mx-auto p-4 mt-2'}>
         {tab === TAB_IDS.DASHBOARD && (
-          loadingItin ? <Loading /> : <TripDashboard itinerary={itinerary} tickets={tickets} onOpenItinerary={() => setTab(TAB_IDS.ITINERARY)} onOpenTickets={() => setTab(TAB_IDS.TICKETS)} />
+          loadingItin ? <Loading /> : <TripDashboard itinerary={itinerary} tickets={tickets} canViewTickets={userPermission.canEdit} onOpenItinerary={() => setTab(TAB_IDS.ITINERARY)} onOpenTickets={() => setTab(TAB_IDS.TICKETS)} />
         )}
         {tab === TAB_IDS.ITINERARY && (
           <div className="animate-fade-in-up">
@@ -620,13 +666,15 @@ export default function App() {
       </main>
 
       {/* Trip Secretary Modal */}
-      <TripSecretaryModal
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-      />
+      {userPermission.canEdit && (
+        <TripSecretaryModal
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+        />
+      )}
 
       {/* Trip Secretary FAB - small icon in bottom right */}
-      {!isChatOpen && (
+      {userPermission.canEdit && !isChatOpen && (
         <button
           onClick={() => setIsChatOpen(true)}
           className="fixed bottom-16 right-4 z-50 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 animate-sparkle-pulse"

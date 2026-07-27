@@ -74,7 +74,11 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     const oldList = [...list];
     setList(list.filter((item) => item.rowNumber !== rowNumber));
     try {
-      const res = await gasClient.deleteExpense(rowNumber);
+      const target = oldList.find((item) => item.rowNumber === rowNumber);
+      const res = await gasClient.deleteExpense(
+        rowNumber,
+        target ? { timestamp: target.timestamp, item: target.item } : undefined
+      );
       if (!res.success) {
         alert(res.message);
         setList(oldList);

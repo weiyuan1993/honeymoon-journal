@@ -6,6 +6,7 @@ interface TripDashboardProps {
   tickets: TicketItem[];
   onOpenItinerary: () => void;
   onOpenTickets: () => void;
+  canViewTickets: boolean;
 }
 
 const stripHtml = (value: string) => value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
@@ -27,6 +28,7 @@ export default function TripDashboard({
   tickets,
   onOpenItinerary,
   onOpenTickets,
+  canViewTickets,
 }: TripDashboardProps) {
   const cities = useMemo(() => {
     const values = itinerary.map((item) => getPrimaryCityName(item.city)).filter(Boolean);
@@ -65,7 +67,7 @@ export default function TripDashboard({
       <section className="dashboard-stats" aria-label="旅程摘要">
         <article><span>旅程天數</span><strong>{itinerary.length}</strong><small>個行程日</small></article>
         <article><span>造訪城市</span><strong>{cities.length}</strong><small>{cities.slice(0, 3).join(' · ')}{cities.length > 3 ? ' …' : ''}</small></article>
-        <article><span>已收納票券</span><strong>{tickets.length}</strong><small>交通、門票與文件</small></article>
+        <article><span>已收納票券</span><strong>{canViewTickets ? tickets.length : '—'}</strong><small>{canViewTickets ? '交通、門票與文件' : '登入後查看'}</small></article>
         <article><span>跨城移動</span><strong>{departures.length}</strong><small>段已規劃路線</small></article>
       </section>
 
@@ -105,7 +107,8 @@ export default function TripDashboard({
               <small>{ticket.day} · {ticket.city}</small>
             </button>
           ))}
-          {tickets.length === 0 && <p className="empty-copy">尚未收納票券。</p>}
+          {!canViewTickets && <p className="empty-copy">登入授權帳號後查看票券。</p>}
+          {canViewTickets && tickets.length === 0 && <p className="empty-copy">尚未收納票券。</p>}
         </div>
       </section>
     </div>

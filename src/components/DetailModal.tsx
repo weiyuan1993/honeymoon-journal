@@ -57,6 +57,9 @@ export default function DetailModal({
       if (result.success && result.content) {
         setGeneratedContent(result.content);
         onStoryGenerated?.(dayKey, result.content);
+        if (result.persisted === false) {
+          setError(result.message || '內容已生成，但尚未儲存');
+        }
       } else {
         setError(result.message || '生成失敗，請稍後再試');
       }
