@@ -1,10 +1,7 @@
 import type { Currency, Category } from '@/config/trip.config';
 import type {
-  ChatMessage,
   ExpenseFormData as SharedExpenseFormData,
   ExpenseItem as SharedExpenseItem,
-  ItineraryFormData,
-  ItineraryItem,
   JourneyContent,
 } from '../../shared/apiTypes';
 
@@ -68,56 +65,3 @@ export interface ChatResponse {
   persisted?: boolean;
   message?: string;
 }
-
-// Google Apps Script types
-declare global {
-  const google: {
-    script: {
-      run: GoogleScriptRun;
-    };
-  };
-}
-
-interface GoogleScriptRun {
-  withSuccessHandler<T>(handler: (result: T) => void): GoogleScriptRun;
-  withFailureHandler(handler: (error: Error) => void): GoogleScriptRun;
-  getItineraryData(): void;
-  editItinerary(form: ItineraryFormData): void;
-  getTicketData(): void;
-  getTodoData(): void;
-  updateTodoStatus(rowNumber: number, done: boolean, expectedItem?: string): void;
-  getExpenseData(): void;
-  saveExpense(formData: ExpenseFormData): void;
-  editExpense(data: ExpenseItem): void;
-  deleteExpense(
-    rowNumber: number,
-    expected?: Pick<ExpenseItem, 'timestamp' | 'item'>
-  ): void;
-  getNavigationData(): void;
-  getAttractionDetails(): void;
-  getFoodRecommendations(): void;
-  getUserPermission(): void;
-  // AI methods
-  generateAttractionStory(
-    dayKey: string,
-    city: string,
-    itineraryContent: string
-  ): void;
-  suggestItinerary(city: string, date?: string, preferences?: string): void;
-  generateFoodRecommendations(
-    dayKey: string,
-    city: string,
-    itineraryContent: string,
-    priceLevel: 'budget' | 'mid' | 'high'
-  ): void;
-  // Journey methods
-  getJourneyContent(): void;
-  generateJourneyIntro(itinerary: ItineraryItem[]): void;
-  // Chat methods
-  chatWithSecretary(question: string, history: ChatMessage[], useSearch?: boolean): void;
-  getChatHistory(): void;
-  deleteChatHistory(rowNumber: number): void;
-  clearChatHistory(): void;
-}
-
-export {};

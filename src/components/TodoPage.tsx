@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TodoItem } from '@/types';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 import Loading from './Loading';
 
 type TodoFilter = 'all' | 'pending' | 'done';
@@ -36,7 +36,7 @@ export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
   const fetchTodos = async (showBlockingLoading = !hasLoadedRef.current) => {
     if (showBlockingLoading) setLoading(true);
     try {
-      const data = await gasClient.getTodoData();
+      const data = await tripClient.getTodoData();
       setTodos(data || []);
       hasLoadedRef.current = true;
     } catch (error) {
@@ -112,7 +112,7 @@ export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
     setTodoDone(todo.rowNumber, done);
 
     try {
-      const res = await gasClient.updateTodoStatus(
+      const res = await tripClient.updateTodoStatus(
         todo.rowNumber,
         done,
         todo.item.replace(/<[^>]*>/g, '')

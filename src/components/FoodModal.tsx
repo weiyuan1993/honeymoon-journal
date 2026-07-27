@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 import { tokenizeLinkedText } from '@/utils/linkifyText';
 import type { PriceLevel } from '@/types';
 
@@ -79,7 +79,7 @@ export default function FoodModal({
     setError(null);
 
     try {
-      const result = await gasClient.generateFoodRecommendations(
+      const result = await tripClient.generateFoodRecommendations(
         dayKey,
         city,
         itineraryContent,

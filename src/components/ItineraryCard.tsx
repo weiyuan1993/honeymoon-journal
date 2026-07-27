@@ -7,7 +7,7 @@ import type {
   FoodRecommendations,
   TicketItem,
 } from '@/types';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 import DetailModal from './DetailModal';
 import MapModal from './MapModal';
 import FoodModal from './FoodModal';
@@ -86,7 +86,7 @@ export default function ItineraryCard({
     if (!canEdit) return;
     setSaving(true);
     try {
-      const res = await gasClient.editItinerary(formData);
+      const res = await tripClient.editItinerary(formData);
       if (res.success) {
         setIsEditing(false);
         onUpdate(formData);

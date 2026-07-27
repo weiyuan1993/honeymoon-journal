@@ -10,9 +10,6 @@ dist/
 # CSV data files (maintained in Google Sheets)
 *.csv
 
-# Local clasp credentials (sensitive)
-.clasprc.json
-
 # Local Cloudflare runtime secrets
 .dev.vars*
 !.dev.vars.example

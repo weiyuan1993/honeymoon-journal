@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { ExpenseItem as ExpenseItemType, ExpenseFormData } from '@/types';
 import { tripConfig, getCurrencySymbol } from '@/config/trip.config';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 import ExpenseItem from './ExpenseItem';
 import Loading from './Loading';
 
@@ -31,7 +31,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
   const fetchList = async (showBlockingLoading = !hasLoadedRef.current) => {
     if (showBlockingLoading) setLoadingList(true);
     try {
-      const data = await gasClient.getExpenseData();
+      const data = await tripClient.getExpenseData();
       if (data && !('error' in data)) {
         setList(data);
         hasLoadedRef.current = true;
@@ -53,7 +53,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     if (!canEdit) return;
     setStatus('submitting');
     try {
-      const res = await gasClient.saveExpense(formData);
+      const res = await tripClient.saveExpense(formData);
       if (res.success) {
         setStatus('success');
         setFormData({ ...formData, item: '', amount: '' });
@@ -75,7 +75,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     setList(list.filter((item) => item.rowNumber !== rowNumber));
     try {
       const target = oldList.find((item) => item.rowNumber === rowNumber);
-      const res = await gasClient.deleteExpense(
+      const res = await tripClient.deleteExpense(
         rowNumber,
         target ? { timestamp: target.timestamp, item: target.item } : undefined
       );

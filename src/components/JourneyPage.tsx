@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import type { ItineraryItem, JourneyContent } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { cityHeroImages, coverMobileImage } from '@/config/journey.images';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 
 interface JourneyPageProps {
   itinerary: ItineraryItem[];
@@ -109,7 +109,7 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
     }
     setGenerating(true);
     try {
-      const result = await gasClient.generateJourneyIntro(itinerary);
+      const result = await tripClient.generateJourneyIntro(itinerary);
       if (result.success && result.content) {
         onJourneyContentUpdate(result.content);
         if (result.persisted === false) {

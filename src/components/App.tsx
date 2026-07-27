@@ -10,7 +10,7 @@ import type {
   TicketItem,
 } from '@/types';
 import { tripConfig } from '@/config/trip.config';
-import { gasClient, isGASEnvironment } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 import ItineraryCard from './ItineraryCard';
 import ExpensePage from './ExpensePage';
 import JourneyPage from './JourneyPage';
@@ -155,7 +155,7 @@ const getInitialTab = (): TabType => {
   if (isTabType(hash)) {
     return hash;
   }
-  // Then try localStorage (for GAS)
+  // Then try localStorage.
   try {
     const saved = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
     if (isTabType(saved)) {
@@ -204,19 +204,19 @@ export default function App() {
       return next;
     });
 
-    // Save to localStorage (works in GAS)
+    // Save the active tab for the next visit.
     try {
       localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
     } catch {
       // localStorage not available
     }
-    // Also update hash (works in local dev)
+    // Also update the URL hash for navigation.
     if (window.location.hash !== `#${tab}`) {
       window.location.hash = tab;
     }
   }, [tab]);
 
-  // Listen for browser back/forward (local dev only)
+  // Listen for browser back/forward navigation.
   useEffect(() => {
     const handleHashChange = () => {
       setTab(getInitialTab());
@@ -243,7 +243,7 @@ export default function App() {
   const fetchItinerary = async (showBlockingLoading = true) => {
     if (showBlockingLoading) setLoadingItin(true);
     try {
-      const data = await gasClient.getItineraryData();
+      const data = await tripClient.getItineraryData();
       setItinerary(data);
       loadedDataRef.current.add('itinerary');
     } catch (error) {
@@ -255,7 +255,7 @@ export default function App() {
 
   const fetchNavigationData = async () => {
     try {
-      const data = await gasClient.getNavigationData();
+      const data = await tripClient.getNavigationData();
       setNavigationData(data || {});
       loadedDataRef.current.add('navigation');
     } catch (error) {
@@ -266,7 +266,7 @@ export default function App() {
   const fetchTicketData = async () => {
     const authEpoch = authEpochRef.current;
     try {
-      const data = await gasClient.getTicketData();
+      const data = await tripClient.getTicketData();
       if (authEpoch !== authEpochRef.current) return;
       setTickets(data || []);
       loadedDataRef.current.add('tickets');
@@ -277,7 +277,7 @@ export default function App() {
 
   const fetchAttractionDetails = async () => {
     try {
-      const data = await gasClient.getAttractionDetails();
+      const data = await tripClient.getAttractionDetails();
       setAttractionDetails(data || {});
       loadedDataRef.current.add('attractionDetails');
     } catch (error) {
@@ -287,7 +287,7 @@ export default function App() {
 
   const fetchFoodRecommendations = async () => {
     try {
-      const data = await gasClient.getFoodRecommendations();
+      const data = await tripClient.getFoodRecommendations();
       setFoodRecommendations(data || {});
       loadedDataRef.current.add('foodRecommendations');
     } catch (error) {
@@ -297,7 +297,7 @@ export default function App() {
 
   const fetchUserPermission = async () => {
     try {
-      const data = await gasClient.getUserPermission();
+      const data = await tripClient.getUserPermission();
       handlePermissionChange(data || { email: null, canEdit: false });
     } catch (error) {
       console.error('Failed to fetch user permission:', error);
@@ -326,7 +326,7 @@ export default function App() {
 
   const fetchJourneyContent = async () => {
     try {
-      const data = await gasClient.getJourneyContent();
+      const data = await tripClient.getJourneyContent();
       if (data && data.intro) setJourneyContent(data);
       loadedDataRef.current.add('journeyContent');
     } catch (error) {
@@ -557,15 +557,11 @@ export default function App() {
                   </svg>
                   GitHub
                 </a>
-                {!isGASEnvironment && (
-                  <>
-                    <div className="mx-3 my-1 h-px bg-gold/10" />
-                    <AuthButton
-                      permission={userPermission}
-                      onChange={handlePermissionChange}
-                    />
-                  </>
-                )}
+                <div className="mx-3 my-1 h-px bg-gold/10" />
+                <AuthButton
+                  permission={userPermission}
+                  onChange={handlePermissionChange}
+                />
               </div>
             </>
           )}

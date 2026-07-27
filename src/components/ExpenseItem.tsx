@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ExpenseItem as ExpenseItemType } from '@/types';
 import { tripConfig } from '@/config/trip.config';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 
 interface ExpenseItemProps {
   data: ExpenseItemType;
@@ -59,7 +59,7 @@ export default function ExpenseItem({
     if (!canEdit) return;
     setSaving(true);
     try {
-      const res = await gasClient.editExpense(editForm as ExpenseItemType);
+      const res = await tripClient.editExpense(editForm as ExpenseItemType);
       if (res.success) {
         setIsEditing(false);
         onUpdate(editForm as ExpenseItemType);

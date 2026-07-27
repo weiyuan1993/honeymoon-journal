@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { AttractionDetail } from '@/types';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 
 interface DetailModalProps {
   isOpen: boolean;
@@ -48,7 +48,7 @@ export default function DetailModal({
     setError(null);
 
     try {
-      const result = await gasClient.generateAttractionStory(
+      const result = await tripClient.generateAttractionStory(
         dayKey,
         city,
         itineraryContent

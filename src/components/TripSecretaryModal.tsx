@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ChatMessage } from '@/types';
-import { gasClient } from '@/utils/gasClient';
+import { tripClient } from '@/utils/tripClient';
 
 interface TripSecretaryModalProps {
   isOpen: boolean;
@@ -41,7 +41,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
     const loadHistory = async () => {
       setIsLoadingHistory(true);
       try {
-        const history = await gasClient.getChatHistory();
+        const history = await tripClient.getChatHistory();
         if (cancelled) return;
 
         if (history.length === 0) {
@@ -103,7 +103,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
         content: msg.content,
       }));
 
-      const response = await gasClient.chatWithSecretary(question, history, useSearch);
+      const response = await tripClient.chatWithSecretary(question, history, useSearch);
 
       if (response.success && response.answer) {
         const assistantMessage: ChatMessage = { role: 'assistant', content: response.answer };
@@ -146,7 +146,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
 
   const handleClearHistory = async () => {
     try {
-      const res = await gasClient.clearChatHistory();
+      const res = await tripClient.clearChatHistory();
       if (res.success) {
         setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
       } else {

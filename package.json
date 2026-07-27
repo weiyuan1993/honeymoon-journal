@@ -5,14 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && node scripts/build-gas.js",
-    "build:cloudflare": "npm run type-check && vite build",
-    "dev:cloudflare": "npm run build:cloudflare && wrangler dev",
+    "build": "npm run type-check && vite build",
+    "build:cloudflare": "npm test -- --run && npm run build",
+    "dev:cloudflare": "npm run build && wrangler dev",
+    "deploy": "npm run build:cloudflare && wrangler deploy",
     "preview": "vite preview",
     "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json",
-    "test": "vitest",
-    "push": "npm run build && clasp push --force",
-    "deploy": "npm run push && clasp deploy -i \"$DEPLOYMENT_ID\" -d \"Manual deploy\""
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +29,6 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "@cloudflare/workers-types": "^5.20260727.1",
-    "@types/google-apps-script": "^2.0.8",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
@@ -39,7 +37,6 @@
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
-    "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^4.1.10",
     "wrangler": "^4.114.0"
   }

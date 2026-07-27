@@ -1,105 +1,92 @@
 # AGENTS.md
 
-This file provides guidance to coding agents, including Codex, when working in this repository.
+This file provides guidance to coding agents working in this repository.
 
-## Project Overview
+## Project overview
 
-A travel journal web app for honeymoon trip planning. The production runtime is a Cloudflare Worker with a React frontend and Google Sheets as the database. The former Google Apps Script deployment is retained as a temporary rollback path. Designed as a reusable template.
+A Cloudflare-hosted travel journal for honeymoon planning. A React SPA and `/api/*` are served from one Cloudflare Worker. Google Sheets is the production database and Gemini powers AI features.
 
-## Primary Travel Data Source
+## Primary travel data source
 
-The source of truth for this specific honeymoon project is the Google Sheet, not local mock data or checked-in files. Current itinerary, hotels, costs, todos, packing notes, references, and comparison tables should be read from Google Sheets through MCP before answering travel-planning questions or making data updates.
+The source of truth for this honeymoon is the live Google Sheet, not local mock data or checked-in files.
 
 - Spreadsheet ID: `1sd5CVy0qd4QSuOUUDnQH6I1Mx2F2W1NvgWVbujcePiU`
-- Sheet URL is configured in `src/config/trip.config.ts` under `tripConfig.links.googleSheet`
-- Project-local MCP config lives at `.codex/config.toml`
-- This project intentionally enables only the `google-sheets` MCP server; other MCP servers are disabled locally
-- Do not store or print credential contents. Credentials are referenced by path in `.codex/config.toml`
+- Production Sheet ID is provided through the `GOOGLE_SHEET_ID` Worker secret
+- Project-local MCP config: `.codex/config.toml`
+- Only the `google-sheets` MCP server is enabled locally
+- Never store or print credential contents
 
-When working with travel information:
+For travel information:
 
-1. Use Google Sheets MCP first, especially `list_sheets`, `get_sheet_data`, `get_multiple_sheet_data`, `update_cells`, and `batch_update_cells`.
-2. Read the relevant tab/range before drawing conclusions. Important planning tabs include `行程`, `住宿`, `費用`, `待辦`, `攜帶`, `記帳`, `參考資料`, `費用比較`, `旅程介紹`, `美食推薦`, `導航`, `景點規劃`, and `AI秘書對話`.
-3. After updating sheet data, re-read the changed range or related totals to verify the update.
-4. Local dev mock data is only for UI development and may be stale. Do not use mock data as evidence for current plans, prices, bookings, or itinerary feasibility.
+1. Use Google Sheets MCP first.
+2. Read the relevant tab and range before drawing conclusions.
+3. Re-read changed ranges or totals after updates.
+4. Never use local mock data as evidence for live plans, prices or bookings.
+
+Important tabs include `行程`, `住宿`, `費用`, `待辦`, `攜帶`, `記帳`, `票券`, `參考資料`, `費用比較`, `旅程介紹`, `美食推薦`, `導航`, `景點規劃`, and `AI秘書對話`.
 
 ## Commands
 
 ```bash
-npm run dev      # Local development with mock data (http://localhost:5173)
-npm run build:cloudflare # Type-check and build the Cloudflare production artifact
-npm run dev:cloudflare   # Build and run the Worker locally
-npm run build            # Build the legacy GAS rollback artifact
-npm run deploy           # Manually deploy the legacy GAS rollback
+npm run dev              # Vite with mock data
+npm run dev:cloudflare   # Production build through local Worker
+npm run type-check       # Frontend and Worker TypeScript
+npm test -- --run        # Test suite
+npm run build            # Production Static Assets build
+npm run deploy           # Manual Cloudflare deployment
 ```
 
-Auto-deploy: Cloudflare Workers Builds deploys the configured production branch to `honeymoon-journal`. During migration that branch is `codex/cloudflare-sheets-api`; switch it to `main` after merge. Pushes to `main` also continue to deploy the GAS rollback through GitHub Actions until that legacy deployment is retired.
+Cloudflare Workers Builds automatically deploys pushes to `main`.
 
 ## Architecture
 
-### Frontend (src/)
-- **React 19 + TypeScript + Tailwind CSS v4** single-page application
-- Built with Vite
-- `gasClient.ts` selects the Cloudflare `/api/*` transport in production, the GAS transport on the rollback deployment, and mock data for local Vite development
+### Frontend
 
-### Production backend (worker/)
-- Cloudflare Worker serves the SPA and `/api/*` from one origin
-- Uses Google Sheets API through a service account
-- Uses Google OAuth ID tokens plus signed session cookies for Vic and Dora
-- Enforces public read-only access and editor-only tickets, writes, and AI operations
-- Integrates Google Gemini API and preserves Sheet-backed AI caches
+- React 19, TypeScript and Tailwind CSS v4
+- `src/utils/tripClient.ts` uses Worker APIs in production and mock data in Vite development
+- `src/utils/apiClient.ts` owns HTTP, auth and error handling
 
-### Rollback backend (gas/)
-- **Code.js**: retained Google Apps Script server functions called via `google.script.run`
-- Reads/writes to Google Sheets tabs: 行程, 記帳, 景點規劃, 導航, 美食推薦, 旅程介紹, AI秘書對話
-- Integrates Google Gemini API for AI features (景點故事, 美食推薦, 旅程介紹, AI秘書對話)
+### Worker
 
-### Data Flow
-```
-React Components → gasClient.ts → /api/* → Cloudflare Worker → Google Sheets API
-                     ├─ GAS rollback → google.script.run → Code.js
-                     └─ local Vite development → mock data
+- `worker/index.ts` routes auth and RPC requests
+- `worker/policy.ts` enforces same-origin mutations and editor authorization
+- `worker/sheets.ts` and `worker/tripRepository.ts` access Google Sheets
+- `worker/gemini.ts` and `worker/tripService.ts` implement AI features
+- `shared/` defines frontend/Worker operation and response contracts
+
+### Data flow
+
+```text
+React -> /api/auth/* or /api/rpc/* -> Cloudflare Worker
+                                      -> Google Sheets API
+                                      -> Gemini API
 ```
 
-### Key Files to Modify for New Trips
-| File | Purpose |
-|------|---------|
-| `src/config/trip.config.ts` | App title, currencies, categories, external links |
-| `worker/tripRepository.ts` | Production Sheet names and data mapping |
-| `wrangler.jsonc` | Production Worker name, assets, and non-secret variables |
-| Cloudflare Worker secrets | Sheet, OAuth, editor, session, ticket, and Gemini credentials |
-| `gas/Code.js` CONFIG object | Legacy rollback page title and sheet names |
+## Access model
 
-## Google Sheets Structure
+- Public users can read non-sensitive itinerary content.
+- Only allowlisted Google accounts receive editor sessions.
+- Tickets, private links, mutations and AI operations require an authorized editor.
+- Drive permissions independently protect ticket files.
+- Successful mutations invalidate public read caches.
 
-Use MCP to inspect the live spreadsheet because planning tabs may evolve over time. The production web runtime uses the tab names configured in `worker/tripRepository.ts`; the rollback runtime uses `gas/Code.js`. Broader trip planning also uses additional tabs.
+## Configuration
 
-| Tab | Columns |
-|-----|---------|
-| 行程 | Day, Date, Weekday, City, Content, Transport, Ticket, Link, Hotel |
-| 記帳 | Timestamp, Item, Amount, Currency, Category |
-| 費用 | Budget/cost planning; inspect live columns with MCP |
-| 費用比較 | Scenario and pass/ticket comparison; inspect live columns with MCP |
-| 住宿 | Hotel/lodging planning; inspect live columns with MCP |
-| 待辦 | Booking and planning todos; inspect live columns with MCP |
-| 攜帶 | Packing notes; inspect live columns with MCP |
-| 參考資料 | Research links and notes; inspect live columns with MCP |
-| 景點規劃 | Day, Title, Content |
-| 導航 | Day, Name, Google Maps Query |
-| 美食推薦 | Day, City, PriceLevel, Content, UpdatedAt |
-| 旅程介紹 | Type (intro/city:name/closing), Content, UpdatedAt |
-| AI秘書對話 | Timestamp, Question, Answer |
+| File or setting | Purpose |
+|-----------------|---------|
+| `src/config/trip.config.ts` | Trip title, currencies, categories and public links |
+| `worker/tripRepository.ts` | Sheet tab names and data mapping |
+| `wrangler.jsonc` | Worker name, Static Assets and non-secret model settings |
+| Cloudflare Worker secrets | Sheet, OAuth, editor, session, ticket and Gemini credentials |
 
-## Important Patterns
-
-- Cloudflare authorization checks every non-public RPC operation against the signed editor session
-- Public Sheet reads are cached; successful mutations invalidate the related public cache
-- The GAS rollback preserves rich text hyperlinks via `getRichTextValues()` → `convertRichTextToHtml()`
-- AI content auto-saves to sheets for caching
-- Types in `src/types/index.ts` must match both Worker and GAS rollback responses
+Types in `shared/` and `src/types/index.ts` must remain aligned with Worker responses.
 
 ## Deployment
 
-Production uses Cloudflare Workers Builds with `npm run build:cloudflare` and `npx wrangler deploy`. Runtime credentials are encrypted Worker secrets and must never be committed. See `docs/deployment-cloudflare.md`.
+- Production Worker: `honeymoon-journal`
+- Production branch: `main`
+- Build: `npm run build:cloudflare`
+- Deploy: `npx wrangler deploy`
+- Runtime credentials must stay in encrypted Worker secrets
 
-The GAS rollback requires authenticated `clasp`; its GitHub Actions workflow uses `CLASPRC_JSON` and `DEPLOYMENT_ID` secrets.
+See `docs/deployment.md`.

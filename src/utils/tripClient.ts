@@ -20,10 +20,6 @@ import type {
 import { authClient, callWorker } from '@/utils/apiClient';
 import type { ApiOperation } from '../../shared/apiOperations';
 
-// Check if running in Google Apps Script environment
-export const isGASEnvironment = typeof google !== 'undefined' && google?.script?.run;
-const isWorkerEnvironment = !isGASEnvironment && import.meta.env.PROD;
-
 // Mock data for local development
 const mockItinerary: ItineraryItem[] = import.meta.env.DEV ? [
   {
@@ -433,58 +429,46 @@ const mockPermission: UserPermission = import.meta.env.DEV ? {
   canEdit: true,
 } : { email: null, canEdit: false };
 
-// Wrapper function for GAS API calls
-function callGAS<T>(
+function callTripApi<T>(
   functionName: ApiOperation | 'getUserPermission',
   mockResponse: T,
   ...args: unknown[]
 ): Promise<T> {
-  if (isWorkerEnvironment) {
+  if (import.meta.env.PROD) {
     if (functionName === 'getUserPermission') {
       return authClient.session() as Promise<T>;
     }
     return callWorker<T>(functionName, args);
   }
 
-  return new Promise((resolve, reject) => {
-    if (isGASEnvironment) {
-      const runner = google.script.run
-        .withSuccessHandler((result: T) => resolve(result))
-        .withFailureHandler((error: Error) => reject(error));
-
-      // Call the function with arguments
-      (runner as unknown as Record<string, (...args: unknown[]) => void>)[functionName](...args);
-    } else {
-      // Development mode - return mock data after a small delay
-      console.log(`[DEV] Mock call to ${functionName}:`, args);
-      setTimeout(() => resolve(mockResponse), 300);
-    }
+  return new Promise((resolve) => {
+    console.log(`[DEV] Mock call to ${functionName}:`, args);
+    setTimeout(() => resolve(mockResponse), 300);
   });
 }
 
-// API Client
-export const gasClient = {
+export const tripClient = {
   // Itinerary
   getItineraryData: (): Promise<ItineraryItem[]> =>
-    callGAS('getItineraryData', mockItinerary),
+    callTripApi('getItineraryData', mockItinerary),
 
   editItinerary: (form: ItineraryFormData): Promise<ApiResponse> =>
-    callGAS('editItinerary', { success: true, message: '行程已更新' }, form),
+    callTripApi('editItinerary', { success: true, message: '行程已更新' }, form),
 
   // Tickets
   getTicketData: (): Promise<TicketItem[]> =>
-    callGAS('getTicketData', mockTickets),
+    callTripApi('getTicketData', mockTickets),
 
   // Todos
   getTodoData: (): Promise<TodoItem[]> =>
-    callGAS('getTodoData', mockTodos),
+    callTripApi('getTodoData', mockTodos),
 
   updateTodoStatus: (
     rowNumber: number,
     done: boolean,
     expectedItem?: string
   ): Promise<ApiResponse> =>
-    callGAS(
+    callTripApi(
       'updateTodoStatus',
       { success: true, message: '待辦狀態已更新' },
       rowNumber,
@@ -494,19 +478,19 @@ export const gasClient = {
 
   // Expenses
   getExpenseData: (): Promise<ExpenseItem[]> =>
-    callGAS('getExpenseData', mockExpenses),
+    callTripApi('getExpenseData', mockExpenses),
 
   saveExpense: (formData: ExpenseFormData): Promise<ApiResponse> =>
-    callGAS('saveExpense', { success: true, message: '記帳成功！' }, formData),
+    callTripApi('saveExpense', { success: true, message: '記帳成功！' }, formData),
 
   editExpense: (data: ExpenseItem): Promise<ApiResponse> =>
-    callGAS('editExpense', { success: true, message: '修改成功' }, data),
+    callTripApi('editExpense', { success: true, message: '修改成功' }, data),
 
   deleteExpense: (
     rowNumber: number,
     expected?: Pick<ExpenseItem, 'timestamp' | 'item'>
   ): Promise<ApiResponse> =>
-    callGAS(
+    callTripApi(
       'deleteExpense',
       { success: true, message: '已刪除' },
       rowNumber,
@@ -515,17 +499,17 @@ export const gasClient = {
 
   // Navigation & Details
   getNavigationData: (): Promise<NavigationData> =>
-    callGAS('getNavigationData', mockNavigation),
+    callTripApi('getNavigationData', mockNavigation),
 
   getAttractionDetails: (): Promise<AttractionDetails> =>
-    callGAS('getAttractionDetails', mockAttractionDetails),
+    callTripApi('getAttractionDetails', mockAttractionDetails),
 
   getFoodRecommendations: (): Promise<FoodRecommendations> =>
-    callGAS('getFoodRecommendations', mockFoodRecommendations),
+    callTripApi('getFoodRecommendations', mockFoodRecommendations),
 
   // User Permission
   getUserPermission: (): Promise<UserPermission> =>
-    callGAS('getUserPermission', mockPermission),
+    callTripApi('getUserPermission', mockPermission),
 
   // AI Features
   generateAttractionStory: (
@@ -533,7 +517,7 @@ export const gasClient = {
     city: string,
     itineraryContent: string
   ): Promise<AIGenerateResponse> =>
-    callGAS(
+    callTripApi(
       'generateAttractionStory',
       {
         success: true,
@@ -550,7 +534,7 @@ export const gasClient = {
     date?: string,
     preferences?: string
   ): Promise<AIGenerateResponse> =>
-    callGAS(
+    callTripApi(
       'suggestItinerary',
       {
         success: true,
@@ -568,7 +552,7 @@ export const gasClient = {
     itineraryContent: string,
     priceLevel: 'budget' | 'mid' | 'high'
   ): Promise<AIGenerateResponse> =>
-    callGAS(
+    callTripApi(
       'generateFoodRecommendations',
       {
         success: true,
@@ -583,10 +567,10 @@ export const gasClient = {
 
   // Journey
   getJourneyContent: (): Promise<JourneyContent | null> =>
-    callGAS('getJourneyContent', null),
+    callTripApi('getJourneyContent', null),
 
   generateJourneyIntro: (itinerary: ItineraryItem[]): Promise<JourneyGenerateResponse> =>
-    callGAS(
+    callTripApi(
       'generateJourneyIntro',
       {
         success: true,
@@ -597,7 +581,7 @@ export const gasClient = {
 
   // Chat methods
   chatWithSecretary: (question: string, history: ChatMessage[], useSearch = false): Promise<ChatResponse> =>
-    callGAS(
+    callTripApi(
       'chatWithSecretary',
       {
         success: true,
@@ -609,13 +593,13 @@ export const gasClient = {
     ),
 
   getChatHistory: (): Promise<ChatHistoryItem[]> =>
-    callGAS('getChatHistory', mockChatHistory),
+    callTripApi('getChatHistory', mockChatHistory),
 
   deleteChatHistory: (rowNumber: number): Promise<ApiResponse> =>
-    callGAS('deleteChatHistory', { success: true, message: '已刪除' }, rowNumber),
+    callTripApi('deleteChatHistory', { success: true, message: '已刪除' }, rowNumber),
 
   clearChatHistory: (): Promise<ApiResponse> =>
-    callGAS('clearChatHistory', { success: true, message: '已清除所有對話記錄' }),
+    callTripApi('clearChatHistory', { success: true, message: '已清除所有對話記錄' }),
 };
 
-export default gasClient;
+export default tripClient;

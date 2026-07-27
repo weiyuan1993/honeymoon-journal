@@ -2,229 +2,127 @@
 
 ![Cover](assets/images/cover.png)
 
-歐洲蜜月旅行日誌 Web App，資料儲存於 Google Sheets。目前 production 由 Cloudflare Worker + Google Sheets API 提供；Google Apps Script 暫時保留作為 rollback。
-
-> **Template 專案**：此專案可作為 template 重複使用，建立其他旅遊日誌。詳見 [SETUP.md](SETUP.md)。
+以 Google Sheets 為資料來源的歐洲蜜月旅行日誌。React 前端與 API 由同一個 Cloudflare Worker 提供，支援桌面與手機瀏覽。
 
 ## 功能
 
-- **行程瀏覽**：依天數瀏覽詳細行程，支援城市快速跳轉
-- **AI 景點規劃**：使用 Google Gemini API 生成景點故事與交通規劃
-- **AI 美食推薦**：依價位（平價/中價位/高價位）推薦當地美食，附 Google Maps 連結
-- **景點地圖**：Google Maps 整合，支援導航
-- **票券預覽**：從 Google Sheet「票券」分頁讀取雲端 PDF，行程卡可直接開啟當日票券預覽
-- **記帳功能**：多幣別記帳（EUR、CHF、GBP、TWD）
-- **待辦事項**：可在 Web App 勾選並同步 Google Sheet
-- **權限控制**：僅授權帳號可編輯
-- **選單連結**：快速存取 Google Sheet、Google Map、票券 Drive 資料夾與 GitHub
+- 行程總覽、每日詳情與城市快速跳轉
+- 多幣別花費統計與記帳
+- 待辦事項同步 Google Sheets
+- Google Maps 導航
+- Gemini 景點故事、美食推薦、行程建議與旅遊助理
+- 授權帳號專用的票券、Sheet 連結、編輯與 AI 功能
+- 公開訪客只能讀取非敏感行程資料
 
-## 技術架構
+## Production
 
-| 層級 | 技術 |
-|------|------|
-| 前端 | React 19 + TypeScript + Tailwind CSS v4 |
-| 建置 | Vite + vite-plugin-singlefile |
-| 後端 | Cloudflare Worker（production）／Google Apps Script（rollback） |
-| 資料庫 | Google Sheets |
-| 部署 | Wrangler／clasp + GitHub Actions |
+- Website: [honeymoon-journal.ab889721.workers.dev](https://honeymoon-journal.ab889721.workers.dev)
+- Runtime: Cloudflare Workers + Static Assets
+- Database: Google Sheets API
+- Authentication: Google Identity Services + signed session cookie
+- AI: Google Gemini API
+- Deployment: Cloudflare Workers Builds from `main`
 
-## 專案結構
+## Architecture
 
-```
-├── src/
-│   ├── config/
-│   │   └── trip.config.ts # 旅遊設定 (標題、幣別、類別)
-│   ├── components/        # React 元件
-│   │   ├── App.tsx
-│   │   ├── ItineraryCard.tsx
-│   │   ├── ExpensePage.tsx
-│   │   ├── ExpenseItem.tsx
-│   │   ├── DetailModal.tsx   # AI 景點規劃 Modal
-│   │   ├── FoodModal.tsx     # AI 美食推薦 Modal
-│   │   ├── TicketModal.tsx   # 票券預覽 Modal
-│   │   ├── MapModal.tsx
-│   │   ├── TodoPage.tsx
-│   │   └── Loading.tsx
-│   ├── utils/
-│   │   └── gasClient.ts   # Worker/GAS API transport + 本機 mock
-│   ├── types/
-│   │   └── index.ts       # TypeScript 型別定義
-│   ├── styles/
-│   │   └── index.css      # Tailwind 設定 + 自訂樣式
-│   ├── main.tsx           # 進入點
-│   └── index.html         # HTML 模板
-├── gas/
-│   ├── Code.js            # GAS 後端程式碼 (含 CONFIG 設定)
-│   └── appsscript.json    # GAS 專案設定
-├── worker/                # Cloudflare API、Google auth、Sheets/Gemini 整合
-├── scripts/
-│   └── build-gas.js       # 建置後處理腳本
-├── dist/                  # 建置輸出 (git ignored)
-├── vite.config.ts
-├── vite.config.ts
-├── wrangler.jsonc
-├── tsconfig.json
-├── package.json
-├── SETUP.md               # 建立新旅遊的說明
-└── .clasp.json            # clasp 設定 (指向 dist/)
+```text
+React SPA
+  -> /api/auth/*          Google login and session
+  -> /api/rpc/*           trip operations
+  -> Cloudflare Worker
+       -> Google Sheets API
+       -> Gemini API
 ```
 
-## 開發流程
+The Worker enforces the access boundary:
 
-### 環境需求
+- `public:read`: anonymous itinerary and public planning content
+- `private:read`: tickets and private links
+- `private:write`: itinerary, todo, expense and chat mutations
+- `private:ai`: Gemini generation and assistant chat
 
-- Node.js 20+
-- npm
-- Google 帳號 (已授權 clasp)
+## Project structure
 
-### 安裝
+```text
+src/                       React application
+  components/              pages, modals and controls
+  config/                  trip-specific frontend settings
+  utils/apiClient.ts       HTTP and authentication transport
+  utils/tripClient.ts      trip API facade and local mock data
+shared/                    frontend/Worker API contracts
+worker/                    auth, policy, Sheets and Gemini backend
+worker/__tests__/          Worker behavior and authorization tests
+docs/deployment.md         production deployment runbook
+wrangler.jsonc             Worker and Static Assets configuration
+```
+
+## Local development
+
+Requirements: Node.js 20+ and npm.
 
 ```bash
 npm install
-```
-
-### 本機開發
-
-```bash
 npm run dev
 ```
 
-開啟 http://localhost:5173 預覽。本機開發使用 mock 資料。
+`npm run dev` opens `http://localhost:5173` with local mock data.
 
-### 建置
+To run the complete Worker locally:
 
 ```bash
-npm run build
+cp .dev.vars.example .dev.vars
+# Fill the local secrets in .dev.vars
+npm run dev:cloudflare
 ```
 
-輸出至 `dist/` 資料夾，包含：
-- `Index.html` - 打包後的前端（單一 HTML 檔案）
-- `Code.js` - 後端程式碼
-- `appsscript.json` - GAS 設定
+Never commit `.dev.vars` or downloaded service-account JSON files.
 
-Cloudflare production 使用獨立建置，不影響 GAS rollback artifact：
+## Verification
 
 ```bash
 npm run type-check
 npm test -- --run
-npm run build:cloudflare
-npm run dev:cloudflare
+npm run build
+npx wrangler deploy --dry-run
 ```
 
-Cloudflare secrets、共用正式 Sheet 驗證與 rollback 請參考 [部署手冊](docs/deployment-cloudflare.md)。
+`npm run build:cloudflare` runs the high-value test suite before the production build. Cloudflare Builds uses this command as the promotion gate.
 
-### 部署
+## Deployment
 
-**GAS rollback：手動部署**
+Cloudflare Workers Builds watches `main`:
+
+- Build command: `npm run build:cloudflare`
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/`
+- Non-production branch builds: disabled
+
+Every push to `main` deploys a new version to the same production URL.
+
+For a manual deployment:
+
 ```bash
-# 只推送程式碼到 Apps Script
-npm run push
-
-# 推送並更新既有 Web App deployment
-DEPLOYMENT_ID=<your-deployment-id> npm run deploy
+npm run deploy
 ```
 
-**Cloudflare production：Git 自動部署**
-```bash
-git add .
-git commit -m "描述"
-git push
-```
+Runtime credentials are encrypted Worker secrets. See [docs/deployment.md](docs/deployment.md) for setup, verification and rollback.
 
-Push 到 `main` 分支仍會自動觸發 GitHub Actions 部署 GAS。Cloudflare Workers Builds 目前從 `codex/cloudflare-sheets-api` 自動部署唯一的 production Worker；它與 GAS 共用正式 Sheet，授權帳號的寫入會立即反映在正式資料。遷移分支合併後，再將 Cloudflare production branch 切換為 `main`。
+## Google Sheets tabs
 
-GAS rollback Web App deployment 使用已登入的 Google 使用者身分執行：
+| Tab | Columns |
+|-----|---------|
+| 行程 | Day, Date, Weekday, City, Content, Transport, Ticket, Link, Hotel |
+| 記帳 | Timestamp, Item, Amount, Currency, Category |
+| 待辦 | Section, Item, Detail, Deadline, Done |
+| 票券 | Day, Date, City, Item, Type, Provider, File URL, Notes |
+| 景點規劃 | Day, Title, Content |
+| 導航 | Day, Name, Google Maps Query |
+| 美食推薦 | Day, City, PriceLevel, Content, UpdatedAt |
+| 旅程介紹 | Type, Content, UpdatedAt |
+| AI秘書對話 | Timestamp, Question, Answer |
 
-- `executeAs`: `USER_ACCESSING`
-- `access`: `ANYONE`
+The live Sheet is the source of truth. Ticket files remain protected by their Google Drive permissions in addition to the website login.
 
-使用者需要登入 Google；可編輯者 email 需加入 Apps Script `AUTHORIZED_EDITORS` Script Property。
+## Create another trip
 
-## Google Sheets 結構
-
-### 行程 (Itinerary)
-| Day | Date | Weekday | City | Content | Transport | Ticket | Link | Hotel |
-|-----|------|---------|------|---------|-----------|--------|------|-------|
-
-### 記帳 (Expenses)
-| Timestamp | Item | Amount | Currency | Category |
-|-----------|------|--------|----------|----------|
-
-### 待辦 (Todos)
-| Section | Item | Detail | Deadline | Done |
-|---------|------|--------|----------|------|
-
-`Done` 使用 checkbox / boolean，Web App 會同步勾選狀態。
-
-### 票券 (Tickets)
-| Day | Date | City | Item | Type | Provider | File URL | Notes |
-|-----|------|------|------|------|----------|----------|-------|
-
-`Day` 必須對應「行程」分頁的 Day（例如 `Day 8`）。當該天有票券資料時，行程卡右上角票券按鈕會開啟當日票券 Modal。Cloudflare 版本只有已授權的 Vic／Dora 帳號能從 API 載入票券清單、PDF URL 與 Drive 檔案；訪客不會收到票券資料。
-
-### 景點介紹 (Attraction Details)
-| Day | Title | Content |
-|-----|-------|---------|
-
-### 導航 (Navigation)
-| Day | Name | Google Maps Query |
-|-----|------|-------------------|
-
-### 美食推薦 (Food Recommendations)
-| Day | City | PriceLevel | Content | UpdatedAt |
-|-----|------|------------|---------|-----------|
-
-## AI 功能
-
-本專案整合 Google Gemini API 提供智慧旅遊助理功能。
-
-### AI 景點規劃
-
-點擊行程卡片的「規劃」按鈕，AI 會根據當日行程生成：
-
-- **景點故事**：融入歷史典故與文化背景的文學風格介紹
-- **交通規劃**：景點間的移動建議與時間安排
-- **旅遊小提醒**：當地習俗、注意事項
-
-生成的內容會自動儲存至 Google Sheet「景點規劃」分頁，下次開啟直接顯示。
-
-### AI 美食推薦
-
-點擊行程卡片的「美食」按鈕，可依價位獲得餐廳推薦：
-
-| 價位 | 說明 |
-|------|------|
-| 平價 | 當地小吃、快餐、街邊美食 |
-| 中價位 | 特色餐廳、當地人氣店家 |
-| 高價位 | 米其林推薦、高級餐廳 |
-
-每間餐廳附有 Google Maps 連結，方便導航。推薦內容儲存至「美食推薦」分頁。
-
-### API 設定
-
-1. 前往 [Google AI Studio](https://aistudio.google.com/apikey) 取得 API Key
-2. 在 Google Apps Script 編輯器執行：
-
-```javascript
-PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', 'your-api-key');
-```
-
-> **注意**：API Key 存於 Script Properties，不會進入版本控制。免費版有每分鐘請求限制。
-
-## 建立新旅遊
-
-此專案設計為可重用的 template。建立新旅遊只需修改兩個設定檔：
-
-| 檔案 | 設定內容 |
-|------|----------|
-| `src/config/trip.config.ts` | 前端設定（App 標題、幣別、支出類別、外部連結） |
-| `gas/Code.js` 的 `CONFIG` | 後端設定（頁面標題、授權帳號、Sheet 名稱） |
-
-詳細步驟請參考 [SETUP.md](SETUP.md)。
-
-## 相關連結
-
-- [Web App](https://script.google.com/macros/s/AKfycbyJY8XcWcWuHQBks2AN9miyp1z2QZNoyt7GgXoIU-W15Di8twr1QAxNpxhB_vBr0Zro/exec)
-- [Short URL](https://weiyuan1993.github.io/honeymoon-journal) (GitHub Pages 轉址)
-- [GitHub Repository](https://github.com/weiyuan1993/honeymoon-journal)
-- [App Script](https://script.google.com/home/projects/1aMzT7R1zAxh6buT3FTTjfjmw31xWIE6y9-eOjDpNHqw4JnhP2j0LSGHX/edit)
+See [SETUP.md](SETUP.md) for the Cloudflare, Google Cloud, Sheet and OAuth setup.

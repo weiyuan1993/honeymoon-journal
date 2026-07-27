@@ -34,14 +34,6 @@ export const tripConfig = {
     { code: 'Toilet', label: '廁所' },
     { code: 'Other', label: '其他' },
   ] as const,
-
-  // Google Sheet tab names (must match your spreadsheet)
-  sheetNames: {
-    itinerary: '行程',
-    expenses: '記帳',
-    attractions: '景點介紹',
-    navigation: '導航',
-  },
 };
 
 // Type exports derived from config
