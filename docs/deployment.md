@@ -37,7 +37,6 @@ Never commit `.dev.vars`, API keys, private keys or downloaded service-account J
 ## Local verification
 
 ```bash
-cp .dev.vars.example .dev.vars
 npm install
 npm run type-check
 npm test -- --run

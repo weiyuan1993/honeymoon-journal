@@ -15,7 +15,7 @@ npm install
 Update:
 
 - `src/config/trip.config.ts`: title, currencies, expense categories and public links
-- `src/index.html`: page title and metadata
+- `index.html`: page title and metadata
 - `worker/tripRepository.ts`: Sheet tab names when they differ from the defaults
 - `wrangler.jsonc`: Worker name
 
@@ -44,7 +44,7 @@ Store ticket files in Google Drive and put their URLs in the `票券` tab. Keep 
 3. Create a service account and download one JSON key.
 4. Share the trip Sheet with the service-account email as Editor.
 5. Create an OAuth 2.0 Web client.
-6. Add the production Worker URL to Authorized JavaScript origins.
+6. Add the production Worker URL and `http://localhost:5173` to Authorized JavaScript origins.
 7. Configure the OAuth consent screen and add intended test users while the app is in testing mode.
 8. Create a Gemini API key in the same project or another controlled Google Cloud project.
 
@@ -70,18 +70,12 @@ Use `npx wrangler secret put <NAME>` for manual setup. Never place secret values
 ## 6. Configure local development
 
 ```bash
-cp .dev.vars.example .dev.vars
-```
-
-Fill `.dev.vars`, preserving private-key line breaks. The file is ignored by Git.
-
-```bash
 npm run dev
-npm run dev:cloudflare
 ```
 
-- `npm run dev`: frontend with mock data
-- `npm run dev:cloudflare`: production build served through the local Worker
+`npm run dev` starts Vite HMR and proxies `/api/*` to the production Cloudflare
+Worker. It requires no local secrets. Local edits and AI requests affect the
+production Google Sheet immediately.
 
 ## 7. Configure automatic deployment
 

@@ -48,7 +48,7 @@ src/                       React application
   components/              pages, modals and controls
   config/                  trip-specific frontend settings
   utils/apiClient.ts       HTTP and authentication transport
-  utils/tripClient.ts      trip API facade and local mock data
+  utils/tripClient.ts      trip API facade
 shared/                    frontend/Worker API contracts
 worker/                    auth, policy, Sheets and Gemini backend
 worker/__tests__/          Worker behavior and authorization tests
@@ -65,17 +65,13 @@ npm install
 npm run dev
 ```
 
-`npm run dev` opens `http://localhost:5173` with local mock data.
+`npm run dev` opens `http://localhost:5173` with Vite HMR and proxies `/api/*`
+to the production Cloudflare Worker. Google Sheets, authentication and Gemini
+therefore use the production services without local secrets or mock data.
 
-To run the complete Worker locally:
-
-```bash
-cp .dev.vars.example .dev.vars
-# Fill the local secrets in .dev.vars
-npm run dev:cloudflare
-```
-
-Never commit `.dev.vars` or downloaded service-account JSON files.
+Add `http://localhost:5173` to the Google OAuth Web client's Authorized
+JavaScript origins. Local edits, AI requests and other mutations affect the
+production Sheet immediately.
 
 ## Verification
 

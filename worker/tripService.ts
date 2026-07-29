@@ -102,8 +102,13 @@ export class TripService {
   async generateJourneyIntro(
     itinerary: ItineraryItem[]
   ): Promise<PersistedGenerateResponse<JourneyContent>> {
-    const { prompt, cities } = journeyPrompt(itinerary);
-    const generated = await this.gemini.generate({ prompt, temperature: 0.9 });
+    const { prompt, cities, responseSchema } = journeyPrompt(itinerary);
+    const generated = await this.gemini.generate({
+      prompt,
+      temperature: 0.9,
+      responseMimeType: 'application/json',
+      responseSchema,
+    });
     const content = parseJourney(generated, cities);
     try {
       await this.repository.saveJourney(content);
@@ -140,17 +145,26 @@ export class TripService {
 }
 
 export function parseJourney(text: string, cities: string[]): JourneyContent {
-  const content: JourneyContent = { intro: '', cities: {}, closing: '' };
-  for (const rawPart of text.split('|||')) {
-    const part = rawPart.trim();
-    if (part.startsWith('【intro】')) content.intro = part.replace('【intro】', '').trim();
-    else if (part.startsWith('【closing】')) {
-      content.closing = part.replace('【closing】', '').trim();
-    } else {
-      const city = cities.find((candidate) => part.startsWith(`【${candidate}】`));
-      if (city) content.cities[city] = part.replace(`【${city}】`, '').trim();
-    }
+  const parsed = JSON.parse(text) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Gemini 回傳格式無法解析');
   }
-  if (!content.intro || !content.closing) throw new Error('Gemini 回傳格式無法解析');
-  return content;
+
+  const value = parsed as Record<string, unknown>;
+  const intro = typeof value.intro === 'string' ? value.intro.trim() : '';
+  const closing = typeof value.closing === 'string' ? value.closing.trim() : '';
+  if (!intro || !closing || !Array.isArray(value.cities)) {
+    throw new Error('Gemini 回傳格式無法解析');
+  }
+
+  const cityContent: Record<string, string> = {};
+  for (const item of value.cities) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const city = item as Record<string, unknown>;
+    const name = typeof city.name === 'string' ? city.name.trim() : '';
+    const content = typeof city.content === 'string' ? city.content.trim() : '';
+    if (cities.includes(name) && content) cityContent[name] = content;
+  }
+
+  return { intro, cities: cityContent, closing };
 }

@@ -59,6 +59,7 @@ export function itinerarySuggestionPrompt(
 export function journeyPrompt(itinerary: ItineraryItem[]): {
   prompt: string;
   cities: string[];
+  responseSchema: Record<string, unknown>;
 } {
   const cities: string[] = [];
   for (const item of itinerary) {
@@ -69,20 +70,47 @@ export function journeyPrompt(itinerary: ItineraryItem[]): {
   const details = itinerary
     .map((item) => `${item.day} ${item.city}: ${stripHtml(item.content).slice(0, 160)}`)
     .join('\n');
-  const citySections = cities.map((city) => `【${city}】\n約 80-120 字的城市體驗。`).join('\n|||\n');
 
   return {
     cities,
     prompt: `你是一位文筆優美的旅遊作家，請以第一人稱複數「我們」撰寫蜜月旅程介紹。
-使用純文字，不要使用 markdown，並用 ||| 分隔：
-【intro】約 100-150 字旅程序章
-|||
-${citySections}
-|||
-【closing】約 40-60 字結語
+intro 請寫約 100-150 字旅程序章。
+cities 請依序為以下每個城市各寫一段約 80-120 字的城市體驗：${cities.join('、')}。
+closing 請寫約 40-60 字結語。
 
 行程：
 ${details}`,
+    responseSchema: {
+      type: 'OBJECT',
+      properties: {
+        intro: {
+          type: 'STRING',
+          description: '約 100-150 字的蜜月旅程序章',
+        },
+        cities: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              name: {
+                type: 'STRING',
+                enum: cities,
+              },
+              content: {
+                type: 'STRING',
+                description: '約 80-120 字的城市體驗',
+              },
+            },
+            required: ['name', 'content'],
+          },
+        },
+        closing: {
+          type: 'STRING',
+          description: '約 40-60 字的旅程結語',
+        },
+      },
+      required: ['intro', 'cities', 'closing'],
+    },
   };
 }
 

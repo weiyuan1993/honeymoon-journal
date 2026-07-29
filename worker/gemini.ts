@@ -38,6 +38,8 @@ export class GeminiClient {
     search?: boolean;
     temperature?: number;
     maxOutputTokens?: number;
+    responseMimeType?: string;
+    responseSchema?: Record<string, unknown>;
   }): Promise<string> {
     if (!this.env.GEMINI_API_KEY) throw new GeminiError('Gemini API Key 未設定', 503, false);
     const model = options.search
@@ -50,12 +52,20 @@ export class GeminiClient {
     if (options.prompt) contents.push({ role: 'user', parts: [{ text: options.prompt }] });
     if (options.question) contents.push({ role: 'user', parts: [{ text: options.question }] });
 
+    const generationConfig: Record<string, unknown> = {
+      temperature: options.temperature ?? 0.8,
+      maxOutputTokens: options.maxOutputTokens ?? 8192,
+    };
+    if (options.responseMimeType) {
+      generationConfig.responseMimeType = options.responseMimeType;
+    }
+    if (options.responseSchema) {
+      generationConfig.responseSchema = options.responseSchema;
+    }
+
     const payload: Record<string, unknown> = {
       contents,
-      generationConfig: {
-        temperature: options.temperature ?? 0.8,
-        maxOutputTokens: options.maxOutputTokens ?? 8192,
-      },
+      generationConfig,
     };
     if (options.systemPrompt) {
       payload.system_instruction = { parts: [{ text: options.systemPrompt }] };
