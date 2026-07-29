@@ -58,14 +58,15 @@ describe('worker privacy boundary', () => {
   });
 
   it('returns practical reference links to anonymous callers', async () => {
-    vi.spyOn(TripRepository.prototype, 'getReferenceLinks').mockResolvedValue([
-      {
-        category: '英國',
-        label: '倫敦地鐵地圖',
-        url: 'https://tfl.gov.uk/maps',
-        note: '官方地鐵圖',
-      },
-    ]);
+    const links = [{
+      category: '英國',
+      label: '倫敦地鐵地圖',
+      url: 'https://tfl.gov.uk/maps',
+      note: '官方地鐵圖',
+    }];
+    vi.spyOn(TripRepository.prototype, 'getReferenceLinks').mockResolvedValue(
+      links
+    );
 
     const response = await worker.fetch(
       new Request('https://trip.example/api/rpc/getReferenceLinks'),
@@ -73,16 +74,93 @@ describe('worker privacy boundary', () => {
     );
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      data: [
-        {
-          category: '英國',
-          label: '倫敦地鐵地圖',
-          url: 'https://tfl.gov.uk/maps',
-          note: '官方地鐵圖',
-        },
-      ],
+    await expect(response.json()).resolves.toEqual({ data: links });
+  });
+
+  it('removes accommodation links for anonymous callers', async () => {
+    vi.spyOn(TripRepository.prototype, 'getItinerary').mockResolvedValue([
+      {
+        rowNumber: 2,
+        day: 'Day 1',
+        date: '2026-09-28',
+        weekday: '一',
+        city: '倫敦',
+        content:
+          '抵達 <a href="https://booking.example/manage?token=secret">飯店</a>，詳見https://booking.example/manage?token=secret。抵達後辦理入住',
+        transport: '<a href="https://rail.example/ticket">車票</a>',
+        ticket: '<a href="https://museum.example/reservation">預約</a>',
+        link: 'https://booking.example/manage?token=secret',
+        hotel:
+          '<a href="https://hotel.example/private">蜜月套房</a>，訂房資料https://hotel.example/private。已確認入住',
+      },
+    ]);
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/getItineraryData'),
+      env
+    );
+    const payload = await response.json() as {
+      data: Array<Record<string, unknown>>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.data[0]).toMatchObject({
+      content:
+        '抵達 <a href="https://booking.example/manage?token=secret">飯店</a>，詳見https://booking.example/manage?token=secret。抵達後辦理入住',
+      transport: '<a href="https://rail.example/ticket">車票</a>',
+      ticket: '<a href="https://museum.example/reservation">預約</a>',
+      link: 'https://booking.example/manage?token=secret',
+      hotel: '蜜月套房，訂房資料。已確認入住',
     });
+    expect(payload.data[0].hotel).not.toContain('https://hotel.example');
+    expect(payload.data[0].hotel).not.toContain('<a');
+  });
+
+  it('returns full itinerary links to authorized editors without public caching', async () => {
+    const itinerary = [{
+      rowNumber: 2,
+      day: 'Day 1',
+      date: '2026-09-28',
+      weekday: '一',
+      city: '倫敦',
+      content: '<a href="https://hotel.example/private">飯店</a>',
+      transport: '',
+      ticket: '',
+      link: 'https://booking.example/manage?token=secret',
+      hotel:
+        '<a href="https://hotel.example/manage?token=secret">蜜月套房</a>',
+    }];
+    vi.spyOn(TripRepository.prototype, 'getItinerary').mockResolvedValue(
+      itinerary
+    );
+    const cachePut = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('caches', {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn().mockResolvedValue(undefined),
+        put: cachePut,
+        delete: vi.fn().mockResolvedValue(true),
+      }),
+    });
+    const token = await createSessionToken(
+      {
+        sub: 'google-user-1',
+        email: 'vic@example.com',
+        role: 'editor',
+      },
+      env.SESSION_SECRET
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/getItineraryData', {
+        headers: { cookie: `honeymoon_session=${token}` },
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    await expect(response.json()).resolves.toEqual({ data: itinerary });
+    expect(cachePut).not.toHaveBeenCalled();
   });
 
   it('revokes an existing session immediately after allowlist removal', async () => {

@@ -6,6 +6,7 @@ import type {
   TicketItem,
   TodoItem,
 } from '@/types';
+import { htmlToText } from '@/utils/htmlToText';
 import {
   buildTripTimeline,
   getFocusTicketAction,
@@ -36,9 +37,6 @@ interface TripDashboardProps {
   onOpenLinks: () => void;
   canViewTickets: boolean;
 }
-
-const stripHtml = (value: string) =>
-  value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
 const formatDate = (value: string) => {
   const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value.trim());
@@ -160,7 +158,7 @@ export default function TripDashboard({
                 {focusItem.day} · {formatDate(focusItem.date)}
               </p>
               <h3>{focusItem.city}</h3>
-              <p>{stripHtml(focusItem.content)}</p>
+              <p>{htmlToText(focusItem.content)}</p>
               {focusTicketAction && (
                 <div className="focus-ticket-actions">
                   {focusTicketAction.type === 'tickets' ? (
@@ -182,7 +180,7 @@ export default function TripDashboard({
                 </div>
               )}
               {focusItem.hotel && (
-                <div className="stay-line">⌂ {stripHtml(focusItem.hotel)}</div>
+                <div className="stay-line">🏨 {htmlToText(focusItem.hotel)}</div>
               )}
             </>
           ) : itineraryError ? (
@@ -214,11 +212,11 @@ export default function TripDashboard({
               </p>
               <h3>{nextTransfer.city}</h3>
               <p>
-                {stripHtml(nextTransfer.transport) ||
+                {htmlToText(nextTransfer.transport) ||
                   '交通資訊將於行程中顯示。'}
               </p>
               <div className="ticket-tag">
-                票務 · {stripHtml(nextTransfer.ticket) || '請查看行程備註'}
+                票務 · {htmlToText(nextTransfer.ticket) || '請查看行程備註'}
               </div>
             </>
           ) : (
@@ -245,9 +243,9 @@ export default function TripDashboard({
             <button type="button" key={todo.rowNumber} onClick={onOpenTodo}>
               <span aria-hidden="true" />
               <div>
-                <strong>{stripHtml(todo.item)}</strong>
+                <strong>{htmlToText(todo.item)}</strong>
                 <small>
-                  {[stripHtml(todo.deadline), stripHtml(todo.detail)]
+                  {[htmlToText(todo.deadline), htmlToText(todo.detail)]
                     .filter(Boolean)
                     .join(' · ')}
                 </small>
@@ -280,7 +278,9 @@ export default function TripDashboard({
                 ? `依目前行程顯示${currentCountry}資料`
                 : '等待目前行程位置'}
             </p>
-            <button type="button" onClick={onOpenLinks}>查看全部 →</button>
+            <button type="button" onClick={onOpenLinks}>
+              查看全部 →
+            </button>
           </div>
         </div>
         <div className="useful-link-grid">

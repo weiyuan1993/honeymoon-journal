@@ -142,7 +142,7 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
 
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <div className="max-w-5xl mx-auto text-center px-4 [text-shadow:_0_2px_8px_rgba(0,0,0,0.8)]">
-            <p className="text-gold text-[10px] tracking-[0.3em] uppercase mb-2 drop-shadow-lg">
+            <p className="text-gold text-xs tracking-[0.3em] uppercase mb-2 drop-shadow-lg">
               {tripConfig.tripSubtitle}
             </p>
             <h1 className="font-display text-2xl md:text-3xl mb-3 drop-shadow-lg">
@@ -197,7 +197,7 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
           >
             {/* City Header */}
             <div className="max-w-5xl mx-auto px-4 md:px-8 pt-8 pb-4">
-              <p className="text-gold text-[10px] tracking-[0.2em] uppercase mb-1">
+              <p className="text-gold text-xs tracking-[0.2em] uppercase mb-1">
                 Day {segment.startDay}{segment.startDay !== segment.endDay ? ` — ${segment.endDay}` : ''}
               </p>
               <h2 className="text-ink font-display text-xl md:text-2xl">
@@ -229,7 +229,7 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
 
                 {/* Highlights */}
                 <div className="border-t border-gold/20 pt-4">
-                  <p className="text-[10px] text-gold uppercase tracking-wider mb-3 font-display">行程亮點</p>
+                  <p className="text-xs text-gold uppercase tracking-wider mb-3 font-display">行程亮點</p>
                   <div className="space-y-2">
                     {segment.days.map((day, dayIdx) => (
                       <div key={dayIdx} className="flex items-start gap-2">

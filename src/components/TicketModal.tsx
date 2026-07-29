@@ -43,7 +43,7 @@ export default function TicketModal({
         <div className="border-b border-gold/20 px-4 py-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-display text-[11px] uppercase tracking-[0.16em] text-gold">
+              <p className="font-display text-[13px] uppercase tracking-[0.16em] text-gold">
                 {day} · {city}
               </p>
               <h2 className="mt-1 font-display text-base text-ink">
@@ -89,7 +89,7 @@ export default function TicketModal({
                 <span className="block truncate font-serif text-xs">
                   {ticket.item}
                 </span>
-                <span className="mt-1 block truncate font-serif text-[11px] text-ink/45">
+                <span className="mt-1 block truncate font-serif text-[13px] text-ink/45">
                   {ticket.provider}
                   {ticket.notes ? ` · ${ticket.notes}` : ''}
                 </span>

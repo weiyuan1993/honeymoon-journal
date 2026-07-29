@@ -1,11 +1,10 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import type { TodoItem } from '@/types';
+import { htmlToText } from '@/utils/htmlToText';
 import { tripClient } from '@/utils/tripClient';
 import Loading from './Loading';
 
 type TodoFilter = 'all' | 'pending' | 'done';
-
-const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
 interface TodoPageProps {
   canEdit: boolean;
@@ -136,7 +135,7 @@ export default function TodoPage({
                   : 'text-ink/55 hover:bg-gold/10 hover:text-ink'
               }`}
             >
-              <span className="block font-display text-[11px] tracking-wide">
+              <span className="block font-display text-[13px] tracking-wide">
                 {option.label}
               </span>
               <span className="mt-0.5 block font-serif text-[12px] leading-none">
@@ -177,7 +176,7 @@ export default function TodoPage({
                   <h3 className="font-display text-sm text-ink/75">
                     {section}
                   </h3>
-                  <span className="font-serif text-[11px] text-ink/45">
+                  <span className="font-serif text-[13px] text-ink/45">
                     {items.filter((todo) => todo.done).length}/{items.length}
                   </span>
                 </div>
@@ -197,7 +196,7 @@ export default function TodoPage({
                         checked={todo.done}
                         disabled={!canEdit || isUpdating}
                         onChange={(e) => handleToggle(todo, e.target.checked)}
-                        aria-label={`${todo.done ? '取消完成' : '完成'} ${stripHtml(todo.item)}`}
+                        aria-label={`${todo.done ? '取消完成' : '完成'} ${htmlToText(todo.item)}`}
                         className="mt-1 h-4 w-4 shrink-0 accent-gold disabled:cursor-not-allowed disabled:opacity-40"
                         title={canEdit ? undefined : '需編輯權限'}
                       />
@@ -217,7 +216,7 @@ export default function TodoPage({
                           </p>
                         )}
                         {todo.deadline && (
-                          <div className="mt-2 inline-flex max-w-full items-center rounded-full bg-gold/10 px-2 py-1 font-serif text-[11px] leading-snug text-gold">
+                          <div className="mt-2 inline-flex max-w-full items-center rounded-full bg-gold/10 px-2 py-1 font-serif text-[13px] leading-snug text-gold">
                             <span className="mr-1 shrink-0">截止</span>
                             <HtmlText
                               html={todo.deadline}

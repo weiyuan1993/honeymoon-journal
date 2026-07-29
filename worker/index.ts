@@ -40,6 +40,10 @@ interface WorkerEnv extends AuthBindings, SheetsEnv, GeminiEnv {
 }
 
 const PUBLIC_CACHE_SECONDS = 45;
+const PUBLIC_CACHE_NAME = 'honeymoon-public-v2';
+const HTML_LINK_TAG_PATTERN = /<\/?a\b[^>]*>/gi;
+const PLAIN_URL_PATTERN =
+  /https?:\/\/[^\s<>"'，。！？、；：）】》〉」』〕］}]+/gi;
 
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
@@ -104,6 +108,10 @@ async function handleRpc(
   if (request.method !== route.method) throw methodNotAllowed();
 
   const session = await readSession(request, env.SESSION_SECRET);
+  const hasEditorAccess = Boolean(
+    session &&
+      isAuthorizedEditor(session.email, env.AUTHORIZED_EDITOR_EMAILS)
+  );
   if (route.capability !== 'public:read') {
     const editor = requireEditor(session);
     if (!isAuthorizedEditor(editor.email, env.AUTHORIZED_EDITOR_EMAILS)) {
@@ -112,9 +120,13 @@ async function handleRpc(
   }
   if (route.method === 'POST') assertSameOriginMutation(request, env.APP_ORIGIN);
 
+  const returnsPrivateItinerary =
+    operation === 'getItineraryData' && hasEditorAccess;
+  const usesPublicCache =
+    route.capability === 'public:read' && !returnsPrivateItinerary;
   const cacheKey = new Request(request.url, { method: 'GET' });
-  const publicCache = await caches.open('honeymoon-public-v1');
-  if (route.capability === 'public:read') {
+  const publicCache = await caches.open(PUBLIC_CACHE_NAME);
+  if (usesPublicCache) {
     const cached = await publicCache.match(cacheKey);
     if (cached) return cached;
   }
@@ -124,9 +136,13 @@ async function handleRpc(
     : [];
   const repository = new TripRepository(new SheetsClient(env));
   const service = new TripService(repository, new GeminiClient(env));
-  const result = await executeOperation(service, operation, args);
+  const operationResult = await executeOperation(service, operation, args);
+  const result =
+    operation === 'getItineraryData' && !hasEditorAccess
+      ? publicItinerary(operationResult as ItineraryItem[])
+      : operationResult;
 
-  if (route.capability === 'public:read') {
+  if (usesPublicCache) {
     const response = jsonResponse(result, {
       headers: { 'cache-control': `public, max-age=0, s-maxage=${PUBLIC_CACHE_SECONDS}` },
     });
@@ -134,6 +150,9 @@ async function handleRpc(
     return response;
   }
 
+  if (returnsPrivateItinerary) {
+    return privateJsonResponse(result);
+  }
   if (route.capability === 'private:write' || route.capability === 'private:ai') {
     await invalidatePublicCache(new URL(request.url).origin);
   }
@@ -273,8 +292,22 @@ function normalizeError(error: unknown): ApiError {
   return new ApiError(500, 'INTERNAL_ERROR', 'An unexpected error occurred.');
 }
 
+function publicItinerary(itinerary: ItineraryItem[]): ItineraryItem[] {
+  const removeLinks = (value: string): string =>
+    value
+      .replace(HTML_LINK_TAG_PATTERN, '')
+      .replace(PLAIN_URL_PATTERN, '')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+
+  return itinerary.map((item) => ({
+    ...item,
+    hotel: removeLinks(item.hotel),
+  }));
+}
+
 async function invalidatePublicCache(origin: string): Promise<void> {
-  const publicCache = await caches.open('honeymoon-public-v1');
+  const publicCache = await caches.open(PUBLIC_CACHE_NAME);
   await Promise.all(
     Object.entries(API_OPERATIONS)
       .filter(([, route]) => route.capability === 'public:read')

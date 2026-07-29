@@ -49,6 +49,7 @@ const DEFAULT_TAB: TabType = TAB_IDS.DASHBOARD;
 const ACTIVE_TAB_STORAGE_KEY = 'activeTab';
 const HEADER_COMPACT_SCROLL_Y = 64;
 const HEADER_EXPAND_SCROLL_Y = 24;
+const BOTTOM_NAV_DIRECTION_DELTA = 8;
 
 const bottomTabs = [
   { id: TAB_IDS.DASHBOARD, label: '總覽' },
@@ -64,12 +65,12 @@ const isTabType = (value: string | null): value is TabType =>
   !!value && validTabs.has(value as TabType);
 
 function TabIcon({ tab }: { tab: TabType }) {
-  const iconClass = 'h-5 w-5';
+  const iconClass = 'h-6 w-6';
 
   switch (tab) {
     case TAB_IDS.DASHBOARD:
       return (
-        <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
         </svg>
       );
@@ -80,7 +81,7 @@ function TabIcon({ tab }: { tab: TabType }) {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth={1.7}
+          strokeWidth={1.9}
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
@@ -97,7 +98,7 @@ function TabIcon({ tab }: { tab: TabType }) {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth={1.7}
+          strokeWidth={1.9}
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
@@ -113,7 +114,7 @@ function TabIcon({ tab }: { tab: TabType }) {
       );
     case TAB_IDS.TICKETS:
       return (
-        <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v3a2 2 0 0 0 0 4v3a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-3a2 2 0 0 0 0-4Z" />
           <path d="M12 7v10" />
         </svg>
@@ -125,7 +126,7 @@ function TabIcon({ tab }: { tab: TabType }) {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth={1.7}
+          strokeWidth={1.9}
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
@@ -141,7 +142,7 @@ function TabIcon({ tab }: { tab: TabType }) {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth={1.7}
+          strokeWidth={1.9}
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
@@ -184,7 +185,7 @@ export default function App() {
   const [loadingTodos, setLoadingTodos] = useState(true);
   const [todosError, setTodosError] = useState(false);
   const [referenceLinks, setReferenceLinks] = useState<ReferenceLink[]>([]);
-  const [loadingReferenceLinks, setLoadingReferenceLinks] = useState(true);
+  const [loadingReferenceLinks, setLoadingReferenceLinks] = useState(false);
   const [referenceLinksError, setReferenceLinksError] = useState(false);
   const [attractionDetails, setAttractionDetails] = useState<AttractionDetails>(
     {}
@@ -198,6 +199,7 @@ export default function App() {
   });
   const [showMenu, setShowMenu] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isBottomNavCompact, setIsBottomNavCompact] = useState(false);
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
   const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -205,8 +207,10 @@ export default function App() {
     () => new Set([getInitialTab()])
   );
   const loadedDataRef = useRef<Set<LazyDataKey>>(new Set());
-  const loadingDataRef = useRef<Set<LazyDataKey>>(new Set());
+  const loadingDataRef = useRef<Map<LazyDataKey, symbol>>(new Map());
   const authEpochRef = useRef(0);
+  const canEditRef = useRef(false);
+  const bottomNavScrollAnchorRef = useRef(0);
 
   // Sync tab with URL hash and localStorage
   useEffect(() => {
@@ -247,6 +251,18 @@ export default function App() {
           : scrollY > HEADER_COMPACT_SCROLL_Y;
         return current === next ? current : next;
       });
+
+      if (scrollY <= HEADER_EXPAND_SCROLL_Y) {
+        setIsBottomNavCompact(false);
+        bottomNavScrollAnchorRef.current = scrollY;
+        return;
+      }
+
+      const directionDelta = scrollY - bottomNavScrollAnchorRef.current;
+      if (Math.abs(directionDelta) >= BOTTOM_NAV_DIRECTION_DELTA) {
+        setIsBottomNavCompact(directionDelta > 0);
+        bottomNavScrollAnchorRef.current = scrollY;
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -254,17 +270,22 @@ export default function App() {
   }, []);
 
   const fetchItinerary = async (showBlockingLoading = true) => {
+    const authEpoch = authEpochRef.current;
     if (showBlockingLoading) setLoadingItin(true);
     setItineraryError(false);
     try {
       const data = await tripClient.getItineraryData();
+      if (authEpoch !== authEpochRef.current) return;
       setItinerary(data);
       loadedDataRef.current.add('itinerary');
     } catch (error) {
+      if (authEpoch !== authEpochRef.current) return;
       if (itinerary.length === 0) setItineraryError(true);
       console.error('Failed to fetch itinerary:', error);
     } finally {
-      if (showBlockingLoading) setLoadingItin(false);
+      if (showBlockingLoading && authEpoch === authEpochRef.current) {
+        setLoadingItin(false);
+      }
     }
   };
 
@@ -311,17 +332,29 @@ export default function App() {
   };
 
   const fetchUserPermission = async () => {
+    const authEpoch = authEpochRef.current;
     try {
       const data = await tripClient.getUserPermission();
+      if (authEpoch !== authEpochRef.current) return;
       handlePermissionChange(data || { email: null, canEdit: false });
     } catch (error) {
+      if (authEpoch !== authEpochRef.current) return;
       console.error('Failed to fetch user permission:', error);
     }
   };
 
   const handlePermissionChange = useCallback((permission: UserPermission) => {
-    authEpochRef.current += 1;
+    const accessChanged = canEditRef.current !== permission.canEdit;
+    canEditRef.current = permission.canEdit;
+    if (accessChanged) authEpochRef.current += 1;
     setUserPermission(permission);
+    if (accessChanged) {
+      setItinerary([]);
+      setLoadingItin(true);
+      loadedDataRef.current.delete('itinerary');
+      loadingDataRef.current.delete('itinerary');
+      loadingDataRef.current.delete('tickets');
+    }
     if (!permission.canEdit) {
       setTickets([]);
       loadedDataRef.current.delete('tickets');
@@ -383,11 +416,14 @@ export default function App() {
     if (loadedDataRef.current.has(key) || loadingDataRef.current.has(key)) {
       return;
     }
-    loadingDataRef.current.add(key);
+    const requestToken = Symbol(key);
+    loadingDataRef.current.set(key, requestToken);
     try {
       await loader();
     } finally {
-      loadingDataRef.current.delete(key);
+      if (loadingDataRef.current.get(key) === requestToken) {
+        loadingDataRef.current.delete(key);
+      }
     }
   };
 
@@ -435,7 +471,7 @@ export default function App() {
 
     loadOnce('itinerary', () => fetchItinerary());
     loadOnce('journeyContent', fetchJourneyContent);
-  }, [tab]);
+  }, [tab, userPermission.canEdit]);
 
   useEffect(() => {
     fetchUserPermission();
@@ -517,7 +553,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-paper">
+    <div className="app-shell min-h-screen bg-paper">
       {/* Header */}
       <header className={`sticky top-0 z-50 liquid-shell-header backdrop-blur-sm border-b border-gold/25 transition-all duration-300 ${
         isScrolled
@@ -527,8 +563,30 @@ export default function App() {
         <div className={`liquid-main-header relative flex flex-col items-center justify-center px-4 transition-all duration-300 ${
           isScrolled ? 'py-1.5' : 'py-2'
         }`}>
+          {/* Trip Secretary shortcut */}
+          {userPermission.canEdit && (
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+              aria-label="開啟旅程秘書"
+              title="AI 旅程秘書"
+              className={`absolute left-3 top-1/2 -translate-y-1/2 rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-forest ${
+                isScrolled ? 'p-1' : 'p-2'
+              }`}
+            >
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+
           {/* Subtitle - hidden when scrolled */}
-          <div className={`flex items-center gap-1.5 text-gold/80 text-[9px] tracking-[0.25em] uppercase transition-all duration-300 ${
+          <div className={`flex items-center gap-1.5 text-gold/80 text-xs tracking-[0.25em] uppercase transition-all duration-300 ${
             isScrolled ? 'h-0 opacity-0 overflow-hidden' : 'h-auto opacity-100 mb-0'
           }`}>
             <span className="w-3 h-px bg-gold/40" />
@@ -796,49 +854,31 @@ export default function App() {
         />
       )}
 
-      {/* Trip Secretary FAB - small icon in bottom right */}
-      {userPermission.canEdit && !isChatOpen && (
-        <button
-          onClick={() => setIsChatOpen(true)}
-          className="fixed bottom-16 right-4 z-50 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 animate-sparkle-pulse"
-          style={{
-            background: 'linear-gradient(135deg, #c5a059, #d4b677)',
-          }}
-          aria-label="開啟旅程秘書"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="white"
-            className="w-5 h-5"
-          >
-            <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
-          </svg>
-        </button>
-      )}
-
-      {/* Bottom fixed tab navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gold shadow-lg">
-        <div className="flex w-full">
-          {bottomTabs.map((item, index) => (
+      {/* Floating liquid-glass tab navigation */}
+      <nav
+        className={`liquid-bottom-nav ${isBottomNavCompact ? 'is-compact' : ''}`}
+        aria-label="主要導覽"
+      >
+        <div className="liquid-bottom-nav-items">
+          {bottomTabs.map((item) => (
             <button
               key={item.id}
+              type="button"
               onClick={() => setTab(item.id)}
               aria-label={item.label}
+              aria-current={tab === item.id ? 'page' : undefined}
               title={item.label}
-              className={`flex h-12 flex-1 items-center justify-center transition-all duration-300 ${
-                index > 0 ? 'border-l border-subtle' : ''
-              } ${
+              className={`liquid-bottom-nav-button ${
                 tab === item.id
-                  ? 'bg-ink text-white shadow-md'
-                  : 'bg-white text-gray-500 hover:text-ink hover:bg-gray-50'
+                  ? 'is-active'
+                  : ''
               }`}
             >
               <TabIcon tab={item.id} />
             </button>
           ))}
         </div>
-      </div>
+      </nav>
     </div>
   );
 }

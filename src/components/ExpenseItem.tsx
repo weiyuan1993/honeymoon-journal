@@ -111,12 +111,12 @@ export default function ExpenseItem({
         <div className="mb-2.5 flex items-center justify-between gap-3">
           <div>
             <div className="font-display text-sm text-ink/80">編輯花費</div>
-            <div className="mt-0.5 font-serif text-[11px] text-ink/45">
+            <div className="mt-0.5 font-serif text-[13px] text-ink/45">
               {timeStr}
             </div>
           </div>
           <div className="rounded-lg bg-white px-2.5 py-1 text-right shadow-sm">
-            <div className="font-serif text-[10px] leading-none text-ink/45">
+            <div className="font-serif text-xs leading-none text-ink/45">
               {currencySymbol(String(editForm.currency))}
             </div>
             <div className="mt-0.5 font-display text-sm font-bold text-gold">
@@ -202,7 +202,7 @@ export default function ExpenseItem({
             <div className="mt-0.5 truncate font-serif text-sm text-ink">
               {data.item}
             </div>
-            <div className="mt-0.5 font-serif text-[11px] text-ink/45">
+            <div className="mt-0.5 font-serif text-[13px] text-ink/45">
               {currencySymbol(data.currency)} {data.amount}
             </div>
           </div>
@@ -231,9 +231,9 @@ export default function ExpenseItem({
   return (
     <div className="px-3 py-2.5 flex justify-between items-center hover:bg-gray-50 transition-colors">
       <div className="flex-1 min-w-0">
-        <div className="text-[10px] text-gray-400 font-serif flex items-center gap-1.5">
+        <div className="text-xs text-gray-400 font-serif flex items-center gap-1.5">
           <span>{timeStr}</span>
-          <span className="bg-gold/10 text-gold px-1.5 py-0.5 rounded text-[10px]">
+          <span className="bg-gold/10 text-gold px-1.5 py-0.5 rounded text-xs">
             {data.category}
           </span>
         </div>

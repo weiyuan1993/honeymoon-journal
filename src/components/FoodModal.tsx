@@ -158,10 +158,10 @@ export default function FoodModal({
                   : 'text-gray-500 hover:bg-gold/10'
               }`}
             >
-              <span className="block text-[10px] mb-0.5">{level.emoji}</span>
+              <span className="block text-xs mb-0.5">{level.emoji}</span>
               {level.label}
               {savedData?.[level.value] && (
-                <span className="ml-1 text-[10px] text-forest">✓</span>
+                <span className="ml-1 text-xs text-forest">✓</span>
               )}
             </button>
           ))}

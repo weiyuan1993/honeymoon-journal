@@ -181,7 +181,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
             <h2 className="font-display text-sm text-ink/80">快速記帳</h2>
           </div>
           {status === 'success' && (
-            <span className="rounded-full bg-forest/10 px-2 py-1 font-serif text-[11px] text-forest">
+            <span className="rounded-full bg-forest/10 px-2 py-1 font-serif text-[13px] text-forest">
               已記錄
             </span>
           )}
@@ -279,7 +279,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-display text-sm text-ink/80">花費記錄</h2>
-                <p className="mt-0.5 font-serif text-[11px] text-ink/45">
+                <p className="mt-0.5 font-serif text-[13px] text-ink/45">
                   {stats.totalCount} 筆紀錄
                 </p>
               </div>
@@ -289,7 +289,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
                     key={currency}
                     className="rounded-lg bg-gold/10 px-2.5 py-1 text-right"
                   >
-                    <div className="font-serif text-[10px] leading-none text-ink/45">
+                    <div className="font-serif text-xs leading-none text-ink/45">
                       {getCurrencySymbol(currency)}
                     </div>
                     <div className="mt-0.5 font-display text-sm font-bold text-gold">
