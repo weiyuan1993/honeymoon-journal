@@ -47,6 +47,7 @@ export class TripService {
   getAttractionDetails = () => this.repository.getAttractionDetails();
   getFoodRecommendations = () => this.repository.getFoodRecommendations();
   getJourneyContent = () => this.repository.getJourney();
+  getReferenceLinks = () => this.repository.getReferenceLinks();
   getChatHistory = () => this.repository.getChatHistory();
   deleteChatHistory = (row: number) => this.repository.deleteChat(row);
   clearChatHistory = () => this.repository.clearChat();

@@ -183,6 +183,7 @@ async function executeOperation(
         optionalString(args[2])
       );
     case 'getJourneyContent': return service.getJourneyContent();
+    case 'getReferenceLinks': return service.getReferenceLinks();
     case 'generateJourneyIntro':
       return service.generateJourneyIntro(requireArray<ItineraryItem>(args[0]));
     case 'chatWithSecretary':

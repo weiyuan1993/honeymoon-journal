@@ -64,6 +64,13 @@ export interface TicketItem {
   notes: string;
 }
 
+export interface ReferenceLink {
+  category: string;
+  label: string;
+  url: string;
+  note?: string;
+}
+
 export interface UserPermission {
   email: string | null;
   canEdit: boolean;

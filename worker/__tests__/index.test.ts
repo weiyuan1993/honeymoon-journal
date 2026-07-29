@@ -57,6 +57,34 @@ describe('worker privacy boundary', () => {
     expect(JSON.stringify(payload)).not.toContain(env.SESSION_SECRET);
   });
 
+  it('returns practical reference links to anonymous callers', async () => {
+    vi.spyOn(TripRepository.prototype, 'getReferenceLinks').mockResolvedValue([
+      {
+        category: '英國',
+        label: '倫敦地鐵地圖',
+        url: 'https://tfl.gov.uk/maps',
+        note: '官方地鐵圖',
+      },
+    ]);
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/getReferenceLinks'),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: [
+        {
+          category: '英國',
+          label: '倫敦地鐵地圖',
+          url: 'https://tfl.gov.uk/maps',
+          note: '官方地鐵圖',
+        },
+      ],
+    });
+  });
+
   it('revokes an existing session immediately after allowlist removal', async () => {
     const token = await createSessionToken(
       {

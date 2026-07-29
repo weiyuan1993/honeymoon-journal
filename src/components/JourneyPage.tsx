@@ -3,6 +3,7 @@ import type { ItineraryItem, JourneyContent } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { cityHeroImages, coverMobileImage } from '@/config/journey.images';
 import { tripClient } from '@/utils/tripClient';
+import { extractPrimaryTripCity } from '@/utils/tripLocations';
 
 interface JourneyPageProps {
   itinerary: ItineraryItem[];
@@ -40,13 +41,7 @@ const cityGroupMap: Record<string, string> = {
 
 // Extract main city name
 function extractMainCity(cityStr: string): { zh: string; en: string } {
-  // Handle separators: → ↔ /
-  const cleanStr = cityStr.split(/[→↔/]/)[0].trim();
-  // Remove any English text, numbers, and extra spaces
-  const zhOnly = cleanStr.replace(/[a-zA-Z0-9]/g, '').replace(/\s+/g, '').trim();
-  let cityName = zhOnly || cleanStr;
-
-  // Apply grouping (e.g., 梵蒂岡 -> 羅馬)
+  let cityName = extractPrimaryTripCity(cityStr);
   cityName = cityGroupMap[cityName] || cityName;
 
   return {

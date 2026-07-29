@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import type { TodoItem } from '@/types';
 import { tripClient } from '@/utils/tripClient';
 import Loading from './Loading';
@@ -9,7 +9,10 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
 interface TodoPageProps {
   canEdit: boolean;
-  isActive: boolean;
+  todos: TodoItem[];
+  loading: boolean;
+  error: boolean;
+  onTodosChange: Dispatch<SetStateAction<TodoItem[]>>;
 }
 
 interface HtmlTextProps {
@@ -26,30 +29,15 @@ function HtmlText({ html, className = '' }: HtmlTextProps) {
   );
 }
 
-export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(false);
+export default function TodoPage({
+  canEdit,
+  todos,
+  loading,
+  error,
+  onTodosChange,
+}: TodoPageProps) {
   const [filter, setFilter] = useState<TodoFilter>('all');
   const [updatingRows, setUpdatingRows] = useState<Set<number>>(new Set());
-  const hasLoadedRef = useRef(false);
-
-  const fetchTodos = async (showBlockingLoading = !hasLoadedRef.current) => {
-    if (showBlockingLoading) setLoading(true);
-    try {
-      const data = await tripClient.getTodoData();
-      setTodos(data || []);
-      hasLoadedRef.current = true;
-    } catch (error) {
-      console.error('Failed to fetch todos:', error);
-    } finally {
-      if (showBlockingLoading) setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!isActive) return;
-    fetchTodos(!hasLoadedRef.current);
-  }, [isActive]);
 
   const stats = useMemo(() => {
     const done = todos.filter((todo) => todo.done).length;
@@ -97,7 +85,7 @@ export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
   };
 
   const setTodoDone = (rowNumber: number, done: boolean) => {
-    setTodos((current) =>
+    onTodosChange((current) =>
       current.map((todo) =>
         todo.rowNumber === rowNumber ? { ...todo, done } : todo
       )
@@ -167,6 +155,10 @@ export default function TodoPage({ canEdit, isActive }: TodoPageProps) {
 
       {loading ? (
         <Loading />
+      ) : error ? (
+        <div className="text-center mt-10 p-6 border border-dashed border-gray-300">
+          <p className="text-gray-500 font-serif">待辦暫時無法載入</p>
+        </div>
       ) : todos.length === 0 ? (
         <div className="text-center mt-10 p-6 border border-dashed border-gray-300">
           <p className="text-gray-500 font-serif">暫無待辦事項</p>

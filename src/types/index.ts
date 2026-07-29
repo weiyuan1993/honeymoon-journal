@@ -12,6 +12,7 @@ export type {
   ItineraryFormData,
   ItineraryItem,
   JourneyContent,
+  ReferenceLink,
   TicketItem,
   TodoItem,
   UserPermission,

@@ -7,6 +7,7 @@ export type {
   ItineraryFormData,
   ItineraryItem,
   JourneyContent,
+  ReferenceLink,
   TicketItem,
   TodoItem,
 } from '../shared/apiTypes';

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseExpensesGrid,
   parseItineraryGrid,
+  parseReferenceLinks,
   parseTodosGrid,
 } from '../tripRepository';
 
@@ -62,5 +63,57 @@ describe('trip repository parsers', () => {
       currency: 'EUR',
     });
     expect(result[0].timestamp).toMatch(/^2027-/);
+  });
+
+  it('groups valid reference links under the latest country heading', () => {
+    const result = parseReferenceLinks([
+      ['英國'],
+      ['項目', '連結', '備註'],
+      ['倫敦地鐵地圖', 'https://tfl.gov.uk/map', '官方地鐵圖'],
+      ['法國'],
+      ['項目', '連結', '備註'],
+      ['只有文字的備忘錄'],
+      [
+        '巴黎地鐵',
+        'https://ratp.fr/map',
+        '博物館通票預約',
+        'https://parismuseumpass.fr/reservation',
+      ],
+      ['無效連結', 'javascript:alert(1)'],
+    ]);
+
+    expect(result).toEqual([
+      {
+        category: '英國',
+        label: '倫敦地鐵地圖',
+        url: 'https://tfl.gov.uk/map',
+        note: '官方地鐵圖',
+      },
+      {
+        category: '法國',
+        label: '巴黎地鐵',
+        url: 'https://ratp.fr/map',
+      },
+      {
+        category: '法國',
+        label: '博物館通票預約',
+        url: 'https://parismuseumpass.fr/reservation',
+      },
+    ]);
+  });
+
+  it('deduplicates URLs and keeps uncategorized links under other', () => {
+    const result = parseReferenceLinks([
+      ['官方網站', 'https://example.com'],
+      ['重複網站', 'https://example.com'],
+    ]);
+
+    expect(result).toEqual([
+      {
+        category: '其他',
+        label: '官方網站',
+        url: 'https://example.com',
+      },
+    ]);
   });
 });

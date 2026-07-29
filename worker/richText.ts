@@ -28,7 +28,7 @@ export function escapeHtml(value: unknown): string {
     .replace(/\n/g, '<br>');
 }
 
-function safeUrl(value: string | undefined): string | null {
+export function safeUrl(value: string | undefined): string | null {
   if (!value) return null;
   try {
     const url = new URL(value);

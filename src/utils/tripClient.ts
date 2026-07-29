@@ -13,6 +13,7 @@ import type {
   AIGenerateResponse,
   JourneyContent,
   JourneyGenerateResponse,
+  ReferenceLink,
   ChatMessage,
   ChatHistoryItem,
   ChatResponse,
@@ -429,6 +430,53 @@ const mockPermission: UserPermission = import.meta.env.DEV ? {
   canEdit: true,
 } : { email: null, canEdit: false };
 
+const mockReferenceLinks: ReferenceLink[] = import.meta.env.DEV ? [
+  {
+    category: '英國',
+    label: '倫敦地鐵地圖',
+    url: 'https://content.tfl.gov.uk/standard-tube-map.pdf',
+    note: '官方地鐵圖',
+  },
+  {
+    category: '英國',
+    label: '倫敦廁所地圖',
+    url: 'https://www.toiletmap.org.uk/',
+  },
+  {
+    category: '法國',
+    label: '巴黎地鐵',
+    url: 'https://www.ratp.fr/en/plan-metro',
+    note: '官方路線圖',
+  },
+  {
+    category: '法國',
+    label: '巴黎博物館通行證',
+    url: 'https://www.parismuseumpass.fr/en/reservation',
+    note: '官方預約',
+  },
+  {
+    category: '瑞士',
+    label: 'SBB',
+    url: 'https://www.sbb.ch/en',
+  },
+  {
+    category: '瑞士',
+    label: '少女峰票券攻略',
+    url: 'https://twoslowbyron.com/jungfrau_ticket/',
+  },
+  {
+    category: '義大利',
+    label: '威尼斯水上巴士交通票',
+    url: 'https://www.klook.com/zh-TW/activity/97406-venice-vaporetto-pass/',
+  },
+  {
+    category: '義大利',
+    label: '羅馬地鐵圖',
+    url: 'https://www.atac.roma.it/',
+    note: '官方交通資訊',
+  },
+] : [];
+
 function callTripApi<T>(
   functionName: ApiOperation | 'getUserPermission',
   mockResponse: T,
@@ -568,6 +616,9 @@ export const tripClient = {
   // Journey
   getJourneyContent: (): Promise<JourneyContent | null> =>
     callTripApi('getJourneyContent', null),
+
+  getReferenceLinks: (): Promise<ReferenceLink[]> =>
+    callTripApi('getReferenceLinks', mockReferenceLinks),
 
   generateJourneyIntro: (itinerary: ItineraryItem[]): Promise<JourneyGenerateResponse> =>
     callTripApi(

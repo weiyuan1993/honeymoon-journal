@@ -8,6 +8,9 @@ export const tripConfig = {
   // Subtitle displayed above the main title
   tripSubtitle: 'Europe 2026',
 
+  // Calendar year used when Sheet or mock dates use M/D format
+  tripYear: 2026,
+
   // External links for menu
   links: {
     googleMap: 'https://maps.app.goo.gl/iHnvbeKHs6nsc1d77',

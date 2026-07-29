@@ -1,6 +1,7 @@
 import {
   cellDisplayValue,
   gridCellToHtml,
+  safeUrl,
   type GridCell,
 } from './richText';
 import { SheetsClient } from './sheets';
@@ -12,6 +13,7 @@ import type {
   ItineraryFormData,
   ItineraryItem,
   JourneyContent,
+  ReferenceLink,
   TicketItem,
   TodoItem,
 } from './models';
@@ -26,6 +28,7 @@ export const SHEET_NAMES = {
   navigation: '導航',
   food: '美食推薦',
   journey: '旅程介紹',
+  references: '參考資料',
   chat: 'AI秘書對話',
 } as const;
 
@@ -113,6 +116,47 @@ export function parseExpensesGrid(
     .reverse();
 }
 
+export function parseReferenceLinks(rows: unknown[][]): ReferenceLink[] {
+  let category = '其他';
+  const seenUrls = new Set<string>();
+  const links: ReferenceLink[] = [];
+
+  for (const [rowIndex, row] of rows.entries()) {
+    const entries = row.map((entry) => String(entry ?? '').trim());
+    const first = entries[0] ?? '';
+    const nextRow = rows[rowIndex + 1] ?? [];
+    const nextRowStartsLinkTable =
+      String(nextRow[0] ?? '').trim() === '項目' &&
+      String(nextRow[1] ?? '').trim() === '連結';
+    if (
+      first &&
+      !safeUrl(first) &&
+      entries.slice(1).every((entry) => !entry) &&
+      nextRowStartsLinkTable
+    ) {
+      category = first;
+      continue;
+    }
+
+    for (let urlIndex = 1; urlIndex < entries.length; urlIndex += 1) {
+      const label = entries[urlIndex - 1];
+      const url = entries[urlIndex];
+      if (!label || !safeUrl(url) || seenUrls.has(url)) continue;
+      const noteCandidate = entries[urlIndex + 1];
+      const nextValueIsAnotherLabel =
+        Boolean(noteCandidate) && safeUrl(entries[urlIndex + 2]);
+      const note =
+        noteCandidate && !safeUrl(noteCandidate) && !nextValueIsAnotherLabel
+          ? noteCandidate
+          : undefined;
+      links.push(note ? { category, label, url, note } : { category, label, url });
+      seenUrls.add(url);
+    }
+  }
+
+  return links;
+}
+
 function generatedHtmlToText(value: string): string {
   return value
     .replace(/<br\s*\/?>/gi, '\n')
@@ -169,6 +213,12 @@ export class TripRepository {
 
   async getTodos(): Promise<TodoItem[]> {
     return parseTodosGrid(await this.sheets.getGrid(`${SHEET_NAMES.todos}!A:E`));
+  }
+
+  async getReferenceLinks(): Promise<ReferenceLink[]> {
+    return parseReferenceLinks(
+      await this.sheets.getValues(`${SHEET_NAMES.references}!A:H`)
+    );
   }
 
   async updateTodoStatus(

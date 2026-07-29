@@ -7,7 +7,9 @@ import type {
   FoodRecommendations,
   UserPermission,
   JourneyContent,
+  ReferenceLink,
   TicketItem,
+  TodoItem,
 } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { tripClient } from '@/utils/tripClient';
@@ -20,6 +22,7 @@ import TripSecretaryModal from './TripSecretaryModal';
 import TripDashboard from './TripDashboard';
 import TicketVaultPage from './TicketVaultPage';
 import AuthButton from './AuthButton';
+import UsefulLinksPage from './UsefulLinksPage';
 
 const TAB_IDS = {
   DASHBOARD: 'dashboard',
@@ -28,6 +31,7 @@ const TAB_IDS = {
   TICKETS: 'tickets',
   EXPENSE: 'expense',
   TODO: 'todo',
+  LINKS: 'links',
 } as const;
 
 type TabType = (typeof TAB_IDS)[keyof typeof TAB_IDS];
@@ -37,7 +41,9 @@ type LazyDataKey =
   | 'tickets'
   | 'attractionDetails'
   | 'foodRecommendations'
-  | 'journeyContent';
+  | 'journeyContent'
+  | 'referenceLinks'
+  | 'todos';
 
 const DEFAULT_TAB: TabType = TAB_IDS.DASHBOARD;
 const ACTIVE_TAB_STORAGE_KEY = 'activeTab';
@@ -52,7 +58,7 @@ const bottomTabs = [
   { id: TAB_IDS.TODO, label: '待辦' },
 ] satisfies Array<{ id: TabType; label: string }>;
 
-const validTabs = new Set<TabType>(bottomTabs.map((item) => item.id));
+const validTabs = new Set<TabType>(Object.values(TAB_IDS));
 
 const isTabType = (value: string | null): value is TabType =>
   !!value && validTabs.has(value as TabType);
@@ -170,9 +176,16 @@ const getInitialTab = (): TabType => {
 export default function App() {
   const [tab, setTab] = useState<TabType>(getInitialTab);
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
-  const [loadingItin, setLoadingItin] = useState(false);
+  const [loadingItin, setLoadingItin] = useState(true);
+  const [itineraryError, setItineraryError] = useState(false);
   const [navigationData, setNavigationData] = useState<NavigationData>({});
   const [tickets, setTickets] = useState<TicketItem[]>([]);
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loadingTodos, setLoadingTodos] = useState(true);
+  const [todosError, setTodosError] = useState(false);
+  const [referenceLinks, setReferenceLinks] = useState<ReferenceLink[]>([]);
+  const [loadingReferenceLinks, setLoadingReferenceLinks] = useState(true);
+  const [referenceLinksError, setReferenceLinksError] = useState(false);
   const [attractionDetails, setAttractionDetails] = useState<AttractionDetails>(
     {}
   );
@@ -242,11 +255,13 @@ export default function App() {
 
   const fetchItinerary = async (showBlockingLoading = true) => {
     if (showBlockingLoading) setLoadingItin(true);
+    setItineraryError(false);
     try {
       const data = await tripClient.getItineraryData();
       setItinerary(data);
       loadedDataRef.current.add('itinerary');
     } catch (error) {
+      if (itinerary.length === 0) setItineraryError(true);
       console.error('Failed to fetch itinerary:', error);
     } finally {
       if (showBlockingLoading) setLoadingItin(false);
@@ -327,10 +342,40 @@ export default function App() {
   const fetchJourneyContent = async () => {
     try {
       const data = await tripClient.getJourneyContent();
-      if (data && data.intro) setJourneyContent(data);
+      if (data) setJourneyContent(data);
       loadedDataRef.current.add('journeyContent');
     } catch (error) {
       console.error('Failed to fetch journey content:', error);
+    }
+  };
+
+  const fetchTodos = async () => {
+    setLoadingTodos(true);
+    setTodosError(false);
+    try {
+      const data = await tripClient.getTodoData();
+      setTodos(data || []);
+      loadedDataRef.current.add('todos');
+    } catch (error) {
+      setTodosError(true);
+      console.error('Failed to fetch todos:', error);
+    } finally {
+      setLoadingTodos(false);
+    }
+  };
+
+  const fetchReferenceLinks = async () => {
+    setLoadingReferenceLinks(true);
+    setReferenceLinksError(false);
+    try {
+      const data = await tripClient.getReferenceLinks();
+      setReferenceLinks(data || []);
+      loadedDataRef.current.add('referenceLinks');
+    } catch (error) {
+      setReferenceLinksError(true);
+      console.error('Failed to fetch reference links:', error);
+    } finally {
+      setLoadingReferenceLinks(false);
     }
   };
 
@@ -347,11 +392,36 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (tab !== TAB_IDS.DASHBOARD && tab !== TAB_IDS.ITINERARY && tab !== TAB_IDS.TICKETS) return;
+    if (
+      tab !== TAB_IDS.DASHBOARD &&
+      tab !== TAB_IDS.ITINERARY &&
+      tab !== TAB_IDS.TICKETS &&
+      tab !== TAB_IDS.TODO &&
+      tab !== TAB_IDS.LINKS
+    ) {
+      return;
+    }
 
-    loadOnce('itinerary', () => fetchItinerary(tab === TAB_IDS.ITINERARY));
-    if (userPermission.canEdit) {
+    if (tab !== TAB_IDS.TODO && tab !== TAB_IDS.LINKS) {
+      loadOnce('itinerary', fetchItinerary);
+    }
+    if (
+      userPermission.canEdit &&
+      (tab === TAB_IDS.DASHBOARD ||
+        tab === TAB_IDS.ITINERARY ||
+        tab === TAB_IDS.TICKETS)
+    ) {
       loadOnce('tickets', fetchTicketData);
+    }
+    if (tab === TAB_IDS.DASHBOARD) {
+      loadOnce('todos', fetchTodos);
+      loadOnce('journeyContent', fetchJourneyContent);
+    } else if (tab === TAB_IDS.TODO) {
+      loadedDataRef.current.delete('todos');
+      void loadOnce('todos', fetchTodos);
+    }
+    if (tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.LINKS) {
+      loadOnce('referenceLinks', fetchReferenceLinks);
     }
     if (tab === TAB_IDS.ITINERARY) {
       loadOnce('navigation', fetchNavigationData);
@@ -359,13 +429,6 @@ export default function App() {
       loadOnce('foodRecommendations', fetchFoodRecommendations);
     }
   }, [tab, userPermission.canEdit]);
-
-  useEffect(() => {
-    if (!userPermission.canEdit) return;
-    if (tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.ITINERARY || tab === TAB_IDS.TICKETS) {
-      loadOnce('tickets', fetchTicketData);
-    }
-  }, [userPermission.canEdit, tab]);
 
   useEffect(() => {
     if (tab !== TAB_IDS.JOURNEY) return;
@@ -486,8 +549,42 @@ export default function App() {
             {tripConfig.tripName}
           </h1>
 
+          {/* Useful links shortcut */}
+          <button
+            type="button"
+            aria-label="開啟實用連結"
+            aria-current={tab === TAB_IDS.LINKS ? 'page' : undefined}
+            title="實用連結"
+            onClick={() => {
+              setShowMenu(false);
+              setTab(TAB_IDS.LINKS);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`absolute right-12 top-1/2 z-50 -translate-y-1/2 rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink ${
+              isScrolled ? 'p-1' : 'p-2'
+            } ${tab === TAB_IDS.LINKS ? 'bg-white/55 text-forest' : ''}`}
+          >
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M10.5 13.5 13.5 10.5" />
+              <path d="M7.05 15.95 5.64 17.36a3.5 3.5 0 0 0 4.95 4.95L14 18.9a3.5 3.5 0 0 0 0-4.95" />
+              <path d="m16.95 8.05 1.41-1.41a3.5 3.5 0 0 0-4.95-4.95L10 5.1a3.5 3.5 0 0 0 0 4.95" />
+            </svg>
+          </button>
+
           {/* Menu button */}
           <button
+            type="button"
+            aria-label="開啟選單"
+            aria-expanded={showMenu}
             onClick={() => setShowMenu(!showMenu)}
             className={`absolute right-3 top-1/2 -translate-y-1/2 text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:text-ink ${
               isScrolled ? 'p-1' : 'p-2'
@@ -588,9 +685,28 @@ export default function App() {
         )}
       </header>
 
-      <main className={tab === TAB_IDS.JOURNEY ? 'mt-2' : tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.TICKETS ? 'mt-2' : 'max-w-6xl mx-auto p-4 mt-2'}>
+      <main className={tab === TAB_IDS.JOURNEY ? 'mt-2' : tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.TICKETS || tab === TAB_IDS.LINKS ? 'mt-2' : 'max-w-6xl mx-auto p-4 mt-2'}>
         {tab === TAB_IDS.DASHBOARD && (
-          loadingItin ? <Loading /> : <TripDashboard itinerary={itinerary} tickets={tickets} canViewTickets={userPermission.canEdit} onOpenItinerary={() => setTab(TAB_IDS.ITINERARY)} onOpenTickets={() => setTab(TAB_IDS.TICKETS)} />
+          loadingItin ? <Loading /> : (
+            <TripDashboard
+              itinerary={itinerary}
+              itineraryError={itineraryError}
+              journeyContent={journeyContent}
+              tickets={tickets}
+              todos={todos}
+              todosLoading={loadingTodos}
+              todosError={todosError}
+              referenceLinks={referenceLinks}
+              referenceLinksLoading={loadingReferenceLinks}
+              referenceLinksError={referenceLinksError}
+              canViewTickets={userPermission.canEdit}
+              onOpenItinerary={() => setTab(TAB_IDS.ITINERARY)}
+              onOpenJourney={() => setTab(TAB_IDS.JOURNEY)}
+              onOpenTickets={() => setTab(TAB_IDS.TICKETS)}
+              onOpenTodo={() => setTab(TAB_IDS.TODO)}
+              onOpenLinks={() => setTab(TAB_IDS.LINKS)}
+            />
+          )
         )}
         {tab === TAB_IDS.ITINERARY && (
           <div className="animate-fade-in-up">
@@ -621,6 +737,14 @@ export default function App() {
         {tab === TAB_IDS.TICKETS && (
           <TicketVaultPage tickets={tickets} canViewTickets={userPermission.canEdit} />
         )}
+        {tab === TAB_IDS.LINKS && (
+          <UsefulLinksPage
+            links={referenceLinks}
+            loading={loadingReferenceLinks}
+            error={referenceLinksError}
+            onBack={() => setTab(TAB_IDS.DASHBOARD)}
+          />
+        )}
         {visitedTabs.has(TAB_IDS.EXPENSE) && (
           <div
             className={tab === TAB_IDS.EXPENSE ? 'animate-fade-in-up' : 'hidden'}
@@ -639,7 +763,10 @@ export default function App() {
           >
             <TodoPage
               canEdit={userPermission.canEdit}
-              isActive={tab === TAB_IDS.TODO}
+              todos={todos}
+              loading={loadingTodos}
+              error={todosError}
+              onTodosChange={setTodos}
             />
           </div>
         )}

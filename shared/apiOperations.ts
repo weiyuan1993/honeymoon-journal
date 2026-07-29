@@ -12,6 +12,7 @@ export const API_OPERATIONS = {
   getAttractionDetails: { capability: 'public:read', method: 'GET' },
   getFoodRecommendations: { capability: 'public:read', method: 'GET' },
   getJourneyContent: { capability: 'public:read', method: 'GET' },
+  getReferenceLinks: { capability: 'public:read', method: 'GET' },
   getTicketData: { capability: 'private:read', method: 'GET' },
   getChatHistory: { capability: 'private:read', method: 'GET' },
   editItinerary: { capability: 'private:write', method: 'POST' },
