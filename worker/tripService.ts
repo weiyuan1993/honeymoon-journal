@@ -14,6 +14,7 @@ import {
   itinerarySuggestionPrompt,
   journeyPrompt,
 } from './prompts';
+import { normalizeAiPlainText } from '../shared/plainText';
 import { TripRepository } from './tripRepository';
 
 export interface PersistedGenerateResponse<T = string> {
@@ -124,7 +125,7 @@ export class TripService {
     useSearch = false
   ): Promise<PersistedGenerateResponse> {
     const context = await this.repository.buildTripContext();
-    const answer = await this.gemini.generate({
+    const generatedAnswer = await this.gemini.generate({
       systemPrompt: chatSystemPrompt(context, useSearch),
       history: history.map((message) => ({
         role: message.role === 'user' ? 'user' : 'model',
@@ -135,6 +136,7 @@ export class TripService {
       temperature: 0.7,
       maxOutputTokens: 2048,
     });
+    const answer = normalizeAiPlainText(generatedAnswer);
     try {
       await this.repository.saveChat(question, answer);
       return { success: true, answer, persisted: true };

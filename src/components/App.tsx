@@ -201,6 +201,14 @@ export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isBottomNavCompact, setIsBottomNavCompact] = useState(false);
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
+  const [journeyNavigation, setJourneyNavigation] = useState<{
+    city: string | null;
+    request: number;
+  }>({ city: null, request: 0 });
+  const [todoNavigation, setTodoNavigation] = useState<{
+    rowNumber: number | null;
+    request: number;
+  }>({ rowNumber: null, request: 0 });
   const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(
@@ -532,6 +540,23 @@ export default function App() {
     }
   };
 
+  const openJourney = (city?: string) => {
+    setJourneyNavigation((current) => ({
+      city: city || null,
+      request: current.request + 1,
+    }));
+    setShowMenu(false);
+    setTab(TAB_IDS.JOURNEY);
+  };
+
+  const openPendingTodos = (rowNumber?: number) => {
+    setTodoNavigation((current) => ({
+      rowNumber: rowNumber ?? null,
+      request: current.request + 1,
+    }));
+    setTab(TAB_IDS.TODO);
+  };
+
   const handleItineraryUpdate = (updatedItem?: ItineraryFormData) => {
     if (updatedItem) {
       setItinerary((current) =>
@@ -600,12 +625,38 @@ export default function App() {
           {/* Main title */}
           <h1
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className={`font-display text-ink tracking-wide cursor-pointer hover:text-gold transition-all duration-300 ${
+            className={`max-w-[104px] truncate font-display text-ink tracking-wide cursor-pointer hover:text-gold transition-all duration-300 sm:max-w-none ${
               isScrolled ? 'text-xs' : 'text-sm'
             }`}
           >
             {tripConfig.tripName}
           </h1>
+
+          {/* Journey shortcut */}
+          <button
+            type="button"
+            aria-label="開啟旅程故事"
+            aria-current={tab === TAB_IDS.JOURNEY ? 'page' : undefined}
+            title="旅程故事"
+            onClick={() => openJourney()}
+            className={`absolute right-[5.25rem] top-1/2 z-50 -translate-y-1/2 rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink ${
+              isScrolled ? 'p-1' : 'p-2'
+            } ${tab === TAB_IDS.JOURNEY ? 'bg-white/55 text-forest' : ''}`}
+          >
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 19.5V5.75A2.75 2.75 0 0 1 6.75 3H20v15H6.75A2.75 2.75 0 0 0 4 20.75" />
+              <path d="M8 7h8M8 11h6" />
+            </svg>
+          </button>
 
           {/* Useful links shortcut */}
           <button
@@ -759,9 +810,9 @@ export default function App() {
               referenceLinksError={referenceLinksError}
               canViewTickets={userPermission.canEdit}
               onOpenItinerary={() => setTab(TAB_IDS.ITINERARY)}
-              onOpenJourney={() => setTab(TAB_IDS.JOURNEY)}
+              onOpenJourney={openJourney}
               onOpenTickets={() => setTab(TAB_IDS.TICKETS)}
-              onOpenTodo={() => setTab(TAB_IDS.TODO)}
+              onOpenTodo={openPendingTodos}
               onOpenLinks={() => setTab(TAB_IDS.LINKS)}
             />
           )
@@ -824,6 +875,8 @@ export default function App() {
               todos={todos}
               loading={loadingTodos}
               error={todosError}
+              isActive={tab === TAB_IDS.TODO}
+              navigation={todoNavigation}
               onTodosChange={setTodos}
             />
           </div>
@@ -839,6 +892,7 @@ export default function App() {
                 itinerary={itinerary}
                 canEdit={userPermission.canEdit}
                 journeyContent={journeyContent}
+                navigation={journeyNavigation}
                 onJourneyContentUpdate={setJourneyContent}
               />
             )}

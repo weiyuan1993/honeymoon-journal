@@ -1,4 +1,11 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import type { TodoItem } from '@/types';
 import { htmlToText } from '@/utils/htmlToText';
 import { tripClient } from '@/utils/tripClient';
@@ -11,6 +18,11 @@ interface TodoPageProps {
   todos: TodoItem[];
   loading: boolean;
   error: boolean;
+  isActive: boolean;
+  navigation: {
+    rowNumber: number | null;
+    request: number;
+  };
   onTodosChange: Dispatch<SetStateAction<TodoItem[]>>;
 }
 
@@ -33,10 +45,47 @@ export default function TodoPage({
   todos,
   loading,
   error,
+  isActive,
+  navigation,
   onTodosChange,
 }: TodoPageProps) {
   const [filter, setFilter] = useState<TodoFilter>('all');
   const [updatingRows, setUpdatingRows] = useState<Set<number>>(new Set());
+  const handledNavigationRequestRef = useRef(0);
+
+  useEffect(() => {
+    if (!isActive || navigation.request === 0) return;
+    setFilter('pending');
+  }, [isActive, navigation.request]);
+
+  useEffect(() => {
+    if (
+      !isActive ||
+      navigation.request === 0 ||
+      handledNavigationRequestRef.current === navigation.request ||
+      loading ||
+      filter !== 'pending'
+    ) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      if (navigation.rowNumber === null) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        handledNavigationRequestRef.current = navigation.request;
+        return;
+      }
+      const target = document.getElementById(
+        `todo-row-${navigation.rowNumber}`
+      );
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        handledNavigationRequestRef.current = navigation.request;
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [filter, isActive, loading, navigation, todos]);
 
   const stats = useMemo(() => {
     const done = todos.filter((todo) => todo.done).length;
@@ -187,6 +236,7 @@ export default function TodoPage({
                   return (
                     <div
                       key={todo.rowNumber}
+                      id={`todo-row-${todo.rowNumber}`}
                       className={`flex gap-3 px-4 py-3 transition-colors ${
                         todo.done ? 'bg-gray-50/60' : 'hover:bg-gray-50'
                       }`}

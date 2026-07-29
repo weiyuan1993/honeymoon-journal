@@ -10,9 +10,12 @@ import { htmlToText } from '@/utils/htmlToText';
 import {
   buildTripTimeline,
   getFocusTicketAction,
-  getPrimaryTripCity,
   getTripCountry,
 } from './dashboardData';
+import {
+  getJourneyCityContent,
+  getPrimaryTripCity,
+} from '@/utils/tripLocations';
 import {
   filterReferenceLinks,
   getReferenceHostname,
@@ -31,9 +34,9 @@ interface TripDashboardProps {
   referenceLinksLoading: boolean;
   referenceLinksError: boolean;
   onOpenItinerary: () => void;
-  onOpenJourney: () => void;
+  onOpenJourney: (city?: string) => void;
   onOpenTickets: () => void;
-  onOpenTodo: () => void;
+  onOpenTodo: (rowNumber?: number) => void;
   onOpenLinks: () => void;
   canViewTickets: boolean;
 }
@@ -107,7 +110,7 @@ export default function TripDashboard({
     : [];
   const focusTicketAction = getFocusTicketAction(focusItem, tickets);
   const heroStory =
-    journeyContent?.cities?.[contextCity] || heroCopy.intro;
+    getJourneyCityContent(journeyContent?.cities, contextCity) || heroCopy.intro;
   let countdownDetail = '等待行程資料';
   if (itineraryError) {
     countdownDetail = '行程暫時無法載入';
@@ -126,7 +129,11 @@ export default function TripDashboard({
           <p className="dashboard-intro">{heroStory}</p>
           <div className="dashboard-actions">
             <button type="button" onClick={onOpenItinerary}>查看完整行程</button>
-            <button type="button" className="secondary" onClick={onOpenJourney}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => onOpenJourney(contextCity || undefined)}
+            >
               閱讀旅程故事
             </button>
             <button type="button" className="secondary" onClick={onOpenTickets}>
@@ -232,7 +239,7 @@ export default function TripDashboard({
       <section className="todo-preview">
         <div className="section-heading">
           <span>NEXT ACTIONS</span>
-          <button type="button" onClick={onOpenTodo}>
+          <button type="button" onClick={() => onOpenTodo()}>
             {todosLoading || todosError
               ? '查看全部 →'
               : `查看全部 ${pendingTodos.length} 項 →`}
@@ -240,7 +247,11 @@ export default function TripDashboard({
         </div>
         <div className="todo-preview-list">
           {!todosLoading && !todosError && pendingTodos.slice(0, 3).map((todo) => (
-            <button type="button" key={todo.rowNumber} onClick={onOpenTodo}>
+            <button
+              type="button"
+              key={todo.rowNumber}
+              onClick={() => onOpenTodo(todo.rowNumber)}
+            >
               <span aria-hidden="true" />
               <div>
                 <strong>{htmlToText(todo.item)}</strong>
@@ -273,11 +284,6 @@ export default function TripDashboard({
             </h3>
           </div>
           <div className="useful-links-meta">
-            <p>
-              {currentCountry
-                ? `依目前行程顯示${currentCountry}資料`
-                : '等待目前行程位置'}
-            </p>
             <button type="button" onClick={onOpenLinks}>
               查看全部 →
             </button>

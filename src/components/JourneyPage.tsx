@@ -1,14 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ItineraryItem, JourneyContent } from '@/types';
 import { tripConfig } from '@/config/trip.config';
 import { cityHeroImages, coverMobileImage } from '@/config/journey.images';
 import { tripClient } from '@/utils/tripClient';
-import { extractPrimaryTripCity } from '@/utils/tripLocations';
+import {
+  getJourneyCityContent,
+  getPrimaryTripCity,
+} from '@/utils/tripLocations';
 
 interface JourneyPageProps {
   itinerary: ItineraryItem[];
   canEdit: boolean;
   journeyContent: JourneyContent | null;
+  navigation: {
+    city: string | null;
+    request: number;
+  };
   onJourneyContentUpdate: (content: JourneyContent) => void;
 }
 
@@ -34,15 +41,9 @@ const cityNameMap: Record<string, string> = {
   '羅馬': 'Rome',
 };
 
-// City grouping (group these cities together)
-const cityGroupMap: Record<string, string> = {
-  '梵蒂岡': '羅馬',
-};
-
 // Extract main city name
 function extractMainCity(cityStr: string): { zh: string; en: string } {
-  let cityName = extractPrimaryTripCity(cityStr);
-  cityName = cityGroupMap[cityName] || cityName;
+  const cityName = getPrimaryTripCity(cityStr);
 
   return {
     zh: cityName,
@@ -52,7 +53,19 @@ function extractMainCity(cityStr: string): { zh: string; en: string } {
 
 const getCitySectionId = (index: number) => `journey-city-${index}`;
 
-export default function JourneyPage({ itinerary, canEdit, journeyContent, onJourneyContentUpdate }: JourneyPageProps) {
+const scrollToCitySection = (index: number) => {
+  document
+    .getElementById(getCitySectionId(index))
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+export default function JourneyPage({
+  itinerary,
+  canEdit,
+  journeyContent,
+  navigation,
+  onJourneyContentUpdate,
+}: JourneyPageProps) {
   const [generating, setGenerating] = useState(false);
 
   // Group itinerary by city segments
@@ -96,6 +109,24 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
     return segments;
   }, [itinerary]);
 
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (!navigation.city) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      const cityIndex = citySegments.findIndex(
+        (segment) => segment.city === navigation.city
+      );
+      if (cityIndex >= 0) {
+        scrollToCitySection(cityIndex);
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [citySegments, navigation]);
+
   const handleGenerate = async () => {
     if (!canEdit) return;
     if (itinerary.length === 0) {
@@ -119,17 +150,10 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
     setGenerating(false);
   };
 
-  const scrollToCitySection = (index: number) => {
-    const target = document.getElementById(getCitySectionId(index));
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <div className="-mt-16 relative h-[80vh] md:h-[85vh] min-h-[450px] max-h-[700px] overflow-hidden">
+      <div className="relative h-[80vh] md:h-[85vh] min-h-[450px] max-h-[700px] overflow-hidden">
         <picture>
           <source media="(max-width: 767px)" srcSet={coverMobileImage} />
           <img
@@ -167,6 +191,41 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
         </div>
       </div>
 
+      <div className="bg-paper px-4 py-3 md:px-8">
+        <div className="mx-auto flex max-w-5xl justify-end">
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={!canEdit || generating || itinerary.length === 0}
+            className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 font-display text-sm shadow-sm transition-all ${
+              !canEdit
+                ? 'cursor-not-allowed bg-gray-300 text-white'
+                : 'border border-gold/30 bg-white text-gold hover:bg-gold/5 hover:shadow-md'
+            } disabled:opacity-50`}
+            title={!canEdit ? '需編輯權限' : undefined}
+          >
+            {generating ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+                AI 撰寫中...
+              </>
+            ) : (
+              <>
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
+                </svg>
+                更新文案
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Intro Section */}
       <div className="bg-paper px-4 md:px-8 py-10">
         <div className="max-w-4xl mx-auto text-center">
@@ -186,7 +245,10 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
 
       {/* City Sections */}
       {citySegments.map((segment, idx) => {
-        const cityContent = journeyContent?.cities?.[segment.city];
+        const cityContent = getJourneyCityContent(
+          journeyContent?.cities,
+          segment.city
+        );
         const heroImage = cityHeroImages[segment.city] || cityHeroImages['倫敦'];
 
         return (
@@ -285,35 +347,6 @@ export default function JourneyPage({ itinerary, canEdit, journeyContent, onJour
             </p>
           </div>
 
-          {/* Generate Button */}
-          <div className="mt-8">
-            <button
-              onClick={handleGenerate}
-              disabled={!canEdit || generating || itinerary.length === 0}
-              className={`inline-flex items-center gap-2 px-6 py-3 font-display text-sm rounded-lg shadow-lg transition-all ${
-                !canEdit
-                  ? 'bg-gray-300 text-white cursor-not-allowed'
-                  : journeyContent
-                    ? 'bg-white border border-gold/30 text-gold hover:bg-gold/5'
-                    : 'bg-gradient-to-r from-gold to-amber-500 text-white hover:shadow-xl'
-              } disabled:opacity-50`}
-              title={!canEdit ? '需編輯權限' : undefined}
-            >
-              {generating ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                  AI 撰寫中...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                  </svg>
-                  {journeyContent ? '重新生成文案' : '✨ AI 生成旅程介紹'}
-                </>
-              )}
-            </button>
-          </div>
         </div>
       </div>
     </div>

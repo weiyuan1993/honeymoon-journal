@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ChatMessage } from '@/types';
 import { tripClient } from '@/utils/tripClient';
+import { normalizeAiPlainText } from '../../shared/plainText';
 
 interface TripSecretaryModalProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
           },
           {
             role: 'assistant',
-            content: item.answer,
+            content: normalizeAiPlainText(item.answer),
             timestamp: item.timestamp,
           },
         ]);
@@ -106,7 +107,10 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
       const response = await tripClient.chatWithSecretary(question, history, useSearch);
 
       if (response.success && response.answer) {
-        const assistantMessage: ChatMessage = { role: 'assistant', content: response.answer };
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: normalizeAiPlainText(response.answer),
+        };
         setMessages(prev => [
           ...prev,
           assistantMessage,

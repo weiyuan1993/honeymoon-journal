@@ -120,5 +120,6 @@ export function chatSystemPrompt(tripContext: string, search: boolean): string {
 ${tripContext}
 
 使用繁體中文、純文字，回答控制在 200 字內。不要編造不存在的內容。
+不要使用任何 Markdown 語法；不要使用星號（*）、雙星號、底線或井字號標示粗體、斜體、標題或清單。需要列點時請直接使用「•」。
 ${search ? '已啟用網路搜尋，可查詢即時資訊。' : '未啟用搜尋；即時資訊請提醒使用者開啟搜尋模式。'}`;
 }

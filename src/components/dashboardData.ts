@@ -1,6 +1,6 @@
 import type { ItineraryItem, TicketItem } from '@/types';
 import { tripConfig } from '../config/trip.config';
-import { extractPrimaryTripCity } from '../utils/tripLocations';
+import { getPrimaryTripCity } from '../utils/tripLocations';
 
 const DAY_IN_MS = 86_400_000;
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
@@ -24,11 +24,6 @@ type FocusTicketAction =
   | { type: 'link'; href: string }
   | null;
 
-const CITY_ALIASES: Record<string, string> = {
-  盧森: '琉森',
-  梵蒂岡: '羅馬',
-};
-
 const COUNTRY_BY_CITY: Record<string, string> = {
   倫敦: '英國',
   巴黎: '法國',
@@ -43,11 +38,6 @@ const COUNTRY_BY_CITY: Record<string, string> = {
   佛羅倫斯: '義大利',
   比薩: '義大利',
   羅馬: '義大利',
-};
-
-export const getPrimaryTripCity = (value: string): string => {
-  const city = extractPrimaryTripCity(value);
-  return CITY_ALIASES[city] || city;
 };
 
 export const getTripCountry = (value: string): string | null =>

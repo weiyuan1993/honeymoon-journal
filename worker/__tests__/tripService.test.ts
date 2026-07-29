@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { parseJourney } from '../tripService';
+import { describe, expect, it, vi } from 'vitest';
+import { TripService, parseJourney } from '../tripService';
+import type { TripRepository } from '../tripRepository';
+import type { GeminiClient } from '../gemini';
 
 describe('parseJourney', () => {
   it('parses structured journey output into the page content shape', () => {
@@ -20,5 +22,33 @@ describe('parseJourney', () => {
       },
       closing: '這段旅程會成為我們共同的珍藏。',
     });
+  });
+});
+
+describe('TripService chat', () => {
+  it('normalizes unsupported Markdown before returning and saving an answer', async () => {
+    const repository = {
+      buildTripContext: vi.fn().mockResolvedValue('trip context'),
+      saveChat: vi.fn().mockResolvedValue(undefined),
+    };
+    const gemini = {
+      generate: vi.fn().mockResolvedValue('**巴黎**\n* 景點'),
+    };
+    const service = new TripService(
+      repository as unknown as TripRepository,
+      gemini as unknown as GeminiClient
+    );
+
+    const result = await service.chatWithSecretary('巴黎怎麼玩？', []);
+
+    expect(result).toMatchObject({
+      success: true,
+      answer: '巴黎\n• 景點',
+      persisted: true,
+    });
+    expect(repository.saveChat).toHaveBeenCalledWith(
+      '巴黎怎麼玩？',
+      '巴黎\n• 景點'
+    );
   });
 });
