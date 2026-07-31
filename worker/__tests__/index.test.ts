@@ -115,6 +115,67 @@ describe('worker privacy boundary', () => {
     expect(JSON.stringify(payload)).not.toContain('vic@example.com');
   });
 
+  it('reuses one public cache entry across expense overview query variants', async () => {
+    const overview = {
+      fetchedAt: '2026-07-31T03:00:00.000Z',
+      ratesTwdPerUnit: { TWD: 1 },
+      categories: [],
+      ledgerByCurrency: [],
+      components: {
+        budgetProjectedTwd: 100,
+        budgetPaidTwd: 40,
+        budgetUnpaidTwd: 60,
+        ledgerTwd: 10,
+      },
+      totals: {
+        projectedTwd: 110,
+        paidTwd: 50,
+        unpaidTwd: 60,
+      },
+      warnings: [],
+      unconvertedCurrencies: [],
+      isComplete: true,
+    };
+    const getExpenseOverview = vi
+      .spyOn(TripRepository.prototype, 'getExpenseOverview')
+      .mockResolvedValue(overview);
+    const cacheEntries = new Map<string, Response>();
+    vi.stubGlobal('caches', {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn(async (key: Request | string) => {
+          const url = typeof key === 'string' ? key : key.url;
+          return cacheEntries.get(url)?.clone();
+        }),
+        put: vi.fn(async (key: Request | string, response: Response) => {
+          const url = typeof key === 'string' ? key : key.url;
+          cacheEntries.set(url, response.clone());
+        }),
+        delete: vi.fn().mockResolvedValue(true),
+      }),
+    });
+
+    const firstResponse = await worker.fetch(
+      new Request(
+        'https://trip.example/api/rpc/getExpenseOverviewData?refresh=first'
+      ),
+      env
+    );
+    const secondResponse = await worker.fetch(
+      new Request(
+        'https://trip.example/api/rpc/getExpenseOverviewData?refresh=second'
+      ),
+      env
+    );
+
+    await expect(firstResponse.json()).resolves.toEqual({ data: overview });
+    await expect(secondResponse.json()).resolves.toEqual({ data: overview });
+    expect(getExpenseOverview).toHaveBeenCalledTimes(1);
+    expect(cacheEntries).toHaveLength(1);
+    expect(cacheEntries.has(
+      'https://trip.example/api/rpc/getExpenseOverviewData'
+    )).toBe(true);
+  });
+
   it('removes accommodation links for anonymous callers', async () => {
     vi.spyOn(TripRepository.prototype, 'getItinerary').mockResolvedValue([
       {

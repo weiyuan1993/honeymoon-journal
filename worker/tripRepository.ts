@@ -103,18 +103,26 @@ export function parseTodosGrid(
 }
 
 export function parseExpensesGrid(
-  rows: Array<{ rowNumber: number; cells: GridCell[] }>
+  rows: Array<{ rowNumber: number; cells: GridCell[] }>,
+  options: { strictAmounts?: boolean } = {}
 ): ExpenseItem[] {
   return rows
     .filter(({ cells }) => cellDisplayValue(cell(cells, 1)))
     .map(({ rowNumber, cells }) => {
+      const amountCell = cell(cells, 2);
+      const effectiveAmount = amountCell?.effectiveValue?.numberValue;
+      const displayAmount = cellDisplayValue(amountCell);
       return {
         rowNumber,
         timestamp: timestampFromCell(cell(cells, 0)),
         item: cellDisplayValue(cell(cells, 1)),
         amount:
-          cell(cells, 2)?.effectiveValue?.numberValue ??
-          (Number(cellDisplayValue(cell(cells, 2))) || 0),
+          effectiveAmount ??
+          (options.strictAmounts
+            ? displayAmount.trim()
+              ? Number(displayAmount)
+              : Number.NaN
+            : Number(displayAmount) || 0),
         currency: cellDisplayValue(cell(cells, 3)),
         category: cellDisplayValue(cell(cells, 4)),
       };
@@ -572,7 +580,7 @@ export class TripRepository {
     ]);
     return buildExpenseOverview(
       parseExpensePlanGrid(planRows),
-      parseExpensesGrid(expenseRows)
+      parseExpensesGrid(expenseRows, { strictAmounts: true })
     );
   }
 

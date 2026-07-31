@@ -124,7 +124,7 @@ async function handleRpc(
     operation === 'getItineraryData' && hasEditorAccess;
   const usesPublicCache =
     route.capability === 'public:read' && !returnsPrivateItinerary;
-  const cacheKey = new Request(request.url, { method: 'GET' });
+  const cacheKey = publicCacheKey(new URL(request.url));
   const publicCache = await caches.open(PUBLIC_CACHE_NAME);
   if (usesPublicCache) {
     const cached = await publicCache.match(cacheKey);
@@ -307,11 +307,19 @@ function publicItinerary(itinerary: ItineraryItem[]): ItineraryItem[] {
   }));
 }
 
+function publicCacheKey(url: URL): string {
+  return `${url.origin}${url.pathname}`;
+}
+
 async function invalidatePublicCache(origin: string): Promise<void> {
   const publicCache = await caches.open(PUBLIC_CACHE_NAME);
   await Promise.all(
     Object.entries(API_OPERATIONS)
       .filter(([, route]) => route.capability === 'public:read')
-      .map(([operation]) => publicCache.delete(`${origin}/api/rpc/${operation}`))
+      .map(([operation]) =>
+        publicCache.delete(
+          publicCacheKey(new URL(`/api/rpc/${operation}`, origin))
+        )
+      )
   );
 }

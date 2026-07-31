@@ -65,6 +65,8 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
   const hasLoadedOverviewRef = useRef(false);
   const ledgerRequestRef = useRef(0);
   const overviewRequestRef = useRef(0);
+  const activeDeleteCountRef = useRef(0);
+  const shouldRefreshAfterDeleteRef = useRef(false);
   const successTimerRef = useRef<number | null>(null);
 
   const fetchLedger = useCallback(async (showBlockingLoading = false) => {
@@ -129,7 +131,10 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     void fetchLedger(!hasLoadedLedgerRef.current);
     void fetchOverview(!hasLoadedOverviewRef.current);
 
-    const handleFocus = refreshAll;
+    const handleFocus = () => {
+      if (activeDeleteCountRef.current > 0) return;
+      refreshAll();
+    };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [fetchLedger, fetchOverview, isActive, refreshAll]);
@@ -219,6 +224,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     if (!canEdit) return;
     const oldList = list;
     const target = oldList.find((item) => item.rowNumber === rowNumber);
+    activeDeleteCountRef.current += 1;
     invalidatePendingReads();
     setList((current) =>
       current.filter((item) => item.rowNumber !== rowNumber)
@@ -235,9 +241,18 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
         setList(oldList);
         return;
       }
-      refreshAll();
+      shouldRefreshAfterDeleteRef.current = true;
     } catch {
       setList(oldList);
+    } finally {
+      activeDeleteCountRef.current -= 1;
+      if (
+        activeDeleteCountRef.current === 0 &&
+        shouldRefreshAfterDeleteRef.current
+      ) {
+        shouldRefreshAfterDeleteRef.current = false;
+        refreshAll();
+      }
     }
   };
 

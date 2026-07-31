@@ -341,6 +341,77 @@ describe('trip repository parsers', () => {
     expect(result.isComplete).toBe(false);
   });
 
+  it('rejects malformed ledger rows from the parsed expense overview', () => {
+    const rows = [
+      {
+        rowNumber: 2,
+        cells: [
+          { formattedValue: '2026/7/31' },
+          { formattedValue: 'Lunch' },
+          { formattedValue: '10', effectiveValue: { numberValue: 10 } },
+          { formattedValue: 'EUR' },
+          { formattedValue: 'Food' },
+        ],
+      },
+      {
+        rowNumber: 3,
+        cells: [
+          { formattedValue: '2026/7/31' },
+          { formattedValue: 'Malformed amount' },
+          { formattedValue: 'not-a-number' },
+          { formattedValue: 'EUR' },
+          { formattedValue: 'Other' },
+        ],
+      },
+      {
+        rowNumber: 4,
+        cells: [
+          { formattedValue: '2026/7/31' },
+          { formattedValue: 'Blank amount' },
+          {},
+          { formattedValue: 'EUR' },
+          { formattedValue: 'Other' },
+        ],
+      },
+      {
+        rowNumber: 5,
+        cells: [
+          { formattedValue: '2026/7/31' },
+          { formattedValue: 'Blank currency' },
+          { formattedValue: '20', effectiveValue: { numberValue: 20 } },
+          {},
+          { formattedValue: 'Other' },
+        ],
+      },
+    ];
+    const expenses = parseExpensesGrid(rows, { strictAmounts: true });
+
+    expect(parseExpensesGrid(rows).find(({ rowNumber }) => rowNumber === 3)?.amount)
+      .toBe(0);
+    expect(
+      expenses
+        .filter(({ rowNumber }) => rowNumber === 3 || rowNumber === 4)
+        .every(({ amount }) => !Number.isFinite(amount))
+    ).toBe(true);
+
+    const result = buildExpenseOverview(
+      parseExpensePlanGrid(expensePlanFixture()),
+      expenses
+    );
+
+    expect(result.ledgerByCurrency).toEqual([
+      { currency: 'EUR', amount: 10, amountTwd: 350 },
+    ]);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        '記帳第 3 列的幣別或金額無效',
+        '記帳第 4 列的幣別或金額無效',
+        '記帳第 5 列的幣別或金額無效',
+      ])
+    );
+    expect(result.isComplete).toBe(false);
+  });
+
   it('groups valid reference links under the latest country heading', () => {
     const result = parseReferenceLinks([
       ['英國'],
