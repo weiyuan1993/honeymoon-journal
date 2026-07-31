@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { ChatMessage } from '@/types';
 import { tripClient } from '@/utils/tripClient';
 import { normalizeAiPlainText } from '../../shared/plainText';
+import { shouldSubmitSecretaryInput } from './tripSecretaryKeyboard';
 
 interface TripSecretaryModalProps {
   isOpen: boolean;
@@ -137,11 +138,17 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const shouldSubmit = shouldSubmitSecretaryInput({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      isComposing: e.nativeEvent.isComposing,
+      keyCode: e.nativeEvent.keyCode,
+    });
+    if (!shouldSubmit) return;
+
+    e.preventDefault();
+    handleSend();
   };
 
   const handleQuickSuggestion = (suggestion: string) => {
