@@ -154,7 +154,10 @@ describe('trip repository parsers', () => {
     const result = parseExpensesGrid([{
       rowNumber: 8,
       cells: [
-        { formattedValue: '2026/10/01 12:00', effectiveValue: { numberValue: 46396.5 } },
+        {
+          formattedValue: '2025/12/30 下午 9:41:15',
+          effectiveValue: { numberValue: 46021.903645833336 },
+        },
         { formattedValue: 'Dinner' },
         { formattedValue: '€1,234.50', effectiveValue: { numberValue: 1234.5 } },
         { formattedValue: 'EUR' },
@@ -168,7 +171,7 @@ describe('trip repository parsers', () => {
       amount: 1234.5,
       currency: 'EUR',
     });
-    expect(result[0].timestamp).toMatch(/^2027-/);
+    expect(result[0].timestamp).toBe('2025-12-30T13:41:15.000Z');
   });
 
   it('normalizes the fee plan to two-person totals and uses effective numbers', () => {

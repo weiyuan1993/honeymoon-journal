@@ -1,91 +1,242 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import type { ExpenseItem as ExpenseItemType, ExpenseFormData } from '@/types';
-import { tripConfig, getCurrencySymbol } from '@/config/trip.config';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
+import type {
+  ExpenseFormData,
+  ExpenseItem as ExpenseItemType,
+  ExpenseOverviewData,
+} from '@/types';
+import { tripConfig } from '@/config/trip.config';
 import { tripClient } from '@/utils/tripClient';
-import ExpenseItem from './ExpenseItem';
-import Loading from './Loading';
+import ExpenseHistory from './ExpenseHistory';
+import type { ExpenseHistoryModel } from './ExpenseHistory';
+import ExpenseOverview from './ExpenseOverview';
+import ExpenseToday from './ExpenseToday';
+import type { ExpenseTodayModel } from './ExpenseToday';
+import {
+  ALL_EXPENSE_FILTER,
+  getLocalDateKey,
+  selectTodayExpenses,
+} from './expenseData';
+import type { ExpenseFilters } from './expenseData';
+import type { LoadStatus, SubmitStatus } from './expenseUi';
 
 interface ExpensePageProps {
   canEdit: boolean;
   isActive: boolean;
 }
 
+type ExpenseTab = 'today' | 'overview' | 'details';
+
+interface ExpenseTabDefinition {
+  id: ExpenseTab;
+  label: string;
+}
+
+const EXPENSE_TABS: ExpenseTabDefinition[] = [
+  { id: 'today', label: '今日' },
+  { id: 'overview', label: '總覽' },
+  { id: 'details', label: '明細' },
+];
+
 export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
+  const [activeTab, setActiveTab] = useState<ExpenseTab>('today');
   const [formData, setFormData] = useState<ExpenseFormData>({
     item: '',
     amount: '',
     currency: tripConfig.defaultCurrency,
     category: tripConfig.categories[0].code,
   });
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
   const [list, setList] = useState<ExpenseItemType[]>([]);
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>(
-    'idle'
-  );
-  const [loadingList, setLoadingList] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterCurrency, setFilterCurrency] = useState('all');
+  const [ledgerStatus, setLedgerStatus] = useState<LoadStatus>('idle');
+  const [ledgerWarning, setLedgerWarning] = useState<string | null>(null);
+  const [overview, setOverview] = useState<ExpenseOverviewData | null>(null);
+  const [overviewStatus, setOverviewStatus] = useState<LoadStatus>('idle');
+  const [overviewWarning, setOverviewWarning] = useState<string | null>(null);
+  const [todayKey, setTodayKey] = useState(() => getLocalDateKey(new Date()));
+  const [filters, setFilters] = useState<ExpenseFilters>({
+    searchTerm: '',
+    category: ALL_EXPENSE_FILTER,
+    currency: ALL_EXPENSE_FILTER,
+  });
   const [showAll, setShowAll] = useState(false);
-  const hasLoadedRef = useRef(false);
 
-  const fetchList = async (showBlockingLoading = !hasLoadedRef.current) => {
-    if (showBlockingLoading) setLoadingList(true);
+  const hasLoadedLedgerRef = useRef(false);
+  const hasLoadedOverviewRef = useRef(false);
+  const ledgerRequestRef = useRef(0);
+  const overviewRequestRef = useRef(0);
+  const successTimerRef = useRef<number | null>(null);
+
+  const fetchLedger = useCallback(async (showBlockingLoading = false) => {
+    const requestId = ++ledgerRequestRef.current;
+    if (showBlockingLoading && !hasLoadedLedgerRef.current) {
+      setLedgerStatus('loading');
+    }
     try {
       const data = await tripClient.getExpenseData();
-      if (data && !('error' in data)) {
-        setList(data);
-        hasLoadedRef.current = true;
-      }
+      if (requestId !== ledgerRequestRef.current) return;
+      setList(data);
+      setLedgerStatus('ready');
+      setLedgerWarning(null);
+      hasLoadedLedgerRef.current = true;
     } catch (error) {
+      if (requestId !== ledgerRequestRef.current) return;
       console.error('Failed to fetch expenses:', error);
-    } finally {
-      if (showBlockingLoading) setLoadingList(false);
+      if (hasLoadedLedgerRef.current) {
+        setLedgerWarning('記帳資料重新整理失敗，目前顯示上次成功載入的內容。');
+      } else {
+        setLedgerStatus('error');
+      }
     }
-  };
+  }, []);
+
+  const fetchOverview = useCallback(async (showBlockingLoading = false) => {
+    const requestId = ++overviewRequestRef.current;
+    if (showBlockingLoading && !hasLoadedOverviewRef.current) {
+      setOverviewStatus('loading');
+    }
+    try {
+      const data = await tripClient.getExpenseOverviewData();
+      if (requestId !== overviewRequestRef.current) return;
+      setOverview(data);
+      setOverviewStatus('ready');
+      setOverviewWarning(null);
+      hasLoadedOverviewRef.current = true;
+    } catch (error) {
+      if (requestId !== overviewRequestRef.current) return;
+      console.error('Failed to fetch expense overview:', error);
+      if (hasLoadedOverviewRef.current) {
+        setOverviewWarning('整體費用重新整理失敗，目前顯示上次成功載入的內容。');
+      } else {
+        setOverviewStatus('error');
+      }
+    }
+  }, []);
+
+  const refreshAll = useCallback(() => {
+    void fetchLedger(false);
+    void fetchOverview(false);
+  }, [fetchLedger, fetchOverview]);
+
+  const invalidatePendingReads = useCallback(() => {
+    ledgerRequestRef.current += 1;
+    overviewRequestRef.current += 1;
+  }, []);
 
   useEffect(() => {
     if (!isActive) return;
-    fetchList(!hasLoadedRef.current);
-  }, [isActive]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canEdit) return;
-    setStatus('submitting');
-    try {
-      const res = await tripClient.saveExpense(formData);
-      if (res.success) {
-        setStatus('success');
-        setFormData({ ...formData, item: '', amount: '' });
-        fetchList(false);
-        setTimeout(() => setStatus('idle'), 2000);
-      } else {
-        alert(res.message);
-        setStatus('idle');
+    void fetchLedger(!hasLoadedLedgerRef.current);
+    void fetchOverview(!hasLoadedOverviewRef.current);
+
+    const handleFocus = refreshAll;
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchLedger, fetchOverview, isActive, refreshAll]);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const syncLocalDay = () => setTodayKey(getLocalDateKey(new Date()));
+    syncLocalDay();
+    const now = new Date();
+    const nextMidnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1
+    );
+    const timeoutId = window.setTimeout(
+      syncLocalDay,
+      Math.max(1_000, nextMidnight.getTime() - now.getTime() + 50)
+    );
+    window.addEventListener('focus', syncLocalDay);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener('focus', syncLocalDay);
+    };
+  }, [isActive, todayKey]);
+
+  useEffect(
+    () => () => {
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
       }
-    } catch (error) {
+    },
+    []
+  );
+
+  const todayItems = useMemo(
+    () => selectTodayExpenses(list, new Date(`${todayKey}T12:00:00`)),
+    [list, todayKey]
+  );
+
+  const todayModel: ExpenseTodayModel = {
+    formData,
+    submitStatus,
+    todayKey,
+    items: todayItems,
+    ledgerStatus,
+    ledgerWarning,
+  };
+
+  const historyModel: ExpenseHistoryModel = {
+    list,
+    status: ledgerStatus,
+    warning: ledgerWarning,
+    filters,
+    showAll,
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canEdit) return;
+    setSubmitStatus('submitting');
+    try {
+      const response = await tripClient.saveExpense(formData);
+      if (!response.success) {
+        alert(response.message);
+        setSubmitStatus('idle');
+        return;
+      }
+      invalidatePendingReads();
+      setSubmitStatus('success');
+      setFormData((current) => ({ ...current, item: '', amount: '' }));
+      refreshAll();
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = window.setTimeout(
+        () => setSubmitStatus('idle'),
+        2_000
+      );
+    } catch {
       alert('記帳失敗');
-      setStatus('idle');
+      setSubmitStatus('idle');
     }
   };
 
   const handleItemDelete = async (rowNumber: number) => {
     if (!canEdit) return;
-    const oldList = [...list];
-    setList(list.filter((item) => item.rowNumber !== rowNumber));
+    const oldList = list;
+    const target = oldList.find((item) => item.rowNumber === rowNumber);
+    invalidatePendingReads();
+    setList((current) =>
+      current.filter((item) => item.rowNumber !== rowNumber)
+    );
     try {
-      const target = oldList.find((item) => item.rowNumber === rowNumber);
-      const res = await tripClient.deleteExpense(
+      const response = await tripClient.deleteExpense(
         rowNumber,
-        target ? { timestamp: target.timestamp, item: target.item } : undefined
+        target
+          ? { timestamp: target.timestamp, item: target.item }
+          : undefined
       );
-      if (!res.success) {
-        alert(res.message);
+      if (!response.success) {
+        alert(response.message);
         setList(oldList);
-      } else {
-        fetchList(false);
+        return;
       }
-    } catch (error) {
+      refreshAll();
+    } catch {
       setList(oldList);
     }
   };
@@ -98,303 +249,70 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
         )
       );
     }
-    fetchList(false);
+    invalidatePendingReads();
+    refreshAll();
   };
-
-  // Calculate statistics
-  const stats = useMemo(() => {
-    const filtered = list.filter((item) => {
-      const matchSearch =
-        !searchTerm ||
-        item.item.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchCategory =
-        filterCategory === 'all' || item.category === filterCategory;
-      const matchCurrency =
-        filterCurrency === 'all' || item.currency === filterCurrency;
-      return matchSearch && matchCategory && matchCurrency;
-    });
-
-    const totals: Record<string, number> = {};
-    filtered.forEach((item) => {
-      const key = item.currency;
-      if (!totals[key]) totals[key] = 0;
-      totals[key] += parseFloat(String(item.amount)) || 0;
-    });
-
-    return { filtered, totals, totalCount: filtered.length };
-  }, [list, searchTerm, filterCategory, filterCurrency]);
-
-  // Group by date
-  const groupedByDate = useMemo(() => {
-    const groups: Record<string, ExpenseItemType[]> = {};
-    stats.filtered.forEach((item) => {
-      try {
-        const d = new Date(item.timestamp);
-        if (!isNaN(d.getTime())) {
-          const dateKey = `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
-          if (!groups[dateKey]) groups[dateKey] = [];
-          groups[dateKey].push(item);
-        } else {
-          const dateKey = '其他';
-          if (!groups[dateKey]) groups[dateKey] = [];
-          groups[dateKey].push(item);
-        }
-      } catch {
-        const dateKey = '其他';
-        if (!groups[dateKey]) groups[dateKey] = [];
-        groups[dateKey].push(item);
-      }
-    });
-    return groups;
-  }, [stats.filtered]);
-
-  const dateKeys = Object.keys(groupedByDate).sort((a, b) => {
-    if (a === '其他') return 1;
-    if (b === '其他') return -1;
-    return b.localeCompare(a);
-  });
-
-  const displayDates = showAll ? dateKeys : dateKeys.slice(0, 3);
-  const hasMore = dateKeys.length > 3;
 
   return (
     <div className="space-y-5">
-      <div className="relative overflow-hidden rounded-2xl border border-gold/25 bg-gradient-to-br from-gold/15 via-white to-gold/5 p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gold text-white shadow-sm">
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M7 3.5h10A1.5 1.5 0 0 1 18.5 5v16l-2.25-1.25L14 21l-2-1.25L10 21l-2.25-1.25L5.5 21V5A1.5 1.5 0 0 1 7 3.5Z" />
-                <path d="M8.5 8h7" />
-                <path d="M8.5 12h7" />
-              </svg>
-            </span>
-            <h2 className="font-display text-sm text-ink/80">快速記帳</h2>
-          </div>
-          {status === 'success' && (
-            <span className="rounded-full bg-deep-blue/10 px-2 py-1 font-serif text-[13px] text-deep-blue">
-              已記錄
-            </span>
-          )}
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-2.5">
-          {!canEdit && (
-            <p className="text-xs text-ink/50 font-serif">
-              目前為瀏覽模式，可查看功能但無法編輯。
-            </p>
-          )}
-          <input
-            type="text"
-            value={formData.item}
-            onChange={(e) =>
-              setFormData({ ...formData, item: e.target.value })
-            }
-            disabled={!canEdit}
-            className="w-full bg-white/90 border border-gold/20 px-3 py-2.5 font-serif text-sm rounded-xl focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
-            placeholder="項目名稱"
-            required
-          />
-          <div className="grid grid-cols-5 gap-2">
-            <input
-              type="number"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) =>
-                setFormData({ ...formData, amount: e.target.value })
-              }
-              disabled={!canEdit}
-              className="col-span-3 bg-white/90 border border-gold/20 px-3 py-2.5 font-serif text-sm rounded-xl focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-colors"
-              placeholder="金額"
-              required
-            />
-            <select
-              value={formData.currency}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  currency: e.target.value as ExpenseFormData['currency'],
-                })
-              }
-              disabled={!canEdit}
-              className="col-span-2 bg-white/90 border border-gold/20 px-2 py-2.5 font-serif text-sm rounded-xl focus:outline-none focus:border-gold transition-colors"
-            >
-              {tripConfig.currencies.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.symbol} {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex gap-2">
-            <select
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  category: e.target.value as ExpenseFormData['category'],
-                })
-              }
-              disabled={!canEdit}
-              className="flex-1 bg-white/90 border border-gold/20 px-3 py-2.5 font-serif text-sm rounded-xl focus:outline-none focus:border-gold transition-colors"
-            >
-              {tripConfig.categories.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={!canEdit || status === 'submitting'}
-              className={`px-5 py-2.5 font-display text-sm text-white rounded-xl transition-all ${
-                !canEdit || status === 'submitting'
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-ink hover:bg-ink/90 shadow-sm'
-              } ${status === 'success' ? '!bg-deep-blue' : ''}`}
-              title={!canEdit ? '需編輯權限' : undefined}
-            >
-              {status === 'submitting'
-                ? '...'
-                : status === 'success'
-                  ? '✔'
-                  : '記錄'}
-            </button>
-          </div>
-        </form>
+      <div
+        role="tablist"
+        aria-label="花費檢視"
+        className="grid grid-cols-3 rounded-2xl border border-gold/20 bg-white p-1 shadow-sm"
+      >
+        {EXPENSE_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={`expense-tab-${tab.id}`}
+            aria-selected={activeTab === tab.id}
+            aria-controls={`expense-panel-${tab.id}`}
+            onClick={() => setActiveTab(tab.id)}
+            className={`rounded-xl px-3 py-2 font-display text-sm transition-colors ${
+              activeTab === tab.id
+                ? 'bg-ink text-white shadow-sm'
+                : 'text-ink/50 hover:bg-gold/5 hover:text-ink/75'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Expense list - grouped by date */}
-      <div className="space-y-3">
-        {list.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="font-display text-sm text-ink/80">花費記錄</h2>
-                <p className="mt-0.5 font-serif text-[13px] text-ink/45">
-                  {stats.totalCount} 筆紀錄
-                </p>
-              </div>
-              <div className="flex flex-wrap justify-end gap-1.5">
-                {Object.entries(stats.totals).map(([currency, total]) => (
-                  <div
-                    key={currency}
-                    className="rounded-lg bg-gold/10 px-2.5 py-1 text-right"
-                  >
-                    <div className="font-serif text-xs leading-none text-ink/45">
-                      {getCurrencySymbol(currency)}
-                    </div>
-                    <div className="mt-0.5 font-display text-sm font-bold text-gold">
-                      {total.toFixed(2)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="搜尋項目..."
-                  className="w-full bg-gray-50 border border-gray-200 pl-9 pr-3 py-2 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
-                />
-              </div>
-              <div className="flex gap-2">
-                <select
-                  value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                  className="flex-1 bg-gray-50 border border-gray-200 px-3 py-2 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
-                >
-                  <option value="all">所有類別</option>
-                  {tripConfig.categories.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filterCurrency}
-                  onChange={(e) => setFilterCurrency(e.target.value)}
-                  className="flex-1 bg-gray-50 border border-gray-200 px-3 py-2 font-serif text-sm rounded-lg focus:outline-none focus:border-gold transition-colors"
-                >
-                  <option value="all">所有貨幣</option>
-                  {tripConfig.currencies.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.symbol} {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {(searchTerm ||
-              filterCategory !== 'all' ||
-              filterCurrency !== 'all') && (
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterCategory('all');
-                  setFilterCurrency('all');
-                }}
-                className="text-xs text-gold hover:text-gold/70 transition-colors"
-              >
-                ✕ 清除篩選
-              </button>
-            )}
-          </div>
-        )}
-        {loadingList ? (
-          <Loading />
-        ) : stats.totalCount === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <p className="text-gray-400 font-serif">
-              {list.length === 0 ? '暫無花費紀錄' : '無符合條件的紀錄'}
-            </p>
-          </div>
+      <div
+        role="tabpanel"
+        id={`expense-panel-${activeTab}`}
+        aria-labelledby={`expense-tab-${activeTab}`}
+      >
+        {activeTab === 'today' ? (
+          <ExpenseToday
+            canEdit={canEdit}
+            model={todayModel}
+            onFormChange={(patch) =>
+              setFormData((current) => ({ ...current, ...patch }))
+            }
+            onSubmit={handleSubmit}
+            onItemUpdate={handleItemUpdate}
+            onItemDelete={handleItemDelete}
+          />
+        ) : activeTab === 'overview' ? (
+          <ExpenseOverview
+            overview={overview}
+            status={overviewStatus}
+            refreshWarning={overviewWarning}
+          />
         ) : (
-          <div className="space-y-2.5">
-            {displayDates.map((dateKey) => (
-              <div
-                key={dateKey}
-                className="bg-white rounded-lg shadow-sm overflow-hidden"
-              >
-                <div className="bg-gradient-to-r from-gold/5 to-transparent px-3 py-1.5 border-b border-gold/10">
-                  <h3 className="font-display text-xs text-ink/60">{dateKey}</h3>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {groupedByDate[dateKey].map((item) => (
-                    <ExpenseItem
-                      key={item.rowNumber}
-                      data={item}
-                      onUpdate={handleItemUpdate}
-                      onDelete={handleItemDelete}
-                      canEdit={canEdit}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-            {hasMore && (
-              <button
-                onClick={() => setShowAll(!showAll)}
-                className="w-full py-2 text-center text-sm text-gold hover:text-wax font-serif border border-gold rounded-sm transition-colors"
-              >
-                {showAll ? '收起' : `顯示更多 (${dateKeys.length - 3} 天)`}
-              </button>
-            )}
-          </div>
+          <ExpenseHistory
+            canEdit={canEdit}
+            model={historyModel}
+            onFiltersChange={(patch) =>
+              setFilters((current) => ({ ...current, ...patch }))
+            }
+            onToggleShowAll={() => setShowAll((current) => !current)}
+            onItemUpdate={handleItemUpdate}
+            onItemDelete={handleItemDelete}
+          />
         )}
       </div>
     </div>

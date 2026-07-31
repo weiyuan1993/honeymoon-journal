@@ -108,6 +108,7 @@ Runtime credentials are encrypted Worker secrets. See [docs/deployment.md](docs/
 | Tab | Columns |
 |-----|---------|
 | 行程 | Day, Date, Weekday, City, Content, Transport, Ticket, Link, Hotel |
+| 費用 | Two-person budget summary plus accommodation, transport, dining and ticket tables with adjacent `已付款` checkboxes |
 | 記帳 | Timestamp, Item, Amount, Currency, Category |
 | 待辦 | Section, Item, Detail, Deadline, Done |
 | 票券 | Day, Date, City, Item, Type, Provider, File URL, Notes |
@@ -117,7 +118,9 @@ Runtime credentials are encrypted Worker secrets. See [docs/deployment.md](docs/
 | 旅程介紹 | Type, Content, UpdatedAt |
 | AI秘書對話 | Timestamp, Question, Answer |
 
-The live Sheet is the source of truth. Ticket files remain protected by their Google Drive permissions in addition to the website login.
+The live Sheet is the source of truth. `費用` stores each planned item's current best-known amount and payment state; the Web reads it but does not edit it. Accommodation detail totals are already for two people, while transport, dining and ticket detail amounts are per person and are normalized by the Worker. The rate table supplies current CHF, EUR and GBP equivalents in TWD. `記帳` remains the additive ledger for meals and other trip spending.
+
+Ticket files remain protected by their Google Drive permissions in addition to the website login.
 
 ## Create another trip
 

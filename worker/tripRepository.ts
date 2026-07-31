@@ -36,6 +36,7 @@ export const SHEET_NAMES = {
 } as const;
 
 const value = (row: unknown[], index: number): string => String(row[index] ?? '');
+const EXPENSE_SHEET_TIME_ZONE_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 function cell(row: GridCell[], index: number): GridCell | undefined {
   return row[index];
@@ -44,7 +45,9 @@ function cell(row: GridCell[], index: number): GridCell | undefined {
 function timestampFromCell(timestampCell: GridCell | undefined): string {
   const serial = timestampCell?.effectiveValue?.numberValue;
   return serial !== undefined
-    ? new Date((serial - 25569) * 86_400_000).toISOString()
+    ? new Date(
+        (serial - 25569) * 86_400_000 - EXPENSE_SHEET_TIME_ZONE_OFFSET_MS
+      ).toISOString()
     : cellDisplayValue(timestampCell);
 }
 
@@ -310,7 +313,9 @@ export function parseExpensePlanGrid(
   warnings.push('簽證沒有可判斷付款狀態的明細，暫列為未付款');
 
   const eurRate = ratesTwdPerUnit.EUR;
-  const categoryOrder = ['住宿', '交通', '簽證', '門票', '飲食'];
+  const categoryOrder = [
+    ...new Set(EXPENSE_PLAN_CATEGORY_ROWS.map(({ category }) => category)),
+  ];
   const categories = categoryOrder.map((category): ExpenseOverviewCategory => {
     const amount = categoryAmounts.get(category) ?? 0;
     const paidAmount = paidAmounts.get(category) ?? 0;

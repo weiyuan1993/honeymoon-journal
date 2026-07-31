@@ -26,6 +26,7 @@ Create these tabs:
 | Tab | Columns |
 |-----|---------|
 | 行程 | Day, Date, Weekday, City, Content, Transport, Ticket, Link, Hotel |
+| 費用 | Two-person budget summary plus accommodation, transport, dining and ticket tables with adjacent `已付款` checkboxes |
 | 記帳 | Timestamp, Item, Amount, Currency, Category |
 | 待辦 | Section, Item, Detail, Deadline, Done |
 | 票券 | Day, Date, City, Item, Type, Provider, File URL, Notes |
@@ -36,6 +37,16 @@ Create these tabs:
 | AI秘書對話 | Timestamp, Question, Answer |
 
 Store ticket files in Google Drive and put their URLs in the `票券` tab. Keep the Drive ACL restricted to the intended accounts.
+
+The default expense dashboard expects the `費用` layout used by this repository:
+
+- the summary stores one-person EUR category amounts and a two-person total;
+- accommodation detail totals are already two-person amounts;
+- transport, dining and ticket detail totals are per person;
+- each detail table keeps `已付款` beside its amount;
+- the rate table supplies positive CHF, EUR and GBP rates in TWD.
+
+The Worker validates these anchors before calculating totals. Update the layout adapter in `worker/tripRepository.ts` when creating a Sheet with a different structure. The website treats `費用` as read-only and appends day-to-day spending to `記帳`.
 
 ## 4. Configure Google Cloud
 

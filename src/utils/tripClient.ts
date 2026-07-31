@@ -7,6 +7,7 @@ import type {
   ChatResponse,
   ExpenseFormData,
   ExpenseItem,
+  ExpenseOverviewData,
   FoodRecommendations,
   ItineraryFormData,
   ItineraryItem,
@@ -20,7 +21,6 @@ import type {
   UserPermission,
 } from '@/types';
 import { authClient, callWorker } from '@/utils/apiClient';
-import type { ExpenseOverviewData } from '../../shared/apiTypes';
 
 export const tripClient = {
   getItineraryData: (): Promise<ItineraryItem[]> =>
