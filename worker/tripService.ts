@@ -38,6 +38,7 @@ export class TripService {
   updateTodoStatus = (row: number, done: boolean, expectedItem?: string) =>
     this.repository.updateTodoStatus(row, done, expectedItem);
   getExpenseData = () => this.repository.getExpenses();
+  getExpenseOverviewData = () => this.repository.getExpenseOverview();
   saveExpense = (form: ExpenseFormData) => this.repository.saveExpense(form);
   editExpense = (expense: ExpenseItem) => this.repository.editExpense(expense);
   deleteExpense = (

@@ -77,6 +77,44 @@ describe('worker privacy boundary', () => {
     await expect(response.json()).resolves.toEqual({ data: links });
   });
 
+  it('returns the combined expense overview to anonymous callers', async () => {
+    const overview = {
+      fetchedAt: '2026-07-31T03:00:00.000Z',
+      ratesTwdPerUnit: { TWD: 1, EUR: 35, CHF: 40, GBP: 43 },
+      categories: [],
+      ledgerByCurrency: [],
+      components: {
+        budgetProjectedTwd: 100,
+        budgetPaidTwd: 40,
+        budgetUnpaidTwd: 60,
+        ledgerTwd: 10,
+      },
+      totals: {
+        projectedTwd: 110,
+        paidTwd: 50,
+        unpaidTwd: 60,
+      },
+      warnings: [],
+      unconvertedCurrencies: [],
+      isComplete: true,
+    };
+    vi.spyOn(TripRepository.prototype, 'getExpenseOverview').mockResolvedValue(
+      overview
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/getExpenseOverviewData'),
+      env
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toContain('s-maxage=45');
+    expect(payload).toEqual({ data: overview });
+    expect(JSON.stringify(payload)).not.toContain('sheet-id');
+    expect(JSON.stringify(payload)).not.toContain('vic@example.com');
+  });
+
   it('removes accommodation links for anonymous callers', async () => {
     vi.spyOn(TripRepository.prototype, 'getItinerary').mockResolvedValue([
       {
@@ -252,6 +290,54 @@ describe('worker privacy boundary', () => {
     await expect(response.json()).resolves.toEqual({
       data: { success: true, message: '待辦狀態已更新' },
     });
+  });
+
+  it('invalidates the public expense overview cache after an expense mutation', async () => {
+    vi.spyOn(TripRepository.prototype, 'saveExpense').mockResolvedValue({
+      success: true,
+      message: '記帳成功！',
+    });
+    const cacheDelete = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('caches', {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn().mockResolvedValue(undefined),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: cacheDelete,
+      }),
+    });
+    const token = await createSessionToken(
+      {
+        sub: 'google-user-1',
+        email: 'vic@example.com',
+        role: 'editor',
+      },
+      env.SESSION_SECRET
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/saveExpense', {
+        method: 'POST',
+        headers: {
+          cookie: `honeymoon_session=${token}`,
+          'content-type': 'application/json',
+          origin: 'https://trip.example',
+        },
+        body: JSON.stringify({
+          args: [{
+            item: 'Lunch',
+            amount: '10',
+            currency: 'EUR',
+            category: 'Food',
+          }],
+        }),
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    expect(cacheDelete).toHaveBeenCalledWith(
+      'https://trip.example/api/rpc/getExpenseOverviewData'
+    );
   });
 
   it('allows an authorized editor to use an AI operation', async () => {

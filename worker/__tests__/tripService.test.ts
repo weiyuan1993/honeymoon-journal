@@ -52,3 +52,38 @@ describe('TripService chat', () => {
     );
   });
 });
+
+describe('TripService expense overview', () => {
+  it('delegates the combined financial snapshot to the repository', async () => {
+    const overview = {
+      fetchedAt: '2026-07-31T03:00:00.000Z',
+      ratesTwdPerUnit: { TWD: 1, EUR: 35, CHF: 40, GBP: 43 },
+      categories: [],
+      ledgerByCurrency: [],
+      components: {
+        budgetProjectedTwd: 100,
+        budgetPaidTwd: 40,
+        budgetUnpaidTwd: 60,
+        ledgerTwd: 10,
+      },
+      totals: {
+        projectedTwd: 110,
+        paidTwd: 50,
+        unpaidTwd: 60,
+      },
+      warnings: [],
+      unconvertedCurrencies: [],
+      isComplete: true,
+    };
+    const repository = {
+      getExpenseOverview: vi.fn().mockResolvedValue(overview),
+    };
+    const service = new TripService(
+      repository as unknown as TripRepository,
+      {} as GeminiClient
+    );
+
+    await expect(service.getExpenseOverviewData()).resolves.toBe(overview);
+    expect(repository.getExpenseOverview).toHaveBeenCalledOnce();
+  });
+});

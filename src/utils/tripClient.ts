@@ -20,6 +20,7 @@ import type {
   UserPermission,
 } from '@/types';
 import { authClient, callWorker } from '@/utils/apiClient';
+import type { ExpenseOverviewData } from '../../shared/apiTypes';
 
 export const tripClient = {
   getItineraryData: (): Promise<ItineraryItem[]> =>
@@ -43,6 +44,9 @@ export const tripClient = {
 
   getExpenseData: (): Promise<ExpenseItem[]> =>
     callWorker('getExpenseData', []),
+
+  getExpenseOverviewData: (): Promise<ExpenseOverviewData> =>
+    callWorker('getExpenseOverviewData', []),
 
   saveExpense: (formData: ExpenseFormData): Promise<ApiResponse> =>
     callWorker('saveExpense', [formData]),

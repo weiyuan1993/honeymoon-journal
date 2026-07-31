@@ -10,6 +10,8 @@ import type {
   ChatHistoryItem,
   ExpenseFormData,
   ExpenseItem,
+  ExpenseOverviewCategory,
+  ExpenseOverviewData,
   ItineraryFormData,
   ItineraryItem,
   JourneyContent,
@@ -22,6 +24,7 @@ import { ConflictError } from './models';
 export const SHEET_NAMES = {
   itinerary: '行程',
   expenses: '記帳',
+  expensePlan: '費用',
   todos: '待辦',
   tickets: '票券',
   attractions: '景點規劃',
@@ -114,6 +117,315 @@ export function parseExpensesGrid(
       };
     })
     .reverse();
+}
+
+interface ParsedExpensePlan {
+  ratesTwdPerUnit: Record<string, number | null>;
+  categories: ExpenseOverviewCategory[];
+  projectedTwd: number | null;
+  paidTwd: number | null;
+  unpaidTwd: number | null;
+  warnings: string[];
+  unconvertedCurrencies: string[];
+  isComplete: boolean;
+}
+
+const EXPENSE_PLAN_CATEGORY_ROWS = [
+  { row: 4, category: '住宿' },
+  { row: 5, category: '交通' },
+  { row: 6, category: '簽證' },
+  { row: 7, category: '交通' },
+  { row: 8, category: '交通' },
+  { row: 9, category: '門票' },
+  { row: 10, category: '門票' },
+  { row: 11, category: '門票' },
+  { row: 12, category: '門票' },
+  { row: 13, category: '飲食' },
+] as const;
+
+const EXPENSE_PLAN_PAID_ROWS = [
+  {
+    category: '住宿',
+    rows: [4, 5, 6, 7, 8, 9, 10, 11, 12],
+    itemColumn: 5,
+    amountColumn: 12,
+    paidColumn: 13,
+    multiplier: 1,
+  },
+  {
+    category: '交通',
+    rows: [
+      17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+      31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    ],
+    itemColumn: 5,
+    amountColumn: 6,
+    paidColumn: 7,
+    multiplier: 2,
+  },
+  {
+    category: '門票',
+    rows: [
+      5, 6, 9, 10, 11, 12, 15, 16, 17, 18,
+      19, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+    ],
+    itemColumn: 15,
+    amountColumn: 16,
+    paidColumn: 17,
+    multiplier: 2,
+  },
+  {
+    category: '飲食',
+    rows: [17, 18, 19],
+    itemColumn: 9,
+    amountColumn: 12,
+    paidColumn: 13,
+    multiplier: 2,
+  },
+] as const;
+
+const EXPENSE_PLAN_ANCHORS = [
+  { row: 3, column: 0, text: '費用估算' },
+  { row: 3, column: 2, text: '費用 EUR' },
+  { row: 3, column: 5, text: '城市' },
+  { row: 3, column: 13, text: '已付款' },
+  { row: 3, column: 15, text: '景點門票' },
+  { row: 3, column: 17, text: '已付款' },
+  { row: 16, column: 5, text: '交通' },
+  { row: 16, column: 7, text: '已付款' },
+  { row: 16, column: 9, text: '飲食' },
+  { row: 16, column: 13, text: '已付款' },
+  { row: 23, column: 0, text: '貨幣' },
+  { row: 23, column: 1, text: '兌台幣匯率' },
+] as const;
+
+const roundMoney = (amount: number): number =>
+  Math.round((amount + Number.EPSILON) * 100) / 100;
+
+function numericCell(cellValue: GridCell | undefined): number | null {
+  const effective = cellValue?.effectiveValue?.numberValue;
+  if (effective !== undefined) return Number.isFinite(effective) ? effective : null;
+  const display = cellDisplayValue(cellValue)
+    .replace(/[^\d.,+\-]/g, '')
+    .replace(/,/g, '');
+  if (!display) return null;
+  const parsed = Number(display);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function paidCell(cellValue: GridCell | undefined): boolean | null {
+  const effective = cellValue?.effectiveValue?.boolValue;
+  if (effective !== undefined) return effective;
+  const display = cellDisplayValue(cellValue).trim().toUpperCase();
+  if (display === 'TRUE') return true;
+  if (display === 'FALSE') return false;
+  return null;
+}
+
+export function parseExpensePlanGrid(
+  rows: Array<{ rowNumber: number; cells: GridCell[] }>
+): ParsedExpensePlan {
+  const rowsByNumber = new Map(rows.map((row) => [row.rowNumber, row.cells]));
+  const planCell = (row: number, column: number) =>
+    cell(rowsByNumber.get(row) ?? [], column);
+
+  for (const anchor of EXPENSE_PLAN_ANCHORS) {
+    const actual = cellDisplayValue(planCell(anchor.row, anchor.column));
+    if (!actual.includes(anchor.text)) {
+      throw new Error(
+        `費用版面不符預期：${anchor.row} 列第 ${anchor.column + 1} 欄缺少「${anchor.text}」`
+      );
+    }
+  }
+
+  const warnings: string[] = [];
+  const invalidCurrencies = new Set<string>();
+  const ratesTwdPerUnit: Record<string, number | null> = { TWD: 1 };
+  for (const [row, expectedCurrency] of [
+    [24, 'CHF'],
+    [25, 'EUR'],
+    [26, 'GBP'],
+  ] as const) {
+    const actualCurrency = cellDisplayValue(planCell(row, 0)).trim().toUpperCase();
+    if (actualCurrency !== expectedCurrency) {
+      throw new Error(
+        `費用版面不符預期：${row} 列匯率幣別應為 ${expectedCurrency}`
+      );
+    }
+    const rate = numericCell(planCell(row, 1));
+    if (rate === null || rate <= 0) {
+      ratesTwdPerUnit[expectedCurrency] = null;
+      invalidCurrencies.add(expectedCurrency);
+      warnings.push(`${expectedCurrency} 匯率無效，無法換算台幣`);
+    } else {
+      ratesTwdPerUnit[expectedCurrency] = rate;
+    }
+  }
+
+  const categoryAmounts = new Map<string, number>();
+  let isComplete = invalidCurrencies.size === 0;
+  for (const definition of EXPENSE_PLAN_CATEGORY_ROWS) {
+    const actualCategory = cellDisplayValue(planCell(definition.row, 0)).trim();
+    if (actualCategory !== definition.category) {
+      throw new Error(
+        `費用版面不符預期：${definition.row} 列分類應為 ${definition.category}`
+      );
+    }
+    const amount = numericCell(planCell(definition.row, 2));
+    if (amount === null) {
+      throw new Error(
+        `費用版面不符預期：${definition.row} 列缺少有效的費用金額`
+      );
+    }
+    categoryAmounts.set(
+      definition.category,
+      (categoryAmounts.get(definition.category) ?? 0) + amount * 2
+    );
+  }
+
+  const paidAmounts = new Map<string, number>();
+  for (const section of EXPENSE_PLAN_PAID_ROWS) {
+    for (const row of section.rows) {
+      const item = cellDisplayValue(planCell(row, section.itemColumn)).trim();
+      const amount = numericCell(planCell(row, section.amountColumn));
+      const paid = paidCell(planCell(row, section.paidColumn));
+      if (!item || amount === null) {
+        warnings.push(`${section.category}第 ${row} 列缺少可判讀的付款明細`);
+        isComplete = false;
+        continue;
+      }
+      if (paid === null) {
+        warnings.push(`${section.category}第 ${row} 列未設定已付款，暫列為未付款`);
+        isComplete = false;
+        continue;
+      }
+      if (paid) {
+        paidAmounts.set(
+          section.category,
+          (paidAmounts.get(section.category) ?? 0) + amount * section.multiplier
+        );
+      }
+    }
+  }
+  warnings.push('簽證沒有可判斷付款狀態的明細，暫列為未付款');
+
+  const eurRate = ratesTwdPerUnit.EUR;
+  const categoryOrder = ['住宿', '交通', '簽證', '門票', '飲食'];
+  const categories = categoryOrder.map((category): ExpenseOverviewCategory => {
+    const amount = categoryAmounts.get(category) ?? 0;
+    const paidAmount = paidAmounts.get(category) ?? 0;
+    const unpaidAmount = amount - paidAmount;
+    if (paidAmount - amount > 0.01) {
+      warnings.push(`${category}已付款金額高於分類總額，請檢查費用表`);
+      isComplete = false;
+    }
+    return {
+      category,
+      currency: 'EUR',
+      amount: roundMoney(amount),
+      paidAmount: roundMoney(paidAmount),
+      unpaidAmount: roundMoney(unpaidAmount),
+      amountTwd: eurRate === null ? null : roundMoney(amount * eurRate),
+      paidAmountTwd:
+        eurRate === null ? null : roundMoney(paidAmount * eurRate),
+      unpaidAmountTwd:
+        eurRate === null ? null : roundMoney(unpaidAmount * eurRate),
+    };
+  });
+
+  const projected = categories.reduce((sum, category) => sum + category.amount, 0);
+  const paid = categories.reduce((sum, category) => sum + category.paidAmount, 0);
+  const unpaid = categories.reduce((sum, category) => sum + category.unpaidAmount, 0);
+  if (Math.abs(projected - paid - unpaid) > 0.01) {
+    warnings.push('費用預計、已付款與未付款金額無法對帳');
+    isComplete = false;
+  }
+
+  return {
+    ratesTwdPerUnit,
+    categories,
+    projectedTwd: eurRate === null ? null : roundMoney(projected * eurRate),
+    paidTwd: eurRate === null ? null : roundMoney(paid * eurRate),
+    unpaidTwd: eurRate === null ? null : roundMoney(unpaid * eurRate),
+    warnings,
+    unconvertedCurrencies: [...invalidCurrencies].sort(),
+    isComplete,
+  };
+}
+
+function addAmounts(left: number | null, right: number | null): number | null {
+  return left === null || right === null ? null : roundMoney(left + right);
+}
+
+export function buildExpenseOverview(
+  plan: ParsedExpensePlan,
+  expenses: ExpenseItem[],
+  fetchedAt = new Date().toISOString()
+): ExpenseOverviewData {
+  const ledgerAmounts = new Map<string, number>();
+  const warnings = [...plan.warnings];
+  let isComplete = plan.isComplete;
+  for (const expense of expenses) {
+    const currency = expense.currency.trim().toUpperCase();
+    if (!currency || !Number.isFinite(expense.amount)) {
+      warnings.push(`記帳第 ${expense.rowNumber} 列的幣別或金額無效`);
+      isComplete = false;
+      continue;
+    }
+    ledgerAmounts.set(currency, (ledgerAmounts.get(currency) ?? 0) + expense.amount);
+  }
+
+  const unconvertedCurrencies = new Set(plan.unconvertedCurrencies);
+  const ledgerByCurrency = [...ledgerAmounts]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([currency, amount]) => {
+      const rate = plan.ratesTwdPerUnit[currency] ?? null;
+      if (rate === null || rate <= 0) {
+        unconvertedCurrencies.add(currency);
+        warnings.push(`${currency} 沒有有效匯率，記帳金額無法換算台幣`);
+        isComplete = false;
+      }
+      return {
+        currency,
+        amount: roundMoney(amount),
+        amountTwd: rate === null || rate <= 0 ? null : roundMoney(amount * rate),
+      };
+    });
+
+  const ledgerTwd = ledgerByCurrency.every(({ amountTwd }) => amountTwd !== null)
+    ? roundMoney(
+        ledgerByCurrency.reduce((sum, { amountTwd }) => sum + (amountTwd ?? 0), 0)
+      )
+    : null;
+  const projectedTwd = addAmounts(plan.projectedTwd, ledgerTwd);
+  const paidTwd = addAmounts(plan.paidTwd, ledgerTwd);
+  const unpaidTwd = plan.unpaidTwd;
+  if (
+    projectedTwd !== null &&
+    paidTwd !== null &&
+    unpaidTwd !== null &&
+    Math.abs(projectedTwd - paidTwd - unpaidTwd) > 0.01
+  ) {
+    warnings.push('總預計、總支出與待付款金額無法對帳');
+    isComplete = false;
+  }
+
+  return {
+    fetchedAt,
+    ratesTwdPerUnit: plan.ratesTwdPerUnit,
+    categories: plan.categories,
+    ledgerByCurrency,
+    components: {
+      budgetProjectedTwd: plan.projectedTwd,
+      budgetPaidTwd: plan.paidTwd,
+      budgetUnpaidTwd: plan.unpaidTwd,
+      ledgerTwd,
+    },
+    totals: { projectedTwd, paidTwd, unpaidTwd },
+    warnings: [...new Set(warnings)],
+    unconvertedCurrencies: [...unconvertedCurrencies].sort(),
+    isComplete: isComplete && unconvertedCurrencies.size === 0,
+  };
 }
 
 export function parseReferenceLinks(rows: unknown[][]): ReferenceLink[] {
@@ -245,6 +557,17 @@ export class TripRepository {
   async getExpenses(): Promise<ExpenseItem[]> {
     return parseExpensesGrid(
       await this.sheets.getGrid(`${SHEET_NAMES.expenses}!A2:E`)
+    );
+  }
+
+  async getExpenseOverview(): Promise<ExpenseOverviewData> {
+    const [planRows, expenseRows] = await Promise.all([
+      this.sheets.getGrid(`${SHEET_NAMES.expensePlan}!A3:R42`),
+      this.sheets.getGrid(`${SHEET_NAMES.expenses}!A2:E`),
+    ]);
+    return buildExpenseOverview(
+      parseExpensePlanGrid(planRows),
+      parseExpensesGrid(expenseRows)
     );
   }
 

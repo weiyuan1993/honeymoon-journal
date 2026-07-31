@@ -43,6 +43,44 @@ export interface ExpenseFormData<
   category: TCategory;
 }
 
+export interface ExpenseOverviewCategory {
+  category: string;
+  currency: string;
+  amount: number;
+  paidAmount: number;
+  unpaidAmount: number;
+  amountTwd: number | null;
+  paidAmountTwd: number | null;
+  unpaidAmountTwd: number | null;
+}
+
+export interface ExpenseOverviewCurrencyTotal {
+  currency: string;
+  amount: number;
+  amountTwd: number | null;
+}
+
+export interface ExpenseOverviewData {
+  fetchedAt: string;
+  ratesTwdPerUnit: Record<string, number | null>;
+  categories: ExpenseOverviewCategory[];
+  ledgerByCurrency: ExpenseOverviewCurrencyTotal[];
+  components: {
+    budgetProjectedTwd: number | null;
+    budgetPaidTwd: number | null;
+    budgetUnpaidTwd: number | null;
+    ledgerTwd: number | null;
+  };
+  totals: {
+    projectedTwd: number | null;
+    paidTwd: number | null;
+    unpaidTwd: number | null;
+  };
+  warnings: string[];
+  unconvertedCurrencies: string[];
+  isComplete: boolean;
+}
+
 export interface TodoItem {
   rowNumber: number;
   section: string;

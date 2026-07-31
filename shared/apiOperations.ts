@@ -8,6 +8,7 @@ export const API_OPERATIONS = {
   getItineraryData: { capability: 'public:read', method: 'GET' },
   getTodoData: { capability: 'public:read', method: 'GET' },
   getExpenseData: { capability: 'public:read', method: 'GET' },
+  getExpenseOverviewData: { capability: 'public:read', method: 'GET' },
   getNavigationData: { capability: 'public:read', method: 'GET' },
   getAttractionDetails: { capability: 'public:read', method: 'GET' },
   getFoodRecommendations: { capability: 'public:read', method: 'GET' },

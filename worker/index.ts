@@ -172,6 +172,7 @@ async function executeOperation(
     case 'updateTodoStatus':
       return service.updateTodoStatus(requireNumber(args[0]), Boolean(args[1]), optionalString(args[2]));
     case 'getExpenseData': return service.getExpenseData();
+    case 'getExpenseOverviewData': return service.getExpenseOverviewData();
     case 'saveExpense': return service.saveExpense(requireObject<ExpenseFormData>(args[0]));
     case 'editExpense': return service.editExpense(requireObject<ExpenseItem>(args[0]));
     case 'deleteExpense':
