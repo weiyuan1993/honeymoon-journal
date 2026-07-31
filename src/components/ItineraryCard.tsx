@@ -293,7 +293,7 @@ export default function ItineraryCard({
       <div className="p-4">
         {/* City + Content */}
         <div className="mb-4">
-          <div className="font-display text-forest text-xs mb-2 flex items-center gap-1">
+          <div className="font-display text-deep-blue text-xs mb-2 flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
@@ -349,7 +349,7 @@ export default function ItineraryCard({
           {hasNavigation && (
             <button
               onClick={() => setShowMap(true)}
-              className="flex-1 py-2 px-3 bg-forest/10 hover:bg-forest/20 text-forest font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 py-2 px-3 bg-deep-blue/10 hover:bg-deep-blue/20 text-deep-blue font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />

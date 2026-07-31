@@ -161,7 +161,7 @@ export default function FoodModal({
               <span className="block text-xs mb-0.5">{level.emoji}</span>
               {level.label}
               {savedData?.[level.value] && (
-                <span className="ml-1 text-xs text-forest">✓</span>
+                <span className="ml-1 text-xs text-deep-blue">✓</span>
               )}
             </button>
           ))}

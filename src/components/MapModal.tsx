@@ -124,7 +124,7 @@ export default function MapModal({
             href={placeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-2 bg-forest text-white font-display text-sm tracking-wider hover:bg-green-800 transition-colors rounded-lg"
+            className="flex items-center justify-center gap-2 w-full py-2 bg-deep-blue text-white font-display text-sm tracking-wider hover:bg-deep-blue/90 transition-colors rounded-lg"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -181,7 +181,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
             <h2 className="font-display text-sm text-ink/80">快速記帳</h2>
           </div>
           {status === 'success' && (
-            <span className="rounded-full bg-forest/10 px-2 py-1 font-serif text-[13px] text-forest">
+            <span className="rounded-full bg-deep-blue/10 px-2 py-1 font-serif text-[13px] text-deep-blue">
               已記錄
             </span>
           )}
@@ -259,7 +259,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
                 !canEdit || status === 'submitting'
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-ink hover:bg-ink/90 shadow-sm'
-              } ${status === 'success' ? '!bg-forest' : ''}`}
+              } ${status === 'success' ? '!bg-deep-blue' : ''}`}
               title={!canEdit ? '需編輯權限' : undefined}
             >
               {status === 'submitting'

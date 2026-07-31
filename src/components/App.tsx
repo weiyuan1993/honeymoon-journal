@@ -47,8 +47,7 @@ type LazyDataKey =
 
 const DEFAULT_TAB: TabType = TAB_IDS.DASHBOARD;
 const ACTIVE_TAB_STORAGE_KEY = 'activeTab';
-const HEADER_COMPACT_SCROLL_Y = 64;
-const HEADER_EXPAND_SCROLL_Y = 24;
+const BOTTOM_NAV_EXPAND_SCROLL_Y = 24;
 const BOTTOM_NAV_DIRECTION_DELTA = 8;
 
 const bottomTabs = [
@@ -198,7 +197,6 @@ export default function App() {
     canEdit: false,
   });
   const [showMenu, setShowMenu] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isBottomNavCompact, setIsBottomNavCompact] = useState(false);
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
   const [journeyNavigation, setJourneyNavigation] = useState<{
@@ -253,14 +251,8 @@ export default function App() {
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      setIsScrolled((current) => {
-        const next = current
-          ? scrollY > HEADER_EXPAND_SCROLL_Y
-          : scrollY > HEADER_COMPACT_SCROLL_Y;
-        return current === next ? current : next;
-      });
 
-      if (scrollY <= HEADER_EXPAND_SCROLL_Y) {
+      if (scrollY <= BOTTOM_NAV_EXPAND_SCROLL_Y) {
         setIsBottomNavCompact(false);
         bottomNavScrollAnchorRef.current = scrollY;
         return;
@@ -580,129 +572,124 @@ export default function App() {
   return (
     <div className="app-shell min-h-screen bg-paper">
       {/* Header */}
-      <header className={`sticky top-0 z-50 liquid-shell-header backdrop-blur-sm border-b border-gold/25 transition-all duration-300 ${
-        isScrolled
-          ? 'liquid-shell-header-compact'
-          : ''
-      }`}>
-        <div className={`liquid-main-header relative flex flex-col items-center justify-center px-4 transition-all duration-300 ${
-          isScrolled ? 'py-1.5' : 'py-2'
-        }`}>
+      <header className="sticky top-0 z-50 liquid-shell-header border-b border-gold/25 backdrop-blur-sm">
+        <div className="liquid-main-header relative grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-2 px-2 py-2 sm:flex sm:min-h-11 sm:flex-col sm:justify-center sm:gap-0 sm:px-4">
           {/* Trip Secretary shortcut */}
-          {userPermission.canEdit && (
+          <div className="col-start-1 flex h-10 w-10 items-center justify-center sm:contents">
+            {userPermission.canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                aria-label="開啟旅程秘書"
+                title="AI 旅程秘書"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-deep-blue sm:absolute sm:left-2 sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          <h1 className="col-start-2 min-w-0">
             <button
               type="button"
-              onClick={() => setIsChatOpen(true)}
-              aria-label="開啟旅程秘書"
-              title="AI 旅程秘書"
-              className={`absolute left-3 top-1/2 -translate-y-1/2 rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-forest ${
-                isScrolled ? 'p-1' : 'p-2'
+              aria-label={`${tripConfig.tripName}，回到頁首`}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex h-10 w-full items-center justify-start gap-1.5 sm:justify-center sm:gap-2"
+            >
+              <img
+                src="/vic-dora-mark.svg"
+                alt=""
+                className="h-6 w-6 shrink-0 min-[360px]:h-8 min-[360px]:w-8 sm:h-9 sm:w-9"
+              />
+              <span className="min-w-0 text-left leading-none">
+                <span className="block whitespace-nowrap font-display text-[10px] font-semibold tracking-[-0.01em] text-ink min-[360px]:text-xs sm:text-sm">
+                  Vic &amp; Dora
+                </span>
+                <span className="mt-1 block whitespace-nowrap text-[7px] font-semibold uppercase tracking-[0.12em] text-gold/90 min-[360px]:text-[8px] sm:text-[9px]">
+                  {tripConfig.tripSubtitle}
+                </span>
+              </span>
+            </button>
+          </h1>
+
+          <div className="col-start-3 flex items-center gap-1.5 sm:contents">
+            {/* Journey shortcut */}
+            <button
+              type="button"
+              aria-label="開啟旅程故事"
+              aria-current={tab === TAB_IDS.JOURNEY ? 'page' : undefined}
+              title="旅程故事"
+              onClick={() => openJourney()}
+              className={`z-50 flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink sm:absolute sm:right-[6.5rem] sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2 ${
+                tab === TAB_IDS.JOURNEY ? 'bg-white/55 text-deep-blue' : ''
               }`}
             >
               <svg
                 className="h-5 w-5"
                 viewBox="0 0 24 24"
-                fill="currentColor"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden="true"
               >
-                <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
+                <path d="M4 19.5V5.75A2.75 2.75 0 0 1 6.75 3H20v15H6.75A2.75 2.75 0 0 0 4 20.75" />
+                <path d="M8 7h8M8 11h6" />
               </svg>
             </button>
-          )}
 
-          {/* Subtitle - hidden when scrolled */}
-          <div className={`flex items-center gap-1.5 text-gold/80 text-xs tracking-[0.25em] uppercase transition-all duration-300 ${
-            isScrolled ? 'h-0 opacity-0 overflow-hidden' : 'h-auto opacity-100 mb-0'
-          }`}>
-            <span className="w-3 h-px bg-gold/40" />
-            <span>{tripConfig.tripSubtitle}</span>
-            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-            <span className="w-3 h-px bg-gold/40" />
+            {/* Useful links shortcut */}
+            <button
+              type="button"
+              aria-label="開啟實用連結"
+              aria-current={tab === TAB_IDS.LINKS ? 'page' : undefined}
+              title="實用連結"
+              onClick={() => {
+                setShowMenu(false);
+                setTab(TAB_IDS.LINKS);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`z-50 flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink sm:absolute sm:right-14 sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2 ${
+                tab === TAB_IDS.LINKS ? 'bg-white/55 text-deep-blue' : ''
+              }`}
+            >
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M10.5 13.5 13.5 10.5" />
+                <path d="M7.05 15.95 5.64 17.36a3.5 3.5 0 0 0 4.95 4.95L14 18.9a3.5 3.5 0 0 0 0-4.95" />
+                <path d="m16.95 8.05 1.41-1.41a3.5 3.5 0 0 0-4.95-4.95L10 5.1a3.5 3.5 0 0 0 0 4.95" />
+              </svg>
+            </button>
+
+            {/* Menu button */}
+            <button
+              type="button"
+              aria-label="開啟選單"
+              aria-expanded={showMenu}
+              onClick={() => setShowMenu(!showMenu)}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink sm:absolute sm:right-2 sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
           </div>
-
-          {/* Main title */}
-          <h1
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className={`max-w-[104px] truncate font-display text-ink tracking-wide cursor-pointer hover:text-gold transition-all duration-300 sm:max-w-none ${
-              isScrolled ? 'text-xs' : 'text-sm'
-            }`}
-          >
-            {tripConfig.tripName}
-          </h1>
-
-          {/* Journey shortcut */}
-          <button
-            type="button"
-            aria-label="開啟旅程故事"
-            aria-current={tab === TAB_IDS.JOURNEY ? 'page' : undefined}
-            title="旅程故事"
-            onClick={() => openJourney()}
-            className={`absolute right-[5.25rem] top-1/2 z-50 -translate-y-1/2 rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink ${
-              isScrolled ? 'p-1' : 'p-2'
-            } ${tab === TAB_IDS.JOURNEY ? 'bg-white/55 text-forest' : ''}`}
-          >
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M4 19.5V5.75A2.75 2.75 0 0 1 6.75 3H20v15H6.75A2.75 2.75 0 0 0 4 20.75" />
-              <path d="M8 7h8M8 11h6" />
-            </svg>
-          </button>
-
-          {/* Useful links shortcut */}
-          <button
-            type="button"
-            aria-label="開啟實用連結"
-            aria-current={tab === TAB_IDS.LINKS ? 'page' : undefined}
-            title="實用連結"
-            onClick={() => {
-              setShowMenu(false);
-              setTab(TAB_IDS.LINKS);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className={`absolute right-12 top-1/2 z-50 -translate-y-1/2 rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink ${
-              isScrolled ? 'p-1' : 'p-2'
-            } ${tab === TAB_IDS.LINKS ? 'bg-white/55 text-forest' : ''}`}
-          >
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M10.5 13.5 13.5 10.5" />
-              <path d="M7.05 15.95 5.64 17.36a3.5 3.5 0 0 0 4.95 4.95L14 18.9a3.5 3.5 0 0 0 0-4.95" />
-              <path d="m16.95 8.05 1.41-1.41a3.5 3.5 0 0 0-4.95-4.95L10 5.1a3.5 3.5 0 0 0 0 4.95" />
-            </svg>
-          </button>
-
-          {/* Menu button */}
-          <button
-            type="button"
-            aria-label="開啟選單"
-            aria-expanded={showMenu}
-            onClick={() => setShowMenu(!showMenu)}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:text-ink ${
-              isScrolled ? 'p-1' : 'p-2'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          </button>
 
           {/* Dropdown menu */}
           {showMenu && (
@@ -717,7 +704,7 @@ export default function App() {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm font-serif text-ink hover:bg-gold/10 transition-colors"
                     onClick={() => setShowMenu(false)}
                   >
-                    <svg className="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="w-4 h-4 text-deep-blue" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/>
                     </svg>
                     Google Sheet

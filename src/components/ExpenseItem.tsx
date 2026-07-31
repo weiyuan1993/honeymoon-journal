@@ -174,7 +174,7 @@ export default function ExpenseItem({
               className={`flex-1 rounded-lg py-2.5 font-display text-sm text-white transition-all ${
                 saving
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-forest hover:bg-forest/90 shadow-sm'
+                  : 'bg-deep-blue hover:bg-deep-blue/90 shadow-sm'
               }`}
             >
               {saving ? '...' : '儲存'}
