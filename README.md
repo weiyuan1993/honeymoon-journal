@@ -69,6 +69,11 @@ npm run dev
 to the production Cloudflare Worker. Google Sheets, authentication and Gemini
 therefore use the production services without local secrets or mock data.
 
+When the current branch adds or changes Worker API operations that are not
+deployed yet, use `npm run dev:cloudflare` instead. It builds the current branch
+and starts a temporary remote Cloudflare development session on the same port,
+using the live Worker bindings without deploying the branch to production.
+
 Add `http://localhost:5173` to the Google OAuth Web client's Authorized
 JavaScript origins. Local edits, AI requests and other mutations affect the
 production Sheet immediately.

@@ -88,6 +88,12 @@ npm run dev
 Worker. It requires no local secrets. Local edits and AI requests affect the
 production Google Sheet immediately.
 
+If the branch changes Worker endpoints that production does not have yet, stop
+the Vite server and run `npm run dev:cloudflare`. This command builds the branch
+and runs its Worker in a temporary remote Cloudflare development session on
+`http://localhost:5173`, with access to the live bindings but no production
+deployment.
+
 ## 7. Configure automatic deployment
 
 In Cloudflare Worker **Settings -> Builds**:

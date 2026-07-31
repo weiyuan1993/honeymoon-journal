@@ -30,7 +30,7 @@ function expensePlanFixture(): Array<{ rowNumber: number; cells: GridCell[] }> {
   put(3, 0, '費用估算（一人）');
   put(3, 2, '費用 EUR');
   put(3, 5, '🏠 城市（29晚，雙人房平分）');
-  put(3, 13, '已付款');
+  put(3, 12, '已付款');
   put(3, 15, '🏔️景點門票');
   put(3, 16, '費用');
   put(3, 17, '已付款');
@@ -68,12 +68,12 @@ function expensePlanFixture(): Array<{ rowNumber: number; cells: GridCell[] }> {
 
   [4, 5, 6, 7, 8, 9, 10, 11, 12].forEach((rowNumber) => {
     put(rowNumber, 5, `Hotel ${rowNumber}`);
-    amount(rowNumber, 12, 0);
-    paid(rowNumber, 13, false);
+    amount(rowNumber, 11, 0);
+    paid(rowNumber, 12, false);
   });
   [
-    17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-    31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    17, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+    32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
   ].forEach((rowNumber) => {
     put(rowNumber, 5, `Transport ${rowNumber}`);
     amount(rowNumber, 6, 0);
@@ -94,14 +94,17 @@ function expensePlanFixture(): Array<{ rowNumber: number; cells: GridCell[] }> {
   });
 
   put(4, 5, 'London');
-  amount(4, 12, 200);
-  paid(4, 13, true);
+  amount(4, 11, 200);
+  paid(4, 12, true);
   put(17, 5, 'Flight');
   amount(17, 6, 20);
   paid(17, 7, true);
-  put(19, 5, 'Train');
-  amount(19, 6, 30);
-  paid(19, 7, false);
+  put(18, 5, 'Visa - UK ETA');
+  amount(18, 6, 5);
+  paid(18, 7, false);
+  put(20, 5, 'Train');
+  amount(20, 6, 30);
+  paid(20, 7, false);
   put(17, 9, 'Breakfast');
   amount(17, 12, 50);
   paid(17, 13, false);
@@ -229,16 +232,44 @@ describe('trip repository parsers', () => {
         unpaidAmountTwd: 3500,
       },
     ]);
-    expect(result.warnings).toContain(
-      '簽證沒有可判斷付款狀態的明細，暫列為未付款'
+    expect(result.warnings).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('簽證')])
     );
     expect(result.isComplete).toBe(true);
+  });
+
+  it('reconciles headline totals before rounding category display amounts', () => {
+    const rows = expensePlanFixture();
+    rows[4 - 3].cells[2] = {
+      formattedValue: '€100.00',
+      effectiveValue: { numberValue: 100.004 },
+    };
+    rows[4 - 3].cells[11] = {
+      formattedValue: '€200.00',
+      effectiveValue: { numberValue: 200.004 },
+    };
+
+    const result = parseExpensePlanGrid(rows);
+    const overview = buildExpenseOverview(result, []);
+
+    expect(result.projectedTwd).toBe(17850.28);
+    expect(result.paidTwd).toBe(11200.14);
+    expect(result.unpaidTwd).toBe(6650.14);
+    expect(overview.totals.projectedTwd).toBe(17850.28);
+    expect(overview.totals.paidTwd).toBe(11200.14);
+    expect(overview.totals.unpaidTwd).toBe(6650.14);
+    expect(overview.warnings).not.toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('無法對帳'),
+      ])
+    );
+    expect(overview.isComplete).toBe(true);
   });
 
   it('moves a budget amount from unpaid to paid without changing projected total', () => {
     const before = parseExpensePlanGrid(expensePlanFixture());
     const changed = expensePlanFixture();
-    changed[19 - 3].cells[7] = {
+    changed[20 - 3].cells[7] = {
       formattedValue: 'TRUE',
       effectiveValue: { boolValue: true },
     };
@@ -251,9 +282,27 @@ describe('trip repository parsers', () => {
     expect(after.unpaidTwd).toBe(4550);
   });
 
+  it('uses the ETA row in the transport table as the visa payment state', () => {
+    const before = parseExpensePlanGrid(expensePlanFixture());
+    const changed = expensePlanFixture();
+    changed[18 - 3].cells[7] = {
+      formattedValue: 'TRUE',
+      effectiveValue: { boolValue: true },
+    };
+    const after = parseExpensePlanGrid(changed);
+
+    expect(before.categories.find(({ category }) => category === '簽證'))
+      .toMatchObject({ amount: 10, paidAmount: 0, unpaidAmount: 10 });
+    expect(after.categories.find(({ category }) => category === '簽證'))
+      .toMatchObject({ amount: 10, paidAmount: 10, unpaidAmount: 0 });
+    expect(after.projectedTwd).toBe(before.projectedTwd);
+    expect(after.paidTwd).toBe((before.paidTwd ?? 0) + 350);
+    expect(after.unpaidTwd).toBe((before.unpaidTwd ?? 0) - 350);
+  });
+
   it('keeps a missing paid checkbox unpaid and reports the ambiguity', () => {
     const rows = expensePlanFixture();
-    rows[19 - 3].cells[7] = {};
+    rows[20 - 3].cells[7] = {};
 
     const result = parseExpensePlanGrid(rows);
     const transport = result.categories.find(
@@ -267,7 +316,7 @@ describe('trip repository parsers', () => {
     });
     expect(result.isComplete).toBe(false);
     expect(result.warnings).toContain(
-      '交通第 19 列未設定已付款，暫列為未付款'
+      '交通第 20 列未設定已付款，暫列為未付款'
     );
   });
 

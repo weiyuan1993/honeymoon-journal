@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import type {
   ExpenseFormData,
@@ -10,13 +10,8 @@ import { tripClient } from '@/utils/tripClient';
 import ExpenseHistory from './ExpenseHistory';
 import type { ExpenseHistoryModel } from './ExpenseHistory';
 import ExpenseOverview from './ExpenseOverview';
-import ExpenseToday from './ExpenseToday';
-import type { ExpenseTodayModel } from './ExpenseToday';
-import {
-  ALL_EXPENSE_FILTER,
-  getLocalDateKey,
-  selectTodayExpenses,
-} from './expenseData';
+import ExpenseQuickEntry from './ExpenseQuickEntry';
+import { ALL_EXPENSE_FILTER } from './expenseData';
 import type { ExpenseFilters } from './expenseData';
 import type { LoadStatus, SubmitStatus } from './expenseUi';
 
@@ -25,7 +20,7 @@ interface ExpensePageProps {
   isActive: boolean;
 }
 
-type ExpenseTab = 'today' | 'overview' | 'details';
+type ExpenseTab = 'ledger' | 'overview';
 
 interface ExpenseTabDefinition {
   id: ExpenseTab;
@@ -33,13 +28,12 @@ interface ExpenseTabDefinition {
 }
 
 const EXPENSE_TABS: ExpenseTabDefinition[] = [
-  { id: 'today', label: '今日' },
+  { id: 'ledger', label: '記帳' },
   { id: 'overview', label: '總覽' },
-  { id: 'details', label: '明細' },
 ];
 
 export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
-  const [activeTab, setActiveTab] = useState<ExpenseTab>('today');
+  const [activeTab, setActiveTab] = useState<ExpenseTab>('ledger');
   const [formData, setFormData] = useState<ExpenseFormData>({
     item: '',
     amount: '',
@@ -53,7 +47,6 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
   const [overview, setOverview] = useState<ExpenseOverviewData | null>(null);
   const [overviewStatus, setOverviewStatus] = useState<LoadStatus>('idle');
   const [overviewWarning, setOverviewWarning] = useState<string | null>(null);
-  const [todayKey, setTodayKey] = useState(() => getLocalDateKey(new Date()));
   const [filters, setFilters] = useState<ExpenseFilters>({
     searchTerm: '',
     category: ALL_EXPENSE_FILTER,
@@ -139,28 +132,6 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     return () => window.removeEventListener('focus', handleFocus);
   }, [fetchLedger, fetchOverview, isActive, refreshAll]);
 
-  useEffect(() => {
-    if (!isActive) return;
-
-    const syncLocalDay = () => setTodayKey(getLocalDateKey(new Date()));
-    syncLocalDay();
-    const now = new Date();
-    const nextMidnight = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + 1
-    );
-    const timeoutId = window.setTimeout(
-      syncLocalDay,
-      Math.max(1_000, nextMidnight.getTime() - now.getTime() + 50)
-    );
-    window.addEventListener('focus', syncLocalDay);
-    return () => {
-      window.clearTimeout(timeoutId);
-      window.removeEventListener('focus', syncLocalDay);
-    };
-  }, [isActive, todayKey]);
-
   useEffect(
     () => () => {
       if (successTimerRef.current !== null) {
@@ -169,20 +140,6 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     },
     []
   );
-
-  const todayItems = useMemo(
-    () => selectTodayExpenses(list, new Date(`${todayKey}T12:00:00`)),
-    [list, todayKey]
-  );
-
-  const todayModel: ExpenseTodayModel = {
-    formData,
-    submitStatus,
-    todayKey,
-    items: todayItems,
-    ledgerStatus,
-    ledgerWarning,
-  };
 
   const historyModel: ExpenseHistoryModel = {
     list,
@@ -273,7 +230,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
       <div
         role="tablist"
         aria-label="花費檢視"
-        className="grid grid-cols-3 rounded-2xl border border-gold/20 bg-white p-1 shadow-sm"
+        className="grid grid-cols-2 rounded-2xl border border-gold/20 bg-white p-1 shadow-sm"
       >
         {EXPENSE_TABS.map((tab) => (
           <button
@@ -300,34 +257,34 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
         id={`expense-panel-${activeTab}`}
         aria-labelledby={`expense-tab-${activeTab}`}
       >
-        {activeTab === 'today' ? (
-          <ExpenseToday
-            canEdit={canEdit}
-            model={todayModel}
-            onFormChange={(patch) =>
-              setFormData((current) => ({ ...current, ...patch }))
-            }
-            onSubmit={handleSubmit}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={handleItemDelete}
-          />
-        ) : activeTab === 'overview' ? (
+        {activeTab === 'overview' ? (
           <ExpenseOverview
             overview={overview}
             status={overviewStatus}
             refreshWarning={overviewWarning}
           />
         ) : (
-          <ExpenseHistory
-            canEdit={canEdit}
-            model={historyModel}
-            onFiltersChange={(patch) =>
-              setFilters((current) => ({ ...current, ...patch }))
-            }
-            onToggleShowAll={() => setShowAll((current) => !current)}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={handleItemDelete}
-          />
+          <div className="space-y-4">
+            <ExpenseQuickEntry
+              canEdit={canEdit}
+              formData={formData}
+              status={submitStatus}
+              onChange={(patch) =>
+                setFormData((current) => ({ ...current, ...patch }))
+              }
+              onSubmit={handleSubmit}
+            />
+            <ExpenseHistory
+              canEdit={canEdit}
+              model={historyModel}
+              onFiltersChange={(patch) =>
+                setFilters((current) => ({ ...current, ...patch }))
+              }
+              onToggleShowAll={() => setShowAll((current) => !current)}
+              onItemUpdate={handleItemUpdate}
+              onItemDelete={handleItemDelete}
+            />
+          </div>
         )}
       </div>
     </div>

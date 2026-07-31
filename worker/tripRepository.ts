@@ -159,15 +159,23 @@ const EXPENSE_PLAN_PAID_ROWS = [
     category: '住宿',
     rows: [4, 5, 6, 7, 8, 9, 10, 11, 12],
     itemColumn: 5,
-    amountColumn: 12,
-    paidColumn: 13,
+    amountColumn: 11,
+    paidColumn: 12,
     multiplier: 1,
+  },
+  {
+    category: '簽證',
+    rows: [18],
+    itemColumn: 5,
+    amountColumn: 6,
+    paidColumn: 7,
+    multiplier: 2,
   },
   {
     category: '交通',
     rows: [
-      17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-      31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+      17, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+      32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
     ],
     itemColumn: 5,
     amountColumn: 6,
@@ -199,7 +207,7 @@ const EXPENSE_PLAN_ANCHORS = [
   { row: 3, column: 0, text: '費用估算' },
   { row: 3, column: 2, text: '費用 EUR' },
   { row: 3, column: 5, text: '城市' },
-  { row: 3, column: 13, text: '已付款' },
+  { row: 3, column: 12, text: '已付款' },
   { row: 3, column: 15, text: '景點門票' },
   { row: 3, column: 17, text: '已付款' },
   { row: 16, column: 5, text: '交通' },
@@ -318,8 +326,6 @@ export function parseExpensePlanGrid(
       }
     }
   }
-  warnings.push('簽證沒有可判斷付款狀態的明細，暫列為未付款');
-
   const eurRate = ratesTwdPerUnit.EUR;
   const categoryOrder = [
     ...new Set(EXPENSE_PLAN_CATEGORY_ROWS.map(({ category }) => category)),
@@ -327,7 +333,15 @@ export function parseExpensePlanGrid(
   const categories = categoryOrder.map((category): ExpenseOverviewCategory => {
     const amount = categoryAmounts.get(category) ?? 0;
     const paidAmount = paidAmounts.get(category) ?? 0;
-    const unpaidAmount = amount - paidAmount;
+    const roundedAmount = roundMoney(amount);
+    const roundedPaidAmount = roundMoney(paidAmount);
+    const roundedUnpaidAmount = roundMoney(
+      roundedAmount - roundedPaidAmount
+    );
+    const amountTwd =
+      eurRate === null ? null : roundMoney(amount * eurRate);
+    const paidAmountTwd =
+      eurRate === null ? null : roundMoney(paidAmount * eurRate);
     if (paidAmount - amount > 0.01) {
       warnings.push(`${category}已付款金額高於分類總額，請檢查費用表`);
       isComplete = false;
@@ -335,31 +349,44 @@ export function parseExpensePlanGrid(
     return {
       category,
       currency: 'EUR',
-      amount: roundMoney(amount),
-      paidAmount: roundMoney(paidAmount),
-      unpaidAmount: roundMoney(unpaidAmount),
-      amountTwd: eurRate === null ? null : roundMoney(amount * eurRate),
-      paidAmountTwd:
-        eurRate === null ? null : roundMoney(paidAmount * eurRate),
+      amount: roundedAmount,
+      paidAmount: roundedPaidAmount,
+      unpaidAmount: roundedUnpaidAmount,
+      amountTwd,
+      paidAmountTwd,
       unpaidAmountTwd:
-        eurRate === null ? null : roundMoney(unpaidAmount * eurRate),
+        amountTwd === null || paidAmountTwd === null
+          ? null
+          : roundMoney(amountTwd - paidAmountTwd),
     };
   });
 
-  const projected = categories.reduce((sum, category) => sum + category.amount, 0);
-  const paid = categories.reduce((sum, category) => sum + category.paidAmount, 0);
-  const unpaid = categories.reduce((sum, category) => sum + category.unpaidAmount, 0);
+  const projected = [...categoryAmounts.values()].reduce(
+    (sum, amount) => sum + amount,
+    0
+  );
+  const paid = [...paidAmounts.values()].reduce(
+    (sum, amount) => sum + amount,
+    0
+  );
+  const unpaid = projected - paid;
   if (Math.abs(projected - paid - unpaid) > 0.01) {
     warnings.push('費用預計、已付款與未付款金額無法對帳');
     isComplete = false;
   }
+  const projectedTwd =
+    eurRate === null ? null : roundMoney(projected * eurRate);
+  const paidTwd = eurRate === null ? null : roundMoney(paid * eurRate);
 
   return {
     ratesTwdPerUnit,
     categories,
-    projectedTwd: eurRate === null ? null : roundMoney(projected * eurRate),
-    paidTwd: eurRate === null ? null : roundMoney(paid * eurRate),
-    unpaidTwd: eurRate === null ? null : roundMoney(unpaid * eurRate),
+    projectedTwd,
+    paidTwd,
+    unpaidTwd:
+      projectedTwd === null || paidTwd === null
+        ? null
+        : roundMoney(projectedTwd - paidTwd),
     warnings,
     unconvertedCurrencies: [...invalidCurrencies].sort(),
     isComplete,

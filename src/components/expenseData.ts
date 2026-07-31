@@ -19,7 +19,7 @@ export type ExpenseOverviewDisplayMode =
   | 'incomplete'
   | 'unavailable';
 
-export const getLocalDateKey = (date: Date): string => {
+const getLocalDateKey = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -29,16 +29,6 @@ export const getLocalDateKey = (date: Date): string => {
 const getTimestampDateKey = (timestamp: string): string | null => {
   const date = new Date(timestamp);
   return Number.isNaN(date.getTime()) ? null : getLocalDateKey(date);
-};
-
-export const selectTodayExpenses = (
-  expenses: ExpenseItem[],
-  today: Date
-): ExpenseItem[] => {
-  const todayKey = getLocalDateKey(today);
-  return expenses.filter(
-    (expense) => getTimestampDateKey(expense.timestamp) === todayKey
-  );
 };
 
 export const aggregateExpensesByCurrency = (

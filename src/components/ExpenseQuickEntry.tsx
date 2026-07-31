@@ -1,39 +1,9 @@
-import { useMemo } from 'react';
 import type { FormEvent } from 'react';
-import type {
-  ExpenseFormData,
-  ExpenseItem as ExpenseItemType,
-} from '@/types';
-import { getCurrencySymbol, tripConfig } from '@/config/trip.config';
-import ExpenseItem from './ExpenseItem';
-import { aggregateExpensesByCurrency } from './expenseData';
-import {
-  expenseAmountFormatter,
-  ExpenseLedgerState,
-  ExpenseWarning,
-  type LoadStatus,
-  type SubmitStatus,
-} from './expenseUi';
+import type { ExpenseFormData } from '@/types';
+import { tripConfig } from '@/config/trip.config';
+import type { SubmitStatus } from './expenseUi';
 
-export interface ExpenseTodayModel {
-  formData: ExpenseFormData;
-  submitStatus: SubmitStatus;
-  todayKey: string;
-  items: ExpenseItemType[];
-  ledgerStatus: LoadStatus;
-  ledgerWarning: string | null;
-}
-
-interface ExpenseTodayProps {
-  canEdit: boolean;
-  model: ExpenseTodayModel;
-  onFormChange: (patch: Partial<ExpenseFormData>) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onItemUpdate: (updatedItem?: ExpenseItemType) => void;
-  onItemDelete: (rowNumber: number) => void;
-}
-
-interface QuickEntryFormProps {
+interface ExpenseQuickEntryProps {
   canEdit: boolean;
   formData: ExpenseFormData;
   status: SubmitStatus;
@@ -41,13 +11,13 @@ interface QuickEntryFormProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
-function QuickEntryForm({
+export default function ExpenseQuickEntry({
   canEdit,
   formData,
   status,
   onChange,
   onSubmit,
-}: QuickEntryFormProps) {
+}: ExpenseQuickEntryProps) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-gold/25 bg-gradient-to-br from-gold/15 via-white to-gold/5 p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -154,96 +124,6 @@ function QuickEntryForm({
           </button>
         </div>
       </form>
-    </div>
-  );
-}
-
-export default function ExpenseToday({
-  canEdit,
-  model,
-  onFormChange,
-  onSubmit,
-  onItemUpdate,
-  onItemDelete,
-}: ExpenseTodayProps) {
-  const totals = useMemo(
-    () => aggregateExpensesByCurrency(model.items),
-    [model.items]
-  );
-
-  return (
-    <div className="space-y-4">
-      <QuickEntryForm
-        canEdit={canEdit}
-        formData={model.formData}
-        status={model.submitStatus}
-        onChange={onFormChange}
-        onSubmit={onSubmit}
-      />
-
-      {model.ledgerWarning ? (
-        <ExpenseWarning>{model.ledgerWarning}</ExpenseWarning>
-      ) : null}
-
-      <section className="space-y-3">
-        <div className="rounded-2xl border border-gold/15 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="font-display text-sm text-ink/80">今日總覽</h2>
-              <p className="mt-0.5 font-serif text-[13px] text-ink/45">
-                {model.todayKey.split('-').join('/')} ·{' '}
-                {model.ledgerStatus === 'ready'
-                  ? `${model.items.length} 筆`
-                  : '資料尚未載入'}
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2">
-              {Object.entries(totals).map(([currency, total]) => (
-                <div
-                  key={currency}
-                  className="min-w-20 rounded-xl bg-gold/10 px-3 py-2 text-right"
-                >
-                  <div className="font-serif text-xs leading-none text-ink/45">
-                    {currency}
-                  </div>
-                  <div className="mt-1 font-display text-base font-bold text-gold">
-                    {getCurrencySymbol(currency)}{' '}
-                    {expenseAmountFormatter.format(total)}
-                  </div>
-                </div>
-              ))}
-              {model.ledgerStatus === 'ready' && model.items.length === 0 ? (
-                <span className="font-serif text-sm text-ink/40">
-                  今日尚無花費
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <ExpenseLedgerState
-          status={model.ledgerStatus}
-          isEmpty={model.items.length === 0}
-          emptyText="今日尚無花費紀錄"
-        >
-          <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-            <div className="border-b border-gold/10 bg-gradient-to-r from-gold/5 to-transparent px-3 py-1.5">
-              <h3 className="font-display text-xs text-ink/60">今日明細</h3>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {model.items.map((item) => (
-                <ExpenseItem
-                  key={item.rowNumber}
-                  data={item}
-                  onUpdate={onItemUpdate}
-                  onDelete={onItemDelete}
-                  canEdit={canEdit}
-                />
-              ))}
-            </div>
-          </div>
-        </ExpenseLedgerState>
-      </section>
     </div>
   );
 }

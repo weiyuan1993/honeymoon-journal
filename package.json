@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:cloudflare": "npm run build && wrangler dev --remote --port 5173 --show-interactive-dev-session false",
     "build": "npm run type-check && vite build",
     "build:cloudflare": "npm test -- --run && npm run build",
     "deploy": "npm run build:cloudflare && wrangler deploy",

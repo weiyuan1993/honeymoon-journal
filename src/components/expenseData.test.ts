@@ -4,9 +4,7 @@ import {
   aggregateExpensesByCurrency,
   filterExpenses,
   getExpenseOverviewDisplayMode,
-  getLocalDateKey,
   groupExpensesByDate,
-  selectTodayExpenses,
 } from './expenseData';
 
 const expense = (
@@ -46,40 +44,15 @@ const completeOverview = (): ExpenseOverviewData => ({
   isComplete: true,
 });
 
-describe('expense local-day helpers', () => {
-  it('builds date keys from the device-local calendar date', () => {
-    expect(getLocalDateKey(new Date(2026, 6, 31, 23, 59, 59))).toBe(
-      '2026-07-31'
-    );
-    expect(getLocalDateKey(new Date(2026, 7, 1, 0, 0, 0))).toBe(
-      '2026-08-01'
-    );
-  });
-
-  it('selects only valid timestamps from today', () => {
-    const items = [
-      expense(1, new Date(2026, 6, 31, 8).toISOString(), 12),
-      expense(2, new Date(2026, 6, 30, 23, 59).toISOString(), 5),
-      expense(3, 'not-a-date', 7),
-    ];
-
-    expect(
-      selectTodayExpenses(items, new Date(2026, 6, 31, 22))
-        .map((item) => item.rowNumber)
-    ).toEqual([1]);
-  });
-
-  it('keeps invalid timestamps in history while excluding them from today', () => {
+describe('expense aggregation and filtering', () => {
+  it('keeps invalid timestamps in the full history', () => {
     const invalid = expense(1, 'not-a-date', 9);
 
-    expect(selectTodayExpenses([invalid], new Date(2026, 6, 31))).toEqual([]);
     expect(groupExpensesByDate([invalid])).toEqual([
       { dateKey: null, items: [invalid] },
     ]);
   });
-});
 
-describe('expense aggregation and filtering', () => {
   it('aggregates EUR and CHF independently', () => {
     expect(
       aggregateExpensesByCurrency([
