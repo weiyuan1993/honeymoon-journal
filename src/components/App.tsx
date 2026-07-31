@@ -579,7 +579,7 @@ export default function App() {
     <div className="app-shell min-h-screen bg-paper">
       {/* Header */}
       <header className="sticky top-0 z-50 liquid-shell-header border-b border-gold/25 backdrop-blur-sm">
-        <div className="liquid-main-header relative flex min-h-14 items-center justify-between gap-2 px-2 py-2">
+        <div className="liquid-main-header relative mx-auto flex min-h-14 max-w-[1180px] items-center justify-between gap-2 px-4 py-2 min-[721px]:px-6">
           <h1 className="min-w-0 flex-1">
             <button
               type="button"
