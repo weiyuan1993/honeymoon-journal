@@ -54,6 +54,78 @@ const formatDate = (value: string) => {
   }).format(date);
 };
 
+interface CityHeroCopy {
+  englishName: string;
+  title: string;
+}
+
+const DEFAULT_CITY_HERO: CityHeroCopy = {
+  englishName: 'EUROPE',
+  title: '把每一段旅程，',
+};
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  英國: '🇬🇧',
+  法國: '🇫🇷',
+  瑞士: '🇨🇭',
+  義大利: '🇮🇹',
+};
+
+const CITY_HERO_COPY: Record<string, CityHeroCopy> = {
+  倫敦: {
+    englishName: 'LONDON',
+    title: '把英倫的從容，',
+  },
+  巴黎: {
+    englishName: 'PARIS',
+    title: '把巴黎的浪漫，',
+  },
+  琉森: {
+    englishName: 'LUCERNE',
+    title: '把湖畔的寧靜，',
+  },
+  格林德瓦: {
+    englishName: 'GRINDELWALD',
+    title: '把山谷的晨光，',
+  },
+  因特拉肯: {
+    englishName: 'INTERLAKEN',
+    title: '把湖山的遼闊，',
+  },
+  茵特拉肯: {
+    englishName: 'INTERLAKEN',
+    title: '把湖山的遼闊，',
+  },
+  策馬特: {
+    englishName: 'ZERMATT',
+    title: '把雪峰的心跳，',
+  },
+  蘇黎世: {
+    englishName: 'ZURICH',
+    title: '把城市與湖光，',
+  },
+  米蘭: {
+    englishName: 'MILAN',
+    title: '把米蘭的風格，',
+  },
+  威尼斯: {
+    englishName: 'VENICE',
+    title: '把水巷的倒影，',
+  },
+  佛羅倫斯: {
+    englishName: 'FLORENCE',
+    title: '把文藝的餘暉，',
+  },
+  比薩: {
+    englishName: 'PISA',
+    title: '把斜塔的午後，',
+  },
+  羅馬: {
+    englishName: 'ROME',
+    title: '把永恆城的黃昏，',
+  },
+};
+
 export default function TripDashboard({
   itinerary,
   itineraryError,
@@ -77,21 +149,18 @@ export default function TripDashboard({
   const pendingTodos = todos.filter((todo) => !todo.done);
   const heroCopy = {
     before: {
-      title: <>把每一段旅程，<br /><em>留給當下。</em></>,
       intro: '行程、票券、待辦與實用連結都集中在這裡；出發前看一眼，就知道下一步。',
       eyebrow: 'DEPARTURE',
       value: timeline.daysToStart ?? '—',
       label: 'days to London',
     },
     during: {
-      title: <>今天的旅程，<br /><em>就在眼前。</em></>,
       intro: '先看今天的安排、下一段交通與即將使用的票券，再放心享受當下。',
       eyebrow: 'TODAY',
       value: timeline.currentDayNumber ?? '—',
       label: `day of ${timeline.totalDays}`,
     },
     after: {
-      title: <>走過的風景，<br /><em>成為我們的故事。</em></>,
       intro: '旅程已完成，回到旅程故事重溫一路上的城市與回憶。',
       eyebrow: 'MEMORIES',
       value: timeline.totalDays || '—',
@@ -100,11 +169,18 @@ export default function TripDashboard({
   }[timeline.phase];
 
   const focusItem = timeline.focusItem;
-  const nextTransfer = timeline.nextTransfer;
   const lastItem = timeline.lastDatedItem;
   const contextItem = focusItem ?? lastItem;
   const contextCity = getPrimaryTripCity(contextItem?.city ?? '');
+  const mappedCityHero = CITY_HERO_COPY[contextCity];
+  const cityHero = mappedCityHero ?? DEFAULT_CITY_HERO;
+  const heroCity = contextCity || '歐洲';
+  const heroEnglishName =
+    mappedCityHero?.englishName ??
+    (contextCity ? '' : DEFAULT_CITY_HERO.englishName);
   const currentCountry = getTripCountry(contextItem?.city ?? '');
+  const heroCountry = currentCountry ?? '歐盟';
+  const heroFlag = COUNTRY_FLAGS[heroCountry] ?? '🇪🇺';
   const currentCountryLinks = currentCountry
     ? filterReferenceLinks(referenceLinks, currentCountry, '').slice(0, 4)
     : [];
@@ -124,8 +200,22 @@ export default function TripDashboard({
     <div className="dashboard-shell animate-fade-in-up">
       <section className="dashboard-hero">
         <div className="dashboard-hero-copy">
-          <p className="eyebrow">EUROPE HONEYMOON · 2026</p>
-          <h2>{heroCopy.title}</h2>
+          <p className="eyebrow dashboard-location">
+            <span
+              className="dashboard-location-flag"
+              role="img"
+              aria-label={`${heroCountry}國旗`}
+            >
+              {heroFlag}
+            </span>
+            {heroCity}
+            {heroEnglishName && ` · ${heroEnglishName}`}
+          </p>
+          <h2>
+            {cityHero.title}
+            <br />
+            <em>留給當下。</em>
+          </h2>
           <p className="dashboard-intro">{heroStory}</p>
           <div className="dashboard-actions">
             <button type="button" onClick={onOpenItinerary}>查看完整行程</button>
@@ -207,33 +297,6 @@ export default function TripDashboard({
           )}
         </article>
 
-        <article className="transfer-card">
-          <div className="section-heading">
-            <span>NEXT TRANSFER</span>
-            <button type="button" onClick={onOpenItinerary}>路線細節 →</button>
-          </div>
-          {nextTransfer ? (
-            <>
-              <p className="next-date">
-                {nextTransfer.day} · {formatDate(nextTransfer.date)}
-              </p>
-              <h3>{nextTransfer.city}</h3>
-              <p>
-                {htmlToText(nextTransfer.transport) ||
-                  '交通資訊將於行程中顯示。'}
-              </p>
-              <div className="ticket-tag">
-                票務 · {htmlToText(nextTransfer.ticket) || '請查看行程備註'}
-              </div>
-            </>
-          ) : (
-            <p className="empty-copy">
-              {timeline.phase === 'after'
-                ? '所有跨城移動都已完成。'
-                : '尚未有跨城行程。'}
-            </p>
-          )}
-        </article>
       </section>
 
       <section className="todo-preview">
@@ -279,9 +342,7 @@ export default function TripDashboard({
         <div className="useful-links-heading">
           <div>
             <p className="eyebrow">TRAVEL TOOLKIT</p>
-            <h3>
-              {currentCountry ? `${currentCountry}實用連結` : '實用連結'}
-            </h3>
+            <h3>實用連結</h3>
           </div>
           <div className="useful-links-meta">
             <button type="button" onClick={onOpenLinks}>
@@ -311,11 +372,7 @@ export default function TripDashboard({
           {!referenceLinksLoading &&
             !referenceLinksError &&
             currentCountryLinks.length === 0 && (
-              <p className="empty-copy">
-                {currentCountry
-                  ? `目前沒有${currentCountry}的實用連結。`
-                  : '目前無法判斷所在國家。'}
-              </p>
+              <p className="empty-copy">目前沒有可顯示的實用連結。</p>
             )}
         </div>
       </section>

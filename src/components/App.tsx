@@ -541,6 +541,12 @@ export default function App() {
     setTab(TAB_IDS.JOURNEY);
   };
 
+  const openDashboard = () => {
+    setShowMenu(false);
+    setTab(TAB_IDS.DASHBOARD);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const openPendingTodos = (rowNumber?: number) => {
     setTodoNavigation((current) => ({
       rowNumber: rowNumber ?? null,
@@ -573,35 +579,14 @@ export default function App() {
     <div className="app-shell min-h-screen bg-paper">
       {/* Header */}
       <header className="sticky top-0 z-50 liquid-shell-header border-b border-gold/25 backdrop-blur-sm">
-        <div className="liquid-main-header relative grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-2 px-2 py-2 sm:flex sm:min-h-11 sm:flex-col sm:justify-center sm:gap-0 sm:px-4">
-          {/* Trip Secretary shortcut */}
-          <div className="col-start-1 flex h-10 w-10 items-center justify-center sm:contents">
-            {userPermission.canEdit && (
-              <button
-                type="button"
-                onClick={() => setIsChatOpen(true)}
-                aria-label="開啟旅程秘書"
-                title="AI 旅程秘書"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-deep-blue sm:absolute sm:left-2 sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2"
-              >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          <h1 className="col-start-2 min-w-0">
+        <div className="liquid-main-header relative flex min-h-14 items-center justify-between gap-2 px-2 py-2">
+          <h1 className="min-w-0 flex-1">
             <button
               type="button"
-              aria-label={`${tripConfig.tripName}，回到頁首`}
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="flex h-10 w-full items-center justify-start gap-1.5 sm:justify-center sm:gap-2"
+              aria-label={`${tripConfig.tripName}，回到總覽`}
+              aria-current={tab === TAB_IDS.DASHBOARD ? 'page' : undefined}
+              onClick={openDashboard}
+              className="flex h-10 min-w-0 items-center justify-start gap-1.5 sm:gap-2"
             >
               <img
                 src="/vic-dora-mark.svg"
@@ -619,7 +604,27 @@ export default function App() {
             </button>
           </h1>
 
-          <div className="col-start-3 flex items-center gap-1.5 sm:contents">
+          <div className="flex shrink-0 items-center gap-1">
+            {/* Trip Secretary shortcut */}
+            {userPermission.canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                aria-label="開啟旅程秘書"
+                title="AI 旅程秘書"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-deep-blue"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+
             {/* Journey shortcut */}
             <button
               type="button"
@@ -627,7 +632,7 @@ export default function App() {
               aria-current={tab === TAB_IDS.JOURNEY ? 'page' : undefined}
               title="旅程故事"
               onClick={() => openJourney()}
-              className={`z-50 flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink sm:absolute sm:right-[6.5rem] sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2 ${
+              className={`z-50 flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink ${
                 tab === TAB_IDS.JOURNEY ? 'bg-white/55 text-deep-blue' : ''
               }`}
             >
@@ -657,7 +662,7 @@ export default function App() {
                 setTab(TAB_IDS.LINKS);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`z-50 flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink sm:absolute sm:right-14 sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2 ${
+              className={`z-50 flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink ${
                 tab === TAB_IDS.LINKS ? 'bg-white/55 text-deep-blue' : ''
               }`}
             >
@@ -683,7 +688,7 @@ export default function App() {
               aria-label="開啟選單"
               aria-expanded={showMenu}
               onClick={() => setShowMenu(!showMenu)}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink sm:absolute sm:right-2 sm:top-1/2 sm:h-11 sm:w-11 sm:-translate-y-1/2"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -781,7 +786,7 @@ export default function App() {
         )}
       </header>
 
-      <main className={tab === TAB_IDS.JOURNEY ? 'mt-2' : tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.TICKETS || tab === TAB_IDS.LINKS ? 'mt-2' : 'max-w-6xl mx-auto p-4 mt-2'}>
+      <main className={tab === TAB_IDS.JOURNEY ? '' : tab === TAB_IDS.DASHBOARD || tab === TAB_IDS.TICKETS || tab === TAB_IDS.LINKS ? 'mt-2' : 'max-w-6xl mx-auto p-4 mt-2'}>
         {tab === TAB_IDS.DASHBOARD && (
           loadingItin ? <Loading /> : (
             <TripDashboard

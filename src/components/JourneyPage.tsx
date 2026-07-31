@@ -192,7 +192,7 @@ export default function JourneyPage({
       </div>
 
       <div className="bg-paper px-4 py-3 md:px-8">
-        <div className="mx-auto flex max-w-5xl justify-end">
+        <div className="mx-auto flex max-w-5xl justify-center">
           <button
             type="button"
             onClick={handleGenerate}
