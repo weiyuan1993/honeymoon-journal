@@ -28,7 +28,7 @@ Create these tabs:
 | 行程 | Day, Date, Weekday, City, Content, Transport, Ticket, Link, Hotel |
 | 費用 | Two-person budget summary plus accommodation, transport, dining and ticket tables with adjacent `已付款` checkboxes |
 | 記帳 | Timestamp, Item, Amount, Currency, Category |
-| 待辦 | Section, Item, Detail, Deadline, Done |
+| 待辦 | Section, Item, Detail, Done, Links（過渡期間也支援舊版 Section, Item, Detail, Deadline, Done, Links） |
 | 票券 | Day, Date, City, Item, Type, Provider, File URL, Notes |
 | 景點規劃 | Day, Title, Content |
 | 導航 | Day, Name, Google Maps Query |

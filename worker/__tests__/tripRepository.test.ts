@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildExpenseOverview,
   parseExpensePlanGrid,
@@ -6,6 +6,7 @@ import {
   parseItineraryGrid,
   parseReferenceLinks,
   parseTodosGrid,
+  TripRepository,
 } from '../tripRepository';
 import type { GridCell } from '../richText';
 
@@ -128,7 +129,17 @@ describe('trip repository parsers', () => {
 
   it('tracks todo section rows and stops before the link appendix', () => {
     const result = parseTodosGrid([
-      { rowNumber: 1, cells: [{ formattedValue: '區段' }, { formattedValue: '項目' }] },
+      {
+        rowNumber: 1,
+        cells: [
+          { formattedValue: '區段' },
+          { formattedValue: '項目' },
+          { formattedValue: '細節' },
+          { formattedValue: '截止建議' },
+          { formattedValue: '狀態' },
+          { formattedValue: '連結' },
+        ],
+      },
       { rowNumber: 2, cells: [{ formattedValue: '出發前' }] },
       {
         rowNumber: 3,
@@ -136,7 +147,7 @@ describe('trip repository parsers', () => {
           {},
           { formattedValue: '買車票' },
           { formattedValue: '官網' },
-          { formattedValue: '8/1' },
+          {},
           { formattedValue: 'TRUE', effectiveValue: { boolValue: true } },
         ],
       },
@@ -149,8 +160,231 @@ describe('trip repository parsers', () => {
       rowNumber: 3,
       section: '出發前',
       item: '買車票',
+      links: [],
       done: true,
     });
+  });
+
+  it('returns every safe link from the todo link column', () => {
+    const result = parseTodosGrid([
+      {
+        rowNumber: 1,
+        cells: [
+          { formattedValue: '區段' },
+          { formattedValue: '項目' },
+          { formattedValue: '細節' },
+          { formattedValue: '狀態' },
+          { formattedValue: '連結' },
+        ],
+      },
+      { rowNumber: 2, cells: [{ formattedValue: '出發前' }] },
+      {
+        rowNumber: 3,
+        cells: [
+          {},
+          { formattedValue: '訂門票' },
+          {},
+          {},
+          { formattedValue: '官方預約', hyperlink: 'https://example.com/book' },
+        ],
+      },
+      {
+        rowNumber: 4,
+        cells: [
+          {},
+          { formattedValue: '直接貼網址' },
+          {},
+          {},
+          { formattedValue: 'https://example.com/direct' },
+        ],
+      },
+      {
+        rowNumber: 5,
+        cells: [
+          {},
+          { formattedValue: '不安全連結' },
+          {},
+          {},
+          { formattedValue: 'javascript:alert(1)' },
+        ],
+      },
+      {
+        rowNumber: 6,
+        cells: [
+          {},
+          { formattedValue: '文字超連結' },
+          {},
+          {},
+          {
+            formattedValue: '官方預約',
+            textFormatRuns: [{
+              startIndex: 0,
+              format: { link: { uri: 'https://example.com/rich-text' } },
+            }],
+          },
+        ],
+      },
+      {
+        rowNumber: 7,
+        cells: [
+          {},
+          { formattedValue: '多筆訂票連結' },
+          {},
+          {},
+          {
+            formattedValue: '第一段訂票\n第二段訂票',
+            textFormatRuns: [
+              {
+                format: { link: { uri: 'https://example.com/first' } },
+              },
+              {
+                startIndex: 6,
+                format: { link: { uri: 'https://example.com/second' } },
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(result.map(({ rowNumber, links }) => ({ rowNumber, links }))).toEqual([
+      {
+        rowNumber: 3,
+        links: [{ label: '官方預約', url: 'https://example.com/book' }],
+      },
+      {
+        rowNumber: 4,
+        links: [{ label: '訂票連結 1', url: 'https://example.com/direct' }],
+      },
+      { rowNumber: 5, links: [] },
+      {
+        rowNumber: 6,
+        links: [{ label: '官方預約', url: 'https://example.com/rich-text' }],
+      },
+      {
+        rowNumber: 7,
+        links: [
+          { label: '第一段訂票', url: 'https://example.com/first' },
+          { label: '第二段訂票', url: 'https://example.com/second' },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps the legacy deadline in detail and reads its link column', () => {
+    const result = parseTodosGrid([
+      {
+        rowNumber: 1,
+        cells: [
+          { formattedValue: '【待辦事項 - 依優先順序】' },
+          { formattedValue: '項目' },
+          { formattedValue: '細節' },
+          { formattedValue: '截止建議' },
+          { formattedValue: '狀態' },
+          { formattedValue: '連結' },
+        ],
+      },
+      { rowNumber: 2, cells: [{ formattedValue: '最優先' }] },
+      {
+        rowNumber: 3,
+        cells: [
+          {},
+          { formattedValue: '機票選位' },
+          { formattedValue: '提前確認座位' },
+          { formattedValue: '出發前兩天' },
+          { formattedValue: 'TRUE', effectiveValue: { boolValue: true } },
+          { formattedValue: '航空公司官網', hyperlink: 'https://example.com/seat' },
+        ],
+      },
+    ]);
+
+    expect(result).toEqual([{
+      rowNumber: 3,
+      section: '最優先',
+      item: '機票選位',
+      detail: '提前確認座位<br>期限／狀態：出發前兩天',
+      links: [{ label: '航空公司官網', url: 'https://example.com/seat' }],
+      done: true,
+    }]);
+  });
+
+  it('preserves structured URL punctuation and trims prose punctuation', () => {
+    const result = parseTodosGrid([
+      {
+        rowNumber: 1,
+        cells: [
+          { formattedValue: '區段' },
+          { formattedValue: '項目' },
+          { formattedValue: '細節' },
+          { formattedValue: '狀態' },
+          { formattedValue: '連結' },
+        ],
+      },
+      { rowNumber: 2, cells: [{ formattedValue: '出發前' }] },
+      {
+        rowNumber: 3,
+        cells: [
+          {},
+          { formattedValue: '官方連結' },
+          {},
+          {},
+          { formattedValue: '官方預約', hyperlink: 'https://example.com/book)' },
+        ],
+      },
+      {
+        rowNumber: 4,
+        cells: [
+          {},
+          { formattedValue: '直接貼網址' },
+          {},
+          {},
+          { formattedValue: '請開啟 https://example.com/direct).' },
+        ],
+      },
+    ]);
+
+    expect(result.map(({ rowNumber, links }) => ({ rowNumber, links }))).toEqual([
+      {
+        rowNumber: 3,
+        links: [{ label: '官方預約', url: 'https://example.com/book)' }],
+      },
+      {
+        rowNumber: 4,
+        links: [{ label: '請開啟', url: 'https://example.com/direct' }],
+      },
+    ]);
+  });
+
+  it('writes todo completion to the legacy status column', async () => {
+    const updateValues = vi.fn().mockResolvedValue(undefined);
+    const batchGetValues = vi.fn().mockResolvedValue([
+      [['區段', '項目', '細節', '截止建議', '狀態', '連結']],
+      [['買車票']],
+    ]);
+    const repository = new TripRepository({
+      batchGetValues,
+      updateValues,
+    } as never);
+
+    await repository.updateTodoStatus(3, true, '買車票');
+
+    expect(updateValues).toHaveBeenCalledWith('待辦!E3:E3', [[true]]);
+  });
+
+  it('writes todo completion to the compact status column', async () => {
+    const updateValues = vi.fn().mockResolvedValue(undefined);
+    const batchGetValues = vi.fn().mockResolvedValue([
+      [['區段', '項目', '細節', '狀態', '連結']],
+      [['買車票']],
+    ]);
+    const repository = new TripRepository({
+      batchGetValues,
+      updateValues,
+    } as never);
+
+    await repository.updateTodoStatus(3, true, '買車票');
+
+    expect(updateValues).toHaveBeenCalledWith('待辦!D3:D3', [[true]]);
   });
 
   it('uses unformatted numeric values for expense totals', () => {

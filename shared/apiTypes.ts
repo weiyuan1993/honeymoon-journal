@@ -81,12 +81,17 @@ export interface ExpenseOverviewData {
   isComplete: boolean;
 }
 
+export interface TodoLink {
+  label: string;
+  url: string;
+}
+
 export interface TodoItem {
   rowNumber: number;
   section: string;
   item: string;
   detail: string;
-  deadline: string;
+  links: TodoLink[];
   done: boolean;
 }
 

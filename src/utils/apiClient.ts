@@ -30,7 +30,9 @@ async function parseResponse<T>(response: Response): Promise<T> {
     data: T;
   } & ApiErrorPayload;
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== 'undefined') {
+    const accessRevoked = response.status === 401
+      || (response.status === 403 && payload.error?.code === 'EDITOR_NOT_AUTHORIZED');
+    if (accessRevoked && typeof window !== 'undefined') {
       window.dispatchEvent(new Event('honeymoon:session-expired'));
     }
     throw new ApiClientError(

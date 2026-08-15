@@ -31,6 +31,16 @@ interface HtmlTextProps {
   className?: string;
 }
 
+const PLAIN_URL_PATTERN =
+  /https?:\/\/[^\s<>"'，。！？、；：）】》〉」』〕］}]+/gi;
+
+function redactedTodoText(value: string): string {
+  return htmlToText(value)
+    .replace(PLAIN_URL_PATTERN, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
 function HtmlText({ html, className = '' }: HtmlTextProps) {
   return (
     <span
@@ -233,6 +243,9 @@ export default function TodoPage({
               <div className="divide-y divide-gray-100">
                 {items.map((todo) => {
                   const isUpdating = updatingRows.has(todo.rowNumber);
+                  const itemText = canEdit
+                    ? htmlToText(todo.item)
+                    : redactedTodoText(todo.item);
                   return (
                     <div
                       key={todo.rowNumber}
@@ -246,7 +259,7 @@ export default function TodoPage({
                         checked={todo.done}
                         disabled={!canEdit || isUpdating}
                         onChange={(e) => handleToggle(todo, e.target.checked)}
-                        aria-label={`${todo.done ? '取消完成' : '完成'} ${htmlToText(todo.item)}`}
+                        aria-label={`${todo.done ? '取消完成' : '完成'} ${itemText}`}
                         className="mt-1 h-4 w-4 shrink-0 accent-gold disabled:cursor-not-allowed disabled:opacity-40"
                         title={canEdit ? undefined : '需編輯權限'}
                       />
@@ -258,22 +271,36 @@ export default function TodoPage({
                               : 'text-ink'
                           }`}
                         >
-                          <HtmlText html={todo.item} />
+                          {canEdit ? <HtmlText html={todo.item} /> : itemText}
                         </div>
                         {todo.detail && (
-                          <p className="mt-1 font-serif text-xs leading-relaxed text-ink/60 break-words [&_a]:text-gold [&_a]:underline">
-                            <HtmlText html={todo.detail} />
+                          <p className="mt-1 font-serif text-xs leading-relaxed text-ink/60 break-words">
+                            {canEdit ? htmlToText(todo.detail) : redactedTodoText(todo.detail)}
                           </p>
                         )}
-                        {todo.deadline && (
-                          <div className="mt-2 inline-flex max-w-full items-center rounded-full bg-gold/10 px-2 py-1 font-serif text-[13px] leading-snug text-gold">
-                            <span className="mr-1 shrink-0">截止</span>
-                            <HtmlText
-                              html={todo.deadline}
-                              className="min-w-0 break-words"
-                            />
+                        {canEdit && todo.links.length > 0 ? (
+                          <div className="mt-3">
+                            <p className="font-display text-[11px] uppercase tracking-[0.12em] text-ink/45">
+                              訂票連結
+                            </p>
+                            <ul className="mt-1.5 space-y-1.5">
+                              {todo.links.map((link, index) => (
+                                <li key={`${link.url}-${index}`}>
+                                  <a
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={`開啟 ${itemText} 的 ${link.label}`}
+                                    className="inline-flex max-w-full items-center gap-1 font-serif text-xs text-gold underline decoration-gold/50 underline-offset-2 transition-colors hover:text-ink"
+                                  >
+                                    <span className="break-all">{link.label}</span>
+                                    <span aria-hidden="true">↗</span>
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   );

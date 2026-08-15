@@ -354,6 +354,11 @@ export default function App() {
       loadedDataRef.current.delete('itinerary');
       loadingDataRef.current.delete('itinerary');
       loadingDataRef.current.delete('tickets');
+      setTodos([]);
+      setLoadingTodos(true);
+      setTodosError(false);
+      loadedDataRef.current.delete('todos');
+      loadingDataRef.current.delete('todos');
     }
     if (!permission.canEdit) {
       setTickets([]);
@@ -383,17 +388,23 @@ export default function App() {
   };
 
   const fetchTodos = async () => {
+    const authEpoch = authEpochRef.current;
+    const canViewLinks = canEditRef.current;
     setLoadingTodos(true);
     setTodosError(false);
     try {
-      const data = await tripClient.getTodoData();
+      const data = await tripClient.getTodoData(canViewLinks);
+      if (authEpoch !== authEpochRef.current) return;
       setTodos(data || []);
       loadedDataRef.current.add('todos');
     } catch (error) {
+      if (authEpoch !== authEpochRef.current) return;
       setTodosError(true);
       console.error('Failed to fetch todos:', error);
     } finally {
-      setLoadingTodos(false);
+      if (authEpoch === authEpochRef.current) {
+        setLoadingTodos(false);
+      }
     }
   };
 

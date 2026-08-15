@@ -17,6 +17,7 @@ export type {
   JourneyContent,
   ReferenceLink,
   TicketItem,
+  TodoLink,
   TodoItem,
   UserPermission,
 } from '../../shared/apiTypes';
