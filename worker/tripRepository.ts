@@ -258,7 +258,7 @@ interface ParsedExpensePlan {
 const EXPENSE_PLAN_CATEGORY_ROWS = [
   { row: 4, category: '住宿' },
   { row: 5, category: '交通' },
-  { row: 6, category: '簽證' },
+  { row: 6, category: '交通', expectedCategory: '簽證' },
   { row: 7, category: '交通' },
   { row: 8, category: '交通' },
   { row: 9, category: '門票' },
@@ -278,7 +278,7 @@ const EXPENSE_PLAN_PAID_ROWS = [
     multiplier: 1,
   },
   {
-    category: '簽證',
+    category: '交通',
     rows: [18],
     itemColumn: 5,
     amountColumn: 6,
@@ -399,9 +399,13 @@ export function parseExpensePlanGrid(
   let isComplete = invalidCurrencies.size === 0;
   for (const definition of EXPENSE_PLAN_CATEGORY_ROWS) {
     const actualCategory = cellDisplayValue(planCell(definition.row, 0)).trim();
-    if (actualCategory !== definition.category) {
+    const expectedCategory =
+      'expectedCategory' in definition
+        ? definition.expectedCategory
+        : definition.category;
+    if (actualCategory !== expectedCategory) {
       throw new Error(
-        `費用版面不符預期：${definition.row} 列分類應為 ${definition.category}`
+        `費用版面不符預期：${definition.row} 列分類應為 ${expectedCategory}`
       );
     }
     const amount = numericCell(planCell(definition.row, 2));

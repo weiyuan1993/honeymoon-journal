@@ -445,22 +445,12 @@ describe('trip repository parsers', () => {
       {
         category: '交通',
         currency: 'EUR',
-        amount: 120,
+        amount: 130,
         paidAmount: 40,
-        unpaidAmount: 80,
-        amountTwd: 4200,
+        unpaidAmount: 90,
+        amountTwd: 4550,
         paidAmountTwd: 1400,
-        unpaidAmountTwd: 2800,
-      },
-      {
-        category: '簽證',
-        currency: 'EUR',
-        amount: 10,
-        paidAmount: 0,
-        unpaidAmount: 10,
-        amountTwd: 350,
-        paidAmountTwd: 0,
-        unpaidAmountTwd: 350,
+        unpaidAmountTwd: 3150,
       },
       {
         category: '門票',
@@ -486,6 +476,7 @@ describe('trip repository parsers', () => {
     expect(result.warnings).not.toEqual(
       expect.arrayContaining([expect.stringContaining('簽證')])
     );
+    expect(result.categories.find(({ category }) => category === '簽證')).toBeUndefined();
     expect(result.isComplete).toBe(true);
   });
 
@@ -533,7 +524,7 @@ describe('trip repository parsers', () => {
     expect(after.unpaidTwd).toBe(4550);
   });
 
-  it('uses the ETA row in the transport table as the visa payment state', () => {
+  it('rolls the ETA row into transport payment totals', () => {
     const before = parseExpensePlanGrid(expensePlanFixture());
     const changed = expensePlanFixture();
     changed[18 - 3].cells[7] = {
@@ -542,10 +533,10 @@ describe('trip repository parsers', () => {
     };
     const after = parseExpensePlanGrid(changed);
 
-    expect(before.categories.find(({ category }) => category === '簽證'))
-      .toMatchObject({ amount: 10, paidAmount: 0, unpaidAmount: 10 });
-    expect(after.categories.find(({ category }) => category === '簽證'))
-      .toMatchObject({ amount: 10, paidAmount: 10, unpaidAmount: 0 });
+    expect(before.categories.find(({ category }) => category === '交通'))
+      .toMatchObject({ amount: 130, paidAmount: 40, unpaidAmount: 90 });
+    expect(after.categories.find(({ category }) => category === '交通'))
+      .toMatchObject({ amount: 130, paidAmount: 50, unpaidAmount: 80 });
     expect(after.projectedTwd).toBe(before.projectedTwd);
     expect(after.paidTwd).toBe((before.paidTwd ?? 0) + 350);
     expect(after.unpaidTwd).toBe((before.unpaidTwd ?? 0) - 350);
@@ -561,9 +552,9 @@ describe('trip repository parsers', () => {
     );
 
     expect(transport).toMatchObject({
-      amount: 120,
+      amount: 130,
       paidAmount: 40,
-      unpaidAmount: 80,
+      unpaidAmount: 90,
     });
     expect(result.isComplete).toBe(false);
     expect(result.warnings).toContain(
@@ -577,6 +568,15 @@ describe('trip repository parsers', () => {
 
     expect(() => parseExpensePlanGrid(rows)).toThrow(
       '費用版面不符預期'
+    );
+  });
+
+  it('keeps the raw visa label while grouping it into transport', () => {
+    const rows = expensePlanFixture();
+    rows[6 - 3].cells[0] = { formattedValue: '交通' };
+
+    expect(() => parseExpensePlanGrid(rows)).toThrow(
+      '費用版面不符預期：6 列分類應為 簽證'
     );
   });
 
