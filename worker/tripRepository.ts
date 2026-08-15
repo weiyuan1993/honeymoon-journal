@@ -4,6 +4,7 @@ import {
   safeUrl,
   type GridCell,
 } from './richText';
+import { todoLinkLabelFromUrl } from '../shared/todoLinkLabel';
 import { SheetsClient } from './sheets';
 import type {
   ApiResponse,
@@ -68,7 +69,10 @@ function addTodoLink(
 
   seenUrls.add(url);
   links.push({
-    label: cleanTodoLinkLabel(label) || `訂票連結 ${links.length + 1}`,
+    label:
+      cleanTodoLinkLabel(label) ||
+      todoLinkLabelFromUrl(url) ||
+      `連結 ${links.length + 1}`,
     url,
   });
 }
@@ -127,7 +131,7 @@ function todoSchema(headers: string[]): TodoSchema {
 
   return {
     deadlineColumn: deadlineColumn >= 0 ? deadlineColumn : undefined,
-    // The live Sheet is still the legacy D=deadline / E=status / F=link layout.
+    // Older sheets may still use the legacy D=deadline / E=status / F=link layout.
     doneColumn: doneColumn >= 0 ? doneColumn : 4,
     linkColumn: linkColumn >= 0 ? linkColumn : 5,
   };

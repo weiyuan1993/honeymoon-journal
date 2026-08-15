@@ -29,7 +29,7 @@ describe('tripClient todo data', () => {
       section: '出發前',
       item: '訂門票',
       detail: '官方預約<br>期限／狀態：8/1，詳見',
-      links: [{ label: '訂票連結', url: 'https://example.com/book' }],
+      links: [{ label: 'example.com', url: 'https://example.com/book' }],
       done: false,
     }]);
   });
@@ -49,7 +49,7 @@ describe('tripClient todo data', () => {
       section: '出發前',
       item: '訂門票',
       detail: '出發資訊 https://example.com/arrival',
-      links: [{ label: '訂票連結', url: 'https://example.com/book' }],
+      links: [{ label: 'example.com', url: 'https://example.com/book' }],
       done: false,
     }]);
   });
@@ -71,6 +71,21 @@ describe('tripClient todo data', () => {
       detail: '官方預約',
       links: [],
       done: false,
+    }]);
+  });
+
+  it('uses a friendly site name when a generic label accompanies a known domain', async () => {
+    vi.mocked(callWorker).mockResolvedValueOnce([{
+      rowNumber: 3,
+      section: '出發前',
+      item: '訂門票',
+      detail: '官方預約',
+      links: [{ label: '訂票連結1', url: 'https://drive.google.com/file/d/booking/view' }],
+      done: false,
+    }] as never);
+
+    await expect(tripClient.getTodoData(true)).resolves.toMatchObject([{
+      links: [{ label: 'Google Drive', url: 'https://drive.google.com/file/d/booking/view' }],
     }]);
   });
 

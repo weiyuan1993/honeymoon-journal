@@ -245,6 +245,16 @@ describe('trip repository parsers', () => {
           },
         ],
       },
+      {
+        rowNumber: 8,
+        cells: [
+          {},
+          { formattedValue: '訂單檔案' },
+          {},
+          {},
+          { formattedValue: 'https://drive.google.com/file/d/booking/view' },
+        ],
+      },
     ]);
 
     expect(result.map(({ rowNumber, links }) => ({ rowNumber, links }))).toEqual([
@@ -254,7 +264,7 @@ describe('trip repository parsers', () => {
       },
       {
         rowNumber: 4,
-        links: [{ label: '訂票連結 1', url: 'https://example.com/direct' }],
+        links: [{ label: 'example.com', url: 'https://example.com/direct' }],
       },
       { rowNumber: 5, links: [] },
       {
@@ -267,6 +277,13 @@ describe('trip repository parsers', () => {
           { label: '第一段訂票', url: 'https://example.com/first' },
           { label: '第二段訂票', url: 'https://example.com/second' },
         ],
+      },
+      {
+        rowNumber: 8,
+        links: [{
+          label: 'Google Drive',
+          url: 'https://drive.google.com/file/d/booking/view',
+        }],
       },
     ]);
   });

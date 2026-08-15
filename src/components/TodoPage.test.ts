@@ -39,6 +39,7 @@ describe('TodoPage', () => {
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('巴黎博物館通票');
     expect(html).toContain('羅浮宮時段');
+    expect(html).not.toContain('訂票連結');
   });
 
   it('does not render todo links without editor access', () => {

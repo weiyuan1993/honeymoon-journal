@@ -280,10 +280,7 @@ export default function TodoPage({
                         )}
                         {canEdit && todo.links.length > 0 ? (
                           <div className="mt-3">
-                            <p className="font-display text-[11px] uppercase tracking-[0.12em] text-ink/45">
-                              訂票連結
-                            </p>
-                            <ul className="mt-1.5 space-y-1.5">
+                            <ul className="space-y-1.5">
                               {todo.links.map((link, index) => (
                                 <li key={`${link.url}-${index}`}>
                                   <a

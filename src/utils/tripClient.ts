@@ -22,6 +22,10 @@ import type {
   UserPermission,
 } from '@/types';
 import { safeUrl } from '../../shared/safeUrl';
+import {
+  isGenericTodoLinkLabel,
+  todoLinkLabelFromUrl,
+} from '../../shared/todoLinkLabel';
 import { authClient, callWorker } from '@/utils/apiClient';
 
 type TodoApiItem = Omit<TodoItem, 'links'> & {
@@ -56,7 +60,7 @@ function normalizeTodoLinks(links: TodoLink[] | undefined, legacyLink?: string):
   const source = Array.isArray(links)
     ? links
     : legacyLink
-      ? [{ label: '訂票連結', url: legacyLink }]
+      ? [{ label: '連結 1', url: legacyLink }]
       : [];
 
   return source.flatMap((link, index) => {
@@ -64,7 +68,9 @@ function normalizeTodoLinks(links: TodoLink[] | undefined, legacyLink?: string):
     if (!url) return [];
     const label = typeof link.label === 'string' ? link.label.trim() : '';
     return [{
-      label: label || `訂票連結 ${index + 1}`,
+      label: label && !isGenericTodoLinkLabel(label)
+        ? label
+        : todoLinkLabelFromUrl(url) || `連結 ${index + 1}`,
       url,
     }];
   });
