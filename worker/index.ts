@@ -17,6 +17,7 @@ import type {
   ExpenseItem,
   ItineraryFormData,
   ItineraryItem,
+  TodoItem,
 } from './models';
 import {
   assertSameOriginMutation,
@@ -41,6 +42,7 @@ interface WorkerEnv extends AuthBindings, SheetsEnv, GeminiEnv {
 
 const PUBLIC_CACHE_SECONDS = 45;
 const PUBLIC_CACHE_NAME = 'honeymoon-public-v2';
+const TODO_PUBLIC_CACHE_KEY = 'todo-v3';
 const HTML_LINK_TAG_PATTERN = /<\/?a\b[^>]*>/gi;
 const PLAIN_URL_PATTERN =
   /https?:\/\/[^\s<>"'，。！？、；：）】》〉」』〕］}]+/gi;
@@ -120,14 +122,19 @@ async function handleRpc(
   }
   if (route.method === 'POST') assertSameOriginMutation(request, env.APP_ORIGIN);
 
-  const returnsPrivateItinerary =
-    operation === 'getItineraryData' && hasEditorAccess;
+  const returnsPrivateData = hasEditorAccess && (
+    operation === 'getItineraryData' || operation === 'getTodoData'
+  );
   const usesPublicCache =
-    route.capability === 'public:read' && !returnsPrivateItinerary;
-  const cacheKey = new Request(request.url, { method: 'GET' });
-  const publicCache = await caches.open(PUBLIC_CACHE_NAME);
-  if (usesPublicCache) {
-    const cached = await publicCache.match(cacheKey);
+    route.capability === 'public:read' && !returnsPrivateData;
+  const publicCacheEntry = usesPublicCache
+    ? {
+      cache: await caches.open(PUBLIC_CACHE_NAME),
+      key: publicCacheKey(request, operation),
+    }
+    : null;
+  if (publicCacheEntry) {
+    const cached = await publicCacheEntry.cache.match(publicCacheEntry.key);
     if (cached) return cached;
   }
 
@@ -140,17 +147,19 @@ async function handleRpc(
   const result =
     operation === 'getItineraryData' && !hasEditorAccess
       ? publicItinerary(operationResult as ItineraryItem[])
-      : operationResult;
+      : operation === 'getTodoData' && !hasEditorAccess
+        ? publicTodos(operationResult as TodoItem[])
+        : operationResult;
 
-  if (usesPublicCache) {
+  if (publicCacheEntry) {
     const response = jsonResponse(result, {
       headers: { 'cache-control': `public, max-age=0, s-maxage=${PUBLIC_CACHE_SECONDS}` },
     });
-    await publicCache.put(cacheKey, response.clone());
+    await publicCacheEntry.cache.put(publicCacheEntry.key, response.clone());
     return response;
   }
 
-  if (returnsPrivateItinerary) {
+  if (returnsPrivateData) {
     return privateJsonResponse(result);
   }
   if (route.capability === 'private:write' || route.capability === 'private:ai') {
@@ -292,18 +301,36 @@ function normalizeError(error: unknown): ApiError {
   return new ApiError(500, 'INTERNAL_ERROR', 'An unexpected error occurred.');
 }
 
-function publicItinerary(itinerary: ItineraryItem[]): ItineraryItem[] {
-  const removeLinks = (value: string): string =>
-    value
-      .replace(HTML_LINK_TAG_PATTERN, '')
-      .replace(PLAIN_URL_PATTERN, '')
-      .replace(/[ \t]{2,}/g, ' ')
-      .trim();
+function removeLinks(value: string): string {
+  return value
+    .replace(HTML_LINK_TAG_PATTERN, '')
+    .replace(PLAIN_URL_PATTERN, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
 
+function publicItinerary(itinerary: ItineraryItem[]): ItineraryItem[] {
   return itinerary.map((item) => ({
     ...item,
     hotel: removeLinks(item.hotel),
   }));
+}
+
+function publicTodos(todos: TodoItem[]): TodoItem[] {
+  return todos.map((todo) => ({
+    ...todo,
+    item: removeLinks(todo.item),
+    detail: removeLinks(todo.detail),
+    links: [],
+  }));
+}
+
+function publicCacheKey(request: Request, operation: ApiOperation): Request {
+  const cacheUrl = new URL(request.url);
+  if (operation === 'getTodoData') {
+    cacheUrl.searchParams.set('__public_cache', TODO_PUBLIC_CACHE_KEY);
+  }
+  return new Request(cacheUrl.toString(), { method: 'GET' });
 }
 
 async function invalidatePublicCache(origin: string): Promise<void> {
@@ -311,6 +338,16 @@ async function invalidatePublicCache(origin: string): Promise<void> {
   await Promise.all(
     Object.entries(API_OPERATIONS)
       .filter(([, route]) => route.capability === 'public:read')
-      .map(([operation]) => publicCache.delete(`${origin}/api/rpc/${operation}`))
+      .flatMap(([operation]) => publicCacheKeys(origin, operation))
+      .map((cacheKey) => publicCache.delete(cacheKey))
   );
+}
+
+function publicCacheKeys(origin: string, operation: string): string[] {
+  const legacyCacheKey = `${origin}/api/rpc/${operation}`;
+  if (operation !== 'getTodoData') return [legacyCacheKey];
+
+  const todoCacheUrl = new URL(legacyCacheKey);
+  todoCacheUrl.searchParams.set('__public_cache', TODO_PUBLIC_CACHE_KEY);
+  return [legacyCacheKey, todoCacheUrl.toString()];
 }

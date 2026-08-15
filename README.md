@@ -41,6 +41,9 @@ The Worker enforces the access boundary:
 - `private:write`: itinerary, todo, expense and chat mutations
 - `private:ai`: Gemini generation and assistant chat
 
+`待辦`的「連結」欄可放訂票、訂單管理與票券網址，僅授權帳號登入後才會取得並顯示。
+網址只接受 `http` 或 `https`；訪客只能讀取不含連結的待辦文字。
+
 ## Project structure
 
 ```text
@@ -109,7 +112,7 @@ Runtime credentials are encrypted Worker secrets. See [docs/deployment.md](docs/
 |-----|---------|
 | 行程 | Day, Date, Weekday, City, Content, Transport, Ticket, Link, Hotel |
 | 記帳 | Timestamp, Item, Amount, Currency, Category |
-| 待辦 | Section, Item, Detail, Deadline, Done |
+| 待辦 | Section, Item, Detail, Done, Links（過渡期間也支援舊版 Section, Item, Detail, Deadline, Done, Links） |
 | 票券 | Day, Date, City, Item, Type, Provider, File URL, Notes |
 | 景點規劃 | Day, Title, Content |
 | 導航 | Day, Name, Google Maps Query |

@@ -163,6 +163,144 @@ describe('worker privacy boundary', () => {
     expect(cachePut).not.toHaveBeenCalled();
   });
 
+  it('redacts todo links for anonymous callers', async () => {
+    vi.spyOn(TripRepository.prototype, 'getTodos').mockResolvedValue([{
+      rowNumber: 3,
+      section: '出發前',
+      item: '<a href="https://booking.example/item?token=secret">訂門票</a>',
+      detail: '<a href="https://booking.example/detail?token=secret">官方預約</a> https://booking.example/plain?token=secret',
+      links: [{
+        label: '訂單管理',
+        url: 'https://booking.example/manage?token=secret',
+      }],
+      done: false,
+    }]);
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/getTodoData'),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toContain('public');
+    await expect(response.json()).resolves.toEqual({
+      data: [{
+        rowNumber: 3,
+        section: '出發前',
+        item: '訂門票',
+        detail: '官方預約',
+        links: [],
+        done: false,
+      }],
+    });
+  });
+
+  it('does not return legacy cached todo data to anonymous callers', async () => {
+    const legacyCacheKey = 'https://trip.example/api/rpc/getTodoData';
+    const todoCacheKey = `${legacyCacheKey}?__public_cache=todo-v3`;
+    const cachedResponses = new Map<string, Response>([
+      [legacyCacheKey, new Response(JSON.stringify({
+        data: [{
+          rowNumber: 3,
+          section: '出發前',
+          item: 'Legacy todo',
+          detail: 'Legacy private link',
+          links: [{
+            label: 'Legacy booking',
+            url: 'https://legacy.example.invalid/private',
+          }],
+          done: false,
+        }],
+      }))],
+    ]);
+    const cacheMatch = vi.fn().mockImplementation(async (key: Request | string) => {
+      const url = typeof key === 'string' ? key : key.url;
+      return cachedResponses.get(url)?.clone();
+    });
+    const cachePut = vi.fn().mockImplementation(async (key: Request | string, response: Response) => {
+      const url = typeof key === 'string' ? key : key.url;
+      cachedResponses.set(url, response.clone());
+    });
+    vi.stubGlobal('caches', {
+      open: vi.fn().mockResolvedValue({
+        match: cacheMatch,
+        put: cachePut,
+        delete: vi.fn().mockResolvedValue(true),
+      }),
+    });
+    vi.spyOn(TripRepository.prototype, 'getTodos').mockResolvedValue([{
+      rowNumber: 3,
+      section: '出發前',
+      item: 'Fresh todo',
+      detail: 'Fresh details',
+      links: [],
+      done: false,
+    }]);
+
+    const response = await worker.fetch(
+      new Request(legacyCacheKey),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: [{
+        rowNumber: 3,
+        section: '出發前',
+        item: 'Fresh todo',
+        detail: 'Fresh details',
+        links: [],
+        done: false,
+      }],
+    });
+    expect(cacheMatch.mock.calls[0][0].url).toBe(todoCacheKey);
+    expect(cachePut.mock.calls[0][0].url).toBe(todoCacheKey);
+    expect(cachePut).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns todo links to authorized editors without public caching', async () => {
+    const todos = [{
+      rowNumber: 3,
+      section: '出發前',
+      item: '訂門票',
+      detail: '官方預約',
+      links: [{
+        label: '訂單管理',
+        url: 'https://booking.example/manage?token=secret',
+      }],
+      done: false,
+    }];
+    vi.spyOn(TripRepository.prototype, 'getTodos').mockResolvedValue(todos);
+    const cachePut = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('caches', {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn().mockResolvedValue(undefined),
+        put: cachePut,
+        delete: vi.fn().mockResolvedValue(true),
+      }),
+    });
+    const token = await createSessionToken(
+      {
+        sub: 'google-user-1',
+        email: 'vic@example.com',
+        role: 'editor',
+      },
+      env.SESSION_SECRET
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/rpc/getTodoData', {
+        headers: { cookie: `honeymoon_session=${token}` },
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    await expect(response.json()).resolves.toEqual({ data: todos });
+    expect(cachePut).not.toHaveBeenCalled();
+  });
+
   it('revokes an existing session immediately after allowlist removal', async () => {
     const token = await createSessionToken(
       {
@@ -226,6 +364,10 @@ describe('worker privacy boundary', () => {
       success: true,
       message: '待辦狀態已更新',
     });
+    const cacheDelete = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('caches', {
+      open: vi.fn().mockResolvedValue({ delete: cacheDelete }),
+    });
     const token = await createSessionToken(
       {
         sub: 'google-user-1',
@@ -252,6 +394,12 @@ describe('worker privacy boundary', () => {
     await expect(response.json()).resolves.toEqual({
       data: { success: true, message: '待辦狀態已更新' },
     });
+    expect(cacheDelete).toHaveBeenCalledWith(
+      'https://trip.example/api/rpc/getTodoData'
+    );
+    expect(cacheDelete).toHaveBeenCalledWith(
+      'https://trip.example/api/rpc/getTodoData?__public_cache=todo-v3'
+    );
   });
 
   it('allows an authorized editor to use an AI operation', async () => {

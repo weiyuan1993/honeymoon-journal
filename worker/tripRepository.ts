@@ -15,6 +15,7 @@ import type {
   JourneyContent,
   ReferenceLink,
   TicketItem,
+  TodoLink,
   TodoItem,
 } from './models';
 import { ConflictError } from './models';
@@ -36,6 +37,112 @@ const value = (row: unknown[], index: number): string => String(row[index] ?? ''
 
 function cell(row: GridCell[], index: number): GridCell | undefined {
   return row[index];
+}
+
+const RAW_URL_PATTERN = /https?:\/\/[^\s<>"']+/gi;
+const TRAILING_URL_PUNCTUATION = /[),.;:!?，。；：、】【）\]]+$/u;
+
+function cleanTodoLinkLabel(value: string): string {
+  return value
+    .replace(RAW_URL_PATTERN, '')
+    .replace(/^[\s:：\-–—|]+|[\s:：\-–—|]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function addTodoLink(
+  links: TodoLink[],
+  seenUrls: Set<string>,
+  value: string | undefined,
+  label: string,
+  trimTrailingPunctuation = false
+): void {
+  const url = safeUrl(
+    trimTrailingPunctuation ? value?.replace(TRAILING_URL_PUNCTUATION, '') : value
+  );
+  if (!url || seenUrls.has(url)) return;
+
+  seenUrls.add(url);
+  links.push({
+    label: cleanTodoLinkLabel(label) || `訂票連結 ${links.length + 1}`,
+    url,
+  });
+}
+
+function todoLinks(cell: GridCell | undefined): TodoLink[] {
+  if (!cell) return [];
+
+  const text = cellDisplayValue(cell);
+  const links: TodoLink[] = [];
+  const seenUrls = new Set<string>();
+  addTodoLink(links, seenUrls, cell.hyperlink, text);
+
+  const runs = (cell.textFormatRuns ?? [])
+    .map((run, index) => ({
+      ...run,
+      startIndex: run.startIndex ?? (index === 0 ? 0 : undefined),
+    }))
+    .filter((run) => Number.isInteger(run.startIndex) && (run.startIndex ?? -1) >= 0)
+    .sort((left, right) => (left.startIndex ?? 0) - (right.startIndex ?? 0));
+  runs.forEach((run, index) => {
+    const start = run.startIndex ?? 0;
+    const end = runs[index + 1]?.startIndex ?? text.length;
+    addTodoLink(links, seenUrls, run.format?.link?.uri, text.slice(start, end));
+  });
+
+  text.split(/\r?\n/).forEach((line) => {
+    for (const match of line.matchAll(RAW_URL_PATTERN)) {
+      addTodoLink(links, seenUrls, match[0], line, true);
+    }
+  });
+
+  return links;
+}
+
+interface TodoSchema {
+  deadlineColumn?: number;
+  doneColumn: number;
+  linkColumn: number;
+}
+
+function normalizedTodoHeader(value: string): string {
+  return value.trim().replace(/\s+/g, '').toLowerCase();
+}
+
+function findTodoColumn(headers: string[], names: string[]): number {
+  return headers.findIndex((header) =>
+    names.some((name) => header === name || header.startsWith(name))
+  );
+}
+
+function todoSchema(headers: string[]): TodoSchema {
+  const normalizedHeaders = headers.map(normalizedTodoHeader);
+  const deadlineColumn = findTodoColumn(normalizedHeaders, ['截止建議', 'deadline']);
+  const doneColumn = findTodoColumn(normalizedHeaders, ['狀態', '完成', 'done', 'status']);
+  const linkColumn = findTodoColumn(normalizedHeaders, ['連結', 'links', 'link']);
+
+  return {
+    deadlineColumn: deadlineColumn >= 0 ? deadlineColumn : undefined,
+    // The live Sheet is still the legacy D=deadline / E=status / F=link layout.
+    doneColumn: doneColumn >= 0 ? doneColumn : 4,
+    linkColumn: linkColumn >= 0 ? linkColumn : 5,
+  };
+}
+
+function todoDetail(detailCell: GridCell | undefined, deadlineCell: GridCell | undefined): string {
+  const detail = gridCellToHtml(detailCell);
+  const deadline = gridCellToHtml(deadlineCell);
+  return deadline
+    ? [detail, `期限／狀態：${deadline}`].filter(Boolean).join('<br>')
+    : detail;
+}
+
+function sheetColumnName(index: number): string {
+  let name = '';
+  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26)) {
+    name = String.fromCharCode(65 + ((value - 1) % 26)) + name;
+  }
+  return name;
 }
 
 function timestampFromCell(timestampCell: GridCell | undefined): string {
@@ -69,6 +176,8 @@ export function parseTodosGrid(
 ): TodoItem[] {
   let section = '未分類';
   const result: TodoItem[] = [];
+  const headers = rows.find(({ rowNumber }) => rowNumber === 1)?.cells ?? [];
+  const schema = todoSchema(headers.map(cellDisplayValue));
 
   for (const { rowNumber, cells } of rows) {
     if (rowNumber === 1) continue;
@@ -81,13 +190,14 @@ export function parseTodosGrid(
     }
     if (!item) continue;
 
-    const doneCell = cell(cells, 4);
+    const doneCell = cell(cells, schema.doneColumn);
+    const linkCell = cell(cells, schema.linkColumn);
     result.push({
       rowNumber,
       section,
       item: gridCellToHtml(cell(cells, 1)),
-      detail: gridCellToHtml(cell(cells, 2)),
-      deadline: gridCellToHtml(cell(cells, 3)),
+      detail: todoDetail(cell(cells, 2), cell(cells, schema.deadlineColumn ?? -1)),
+      links: todoLinks(linkCell),
       done:
         doneCell?.effectiveValue?.boolValue === true ||
         cellDisplayValue(doneCell).toUpperCase() === 'TRUE',
@@ -212,7 +322,7 @@ export class TripRepository {
   }
 
   async getTodos(): Promise<TodoItem[]> {
-    return parseTodosGrid(await this.sheets.getGrid(`${SHEET_NAMES.todos}!A:E`));
+    return parseTodosGrid(await this.sheets.getGrid(`${SHEET_NAMES.todos}!A:F`));
   }
 
   async getReferenceLinks(): Promise<ReferenceLink[]> {
@@ -227,16 +337,20 @@ export class TripRepository {
     expectedItem?: string
   ): Promise<ApiResponse> {
     if (!Number.isInteger(rowNumber) || rowNumber < 2) throw new Error('無效的行號');
-    const current = await this.sheets.getValues(
-      `${SHEET_NAMES.todos}!B${rowNumber}:B${rowNumber}`
-    );
-    const currentItem = value(current[0] ?? [], 0);
+    const [headerRows, currentRows] = await this.sheets.batchGetValues([
+      `${SHEET_NAMES.todos}!A1:F1`,
+      `${SHEET_NAMES.todos}!B${rowNumber}:B${rowNumber}`,
+    ]);
+    const [headers] = headerRows ?? [];
+    const schema = todoSchema((headers ?? []).map((header) => String(header ?? '')));
+    const currentItem = value(currentRows?.[0] ?? [], 0);
     if (!currentItem) throw new ConflictError('找不到待辦項目');
     if (expectedItem && currentItem !== generatedHtmlToText(expectedItem)) {
       throw new ConflictError('待辦資料已變更，請重新整理');
     }
+    const doneColumn = sheetColumnName(schema.doneColumn);
     await this.sheets.updateValues(
-      `${SHEET_NAMES.todos}!E${rowNumber}:E${rowNumber}`,
+      `${SHEET_NAMES.todos}!${doneColumn}${rowNumber}:${doneColumn}${rowNumber}`,
       [[done]]
     );
     return { success: true, message: '待辦狀態已更新' };

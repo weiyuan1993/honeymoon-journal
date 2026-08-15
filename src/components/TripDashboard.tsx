@@ -319,9 +319,7 @@ export default function TripDashboard({
               <div>
                 <strong>{htmlToText(todo.item)}</strong>
                 <small>
-                  {[htmlToText(todo.deadline), htmlToText(todo.detail)]
-                    .filter(Boolean)
-                    .join(' · ')}
+                  {htmlToText(todo.detail)}
                 </small>
               </div>
             </button>

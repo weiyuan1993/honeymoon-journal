@@ -1,3 +1,5 @@
+import { safeUrl } from '../shared/safeUrl';
+
 export interface TextFormatRun {
   startIndex?: number;
   format?: {
@@ -28,15 +30,7 @@ export function escapeHtml(value: unknown): string {
     .replace(/\n/g, '<br>');
 }
 
-export function safeUrl(value: string | undefined): string | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
-  } catch {
-    return null;
-  }
-}
+export { safeUrl };
 
 function linked(text: string, url: string | null): string {
   if (!url) return escapeHtml(text);

@@ -16,10 +16,79 @@ import type {
   PriceLevel,
   ReferenceLink,
   TicketItem,
+  TodoLink,
   TodoItem,
   UserPermission,
 } from '@/types';
+import { safeUrl } from '../../shared/safeUrl';
 import { authClient, callWorker } from '@/utils/apiClient';
+
+type TodoApiItem = Omit<TodoItem, 'links'> & {
+  links?: TodoLink[];
+  deadline?: string;
+  link?: string;
+};
+
+const PLAIN_URL_PATTERN =
+  /https?:\/\/[^\s<>"'，。！？、；：）】》〉」』〕］}]+/gi;
+
+function removeTodoUrls(value: string): string {
+  return value
+    .replace(PLAIN_URL_PATTERN, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function removeLinkedTodoUrls(value: string, links: TodoLink[]): string {
+  const linkedUrls = new Set(links.map((link) => link.url));
+  if (linkedUrls.size === 0) return value;
+
+  return value
+    .replace(PLAIN_URL_PATTERN, (url) =>
+      linkedUrls.has(safeUrl(url) ?? '') ? '' : url
+    )
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function normalizeTodoLinks(links: TodoLink[] | undefined, legacyLink?: string): TodoLink[] {
+  const source = Array.isArray(links)
+    ? links
+    : legacyLink
+      ? [{ label: '訂票連結', url: legacyLink }]
+      : [];
+
+  return source.flatMap((link, index) => {
+    const url = safeUrl(link.url);
+    if (!url) return [];
+    const label = typeof link.label === 'string' ? link.label.trim() : '';
+    return [{
+      label: label || `訂票連結 ${index + 1}`,
+      url,
+    }];
+  });
+}
+
+function normalizeTodoItem(
+  { deadline, link, links, ...todo }: TodoApiItem,
+  canViewLinks: boolean
+): TodoItem {
+  const normalizedLinks = normalizeTodoLinks(links, link);
+  const cleanUrls = canViewLinks
+    ? (value: string) => removeLinkedTodoUrls(value, normalizedLinks)
+    : removeTodoUrls;
+  const detail = cleanUrls(todo.detail);
+  const visibleDeadline = deadline
+    ? cleanUrls(deadline)
+    : '';
+  return {
+    ...todo,
+    detail: visibleDeadline && !detail.includes('期限／狀態：')
+      ? [detail, `期限／狀態：${visibleDeadline}`].filter(Boolean).join('<br>')
+      : detail,
+    links: canViewLinks ? normalizedLinks : [],
+  };
+}
 
 export const tripClient = {
   getItineraryData: (): Promise<ItineraryItem[]> =>
@@ -31,8 +100,10 @@ export const tripClient = {
   getTicketData: (): Promise<TicketItem[]> =>
     callWorker('getTicketData', []),
 
-  getTodoData: (): Promise<TodoItem[]> =>
-    callWorker('getTodoData', []),
+  getTodoData: async (canViewLinks = false): Promise<TodoItem[]> =>
+    (await callWorker<TodoApiItem[]>('getTodoData', [])).map((todo) =>
+      normalizeTodoItem(todo, canViewLinks)
+    ),
 
   updateTodoStatus: (
     rowNumber: number,
