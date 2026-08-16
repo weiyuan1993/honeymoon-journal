@@ -355,6 +355,17 @@ function paidCell(cellValue: GridCell | undefined): boolean | null {
   return null;
 }
 
+function isExpensePlanHeadingOrSummaryRow(
+  item: string,
+  amount: number | null,
+  paid: boolean | null
+): boolean {
+  return (
+    Boolean(item) &&
+    (/(?:小計|總計)$/.test(item) || (amount === null && paid === null))
+  );
+}
+
 export function parseExpensePlanGrid(
   rows: Array<{ rowNumber: number; cells: GridCell[] }>
 ): ParsedExpensePlan {
@@ -426,6 +437,7 @@ export function parseExpensePlanGrid(
       const item = cellDisplayValue(planCell(row, section.itemColumn)).trim();
       const amount = numericCell(planCell(row, section.amountColumn));
       const paid = paidCell(planCell(row, section.paidColumn));
+      if (isExpensePlanHeadingOrSummaryRow(item, amount, paid)) continue;
       if (!item || amount === null) {
         warnings.push(`${section.category}第 ${row} 列缺少可判讀的付款明細`);
         isComplete = false;

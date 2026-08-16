@@ -562,6 +562,28 @@ describe('trip repository parsers', () => {
     );
   });
 
+  it('ignores summary and heading rows without paid checkboxes', () => {
+    const rows = expensePlanFixture();
+
+    rows[33 - 3].cells[5] = { formattedValue: '小計' };
+    rows[33 - 3].cells[7] = {};
+    rows[34 - 3].cells[5] = { formattedValue: '當地交通' };
+    rows[34 - 3].cells[6] = {};
+    rows[34 - 3].cells[7] = {};
+    rows[41 - 3].cells[5] = { formattedValue: '交通總計' };
+    rows[41 - 3].cells[7] = {};
+    rows[15 - 3].cells[15] = { formattedValue: '巴黎' };
+    rows[15 - 3].cells[16] = {};
+    rows[15 - 3].cells[17] = {};
+    rows[30 - 3].cells[15] = { formattedValue: '小計' };
+    rows[30 - 3].cells[17] = {};
+
+    const result = parseExpensePlanGrid(rows);
+
+    expect(result.warnings).toEqual([]);
+    expect(result.isComplete).toBe(true);
+  });
+
   it('rejects required layout anchor drift', () => {
     const rows = expensePlanFixture();
     rows[0].cells[5] = { formattedValue: 'unexpected' };

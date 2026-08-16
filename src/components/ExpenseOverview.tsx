@@ -18,9 +18,20 @@ const twdFormatter = new Intl.NumberFormat('zh-TW', {
   maximumFractionDigits: 0,
 });
 
+const exchangeRateFormatter = new Intl.NumberFormat('zh-TW', {
+  maximumFractionDigits: 5,
+});
+
+const exchangeRateCurrencies = ['CHF', 'EUR', 'GBP'] as const;
+
 const formatTwd = (amount: number | null, approximate = false): string => {
   if (amount === null || !Number.isFinite(amount)) return '暫無法換算';
   return `${approximate ? '約 ' : ''}NT$${twdFormatter.format(amount)}`;
+};
+
+const formatExchangeRate = (rate: number | null): string => {
+  if (rate === null) return '暫無有效匯率';
+  return `${getCurrencySymbol('TWD')}${exchangeRateFormatter.format(rate)}`;
 };
 
 const formatFetchedAt = (value: string): string => {
@@ -110,6 +121,31 @@ export default function ExpenseOverview({
           </div>
         ))}
       </div>
+
+      <section className="rounded-2xl bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-sm text-ink/80">目前匯率</h2>
+            <p className="mt-0.5 font-serif text-[13px] text-ink/45">
+              每 1 單位外幣兌台幣
+            </p>
+          </div>
+          <span className="font-serif text-xs text-ink/35">Google Sheet</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {exchangeRateCurrencies.map((currency) => (
+            <div
+              key={currency}
+              className="rounded-xl bg-gold/10 px-3 py-2"
+            >
+              <div className="font-serif text-xs text-ink/45">1 {currency}</div>
+              <div className="font-display text-sm font-bold text-gold">
+                {formatExchangeRate(overview.ratesTwdPerUnit[currency])}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <div className="mb-3 flex items-end justify-between gap-3">
