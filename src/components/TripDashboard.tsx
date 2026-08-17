@@ -9,7 +9,7 @@ import type {
 import { htmlToText } from '@/utils/htmlToText';
 import {
   buildTripTimeline,
-  getFocusTicketAction,
+  getFocusDayAction,
   getTripCountry,
 } from './dashboardData';
 import {
@@ -184,7 +184,7 @@ export default function TripDashboard({
   const currentCountryLinks = currentCountry
     ? filterReferenceLinks(referenceLinks, currentCountry, '').slice(0, 4)
     : [];
-  const focusTicketAction = getFocusTicketAction(focusItem, tickets);
+  const focusDayAction = getFocusDayAction(focusItem, tickets);
   const heroStory =
     getJourneyCityContent(journeyContent?.cities, contextCity) || heroCopy.intro;
   let countdownDetail = '等待行程資料';
@@ -256,23 +256,19 @@ export default function TripDashboard({
               </p>
               <h3>{focusItem.city}</h3>
               <p>{htmlToText(focusItem.content)}</p>
-              {focusTicketAction && (
+              {focusDayAction && (
                 <div className="focus-ticket-actions">
-                  {focusTicketAction.type === 'tickets' ? (
+                  {focusDayAction.type === 'tickets' ? (
                     <button
                       type="button"
                       onClick={() => setShowFocusTickets(true)}
                     >
-                      當日票券 {focusTicketAction.tickets.length} 張
+                      當日票券 {focusDayAction.tickets.length} 張
                     </button>
                   ) : (
-                    <a
-                      href={focusTicketAction.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      票務連結
-                    </a>
+                    <button type="button" onClick={onOpenItinerary}>
+                      當日參考連結 {focusDayAction.count} 筆
+                    </button>
                   )}
                 </div>
               )}
@@ -377,11 +373,11 @@ export default function TripDashboard({
 
       {showFocusTickets &&
         focusItem &&
-        focusTicketAction?.type === 'tickets' && (
+        focusDayAction?.type === 'tickets' && (
         <TicketModal
           day={focusItem.day}
           city={focusItem.city}
-          tickets={focusTicketAction.tickets}
+          tickets={focusDayAction.tickets}
           canViewTickets={canViewTickets}
           onClose={() => setShowFocusTickets(false)}
         />

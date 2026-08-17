@@ -1,3 +1,10 @@
+export interface LinkTarget {
+  label: string;
+  url: string;
+}
+
+export type ItineraryReferenceLink = LinkTarget;
+
 export interface ItineraryItem {
   rowNumber: number;
   day: string;
@@ -8,6 +15,7 @@ export interface ItineraryItem {
   transport: string;
   ticket: string;
   link: string;
+  referenceLinks: ItineraryReferenceLink[];
   hotel: string;
 }
 
@@ -81,10 +89,7 @@ export interface ExpenseOverviewData {
   isComplete: boolean;
 }
 
-export interface TodoLink {
-  label: string;
-  url: string;
-}
+export type TodoLink = LinkTarget;
 
 export interface TodoItem {
   rowNumber: number;

@@ -313,6 +313,7 @@ function removeLinks(value: string): string {
 function publicItinerary(itinerary: ItineraryItem[]): ItineraryItem[] {
   return itinerary.map((item) => ({
     ...item,
+    referenceLinks: [],
     hotel: removeLinks(item.hotel),
   }));
 }

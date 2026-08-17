@@ -19,9 +19,9 @@ interface TripTimeline {
   lastDatedItem?: ItineraryItem;
 }
 
-type FocusTicketAction =
+type FocusDayAction =
   | { type: 'tickets'; tickets: TicketItem[] }
-  | { type: 'link'; href: string }
+  | { type: 'reference-links'; count: number }
   | null;
 
 const COUNTRY_BY_CITY: Record<string, string> = {
@@ -43,10 +43,10 @@ const COUNTRY_BY_CITY: Record<string, string> = {
 export const getTripCountry = (value: string): string | null =>
   COUNTRY_BY_CITY[getPrimaryTripCity(value)] ?? null;
 
-export const getFocusTicketAction = (
+export const getFocusDayAction = (
   focusItem: ItineraryItem | undefined,
   tickets: TicketItem[]
-): FocusTicketAction => {
+): FocusDayAction => {
   if (!focusItem) return null;
 
   const focusTickets = tickets.filter(
@@ -56,8 +56,9 @@ export const getFocusTicketAction = (
     return { type: 'tickets', tickets: focusTickets };
   }
 
-  return focusItem.link
-    ? { type: 'link', href: focusItem.link }
+  const referenceLinkCount = focusItem.referenceLinks?.length ?? 0;
+  return referenceLinkCount > 0
+    ? { type: 'reference-links', count: referenceLinkCount }
     : null;
 };
 

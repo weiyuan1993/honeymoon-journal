@@ -578,6 +578,8 @@ export default function App() {
                 transport: updatedItem.transport,
                 ticket: updatedItem.ticket,
                 link: updatedItem.link,
+                referenceLinks:
+                  updatedItem.link === item.link ? item.referenceLinks : [],
               }
             : item
         )

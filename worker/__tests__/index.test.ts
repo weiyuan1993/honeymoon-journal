@@ -176,7 +176,7 @@ describe('worker privacy boundary', () => {
     )).toBe(true);
   });
 
-  it('removes accommodation links for anonymous callers', async () => {
+  it('removes accommodation and itinerary reference links for anonymous callers', async () => {
     vi.spyOn(TripRepository.prototype, 'getItinerary').mockResolvedValue([
       {
         rowNumber: 2,
@@ -189,6 +189,10 @@ describe('worker privacy boundary', () => {
         transport: '<a href="https://rail.example/ticket">車票</a>',
         ticket: '<a href="https://museum.example/reservation">預約</a>',
         link: 'https://booking.example/manage?token=secret',
+        referenceLinks: [{
+          label: '訂單管理',
+          url: 'https://booking.example/manage?token=secret',
+        }],
         hotel:
           '<a href="https://hotel.example/private">蜜月套房</a>，訂房資料https://hotel.example/private。已確認入住',
       },
@@ -209,6 +213,7 @@ describe('worker privacy boundary', () => {
       transport: '<a href="https://rail.example/ticket">車票</a>',
       ticket: '<a href="https://museum.example/reservation">預約</a>',
       link: 'https://booking.example/manage?token=secret',
+      referenceLinks: [],
       hotel: '蜜月套房，訂房資料。已確認入住',
     });
     expect(payload.data[0].hotel).not.toContain('https://hotel.example');
@@ -226,6 +231,10 @@ describe('worker privacy boundary', () => {
       transport: '',
       ticket: '',
       link: 'https://booking.example/manage?token=secret',
+      referenceLinks: [{
+        label: '訂單管理',
+        url: 'https://booking.example/manage?token=secret',
+      }],
       hotel:
         '<a href="https://hotel.example/manage?token=secret">蜜月套房</a>',
     }];

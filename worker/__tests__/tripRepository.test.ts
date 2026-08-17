@@ -127,6 +127,45 @@ describe('trip repository parsers', () => {
     expect(result.map((item) => item.rowNumber)).toEqual([2, 4]);
   });
 
+  it('extracts every safe reference link from an itinerary row', () => {
+    const result = parseItineraryGrid([
+      {
+        rowNumber: 2,
+        cells: [
+          { formattedValue: 'Day 1' },
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            formattedValue: '官方預約\n交通資訊\nhttps://example.com/guide',
+            textFormatRuns: [
+              {
+                startIndex: 0,
+                format: { link: { uri: 'https://example.com/tickets' } },
+              },
+              {
+                startIndex: 5,
+                format: { link: { uri: 'https://example.com/transport' } },
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(result[0]).toMatchObject({
+      link: '官方預約\n交通資訊\nhttps://example.com/guide',
+      referenceLinks: [
+        { label: '官方預約', url: 'https://example.com/tickets' },
+        { label: '交通資訊', url: 'https://example.com/transport' },
+        { label: 'example.com', url: 'https://example.com/guide' },
+      ],
+    });
+  });
+
   it('tracks todo section rows and stops before the link appendix', () => {
     const result = parseTodosGrid([
       {

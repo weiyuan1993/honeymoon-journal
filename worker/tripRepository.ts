@@ -16,9 +16,9 @@ import type {
   ItineraryFormData,
   ItineraryItem,
   JourneyContent,
+  LinkTarget,
   ReferenceLink,
   TicketItem,
-  TodoLink,
   TodoItem,
 } from './models';
 import { ConflictError } from './models';
@@ -47,7 +47,7 @@ function cell(row: GridCell[], index: number): GridCell | undefined {
 const RAW_URL_PATTERN = /https?:\/\/[^\s<>"']+/gi;
 const TRAILING_URL_PUNCTUATION = /[),.;:!?，。；：、】【）\]]+$/u;
 
-function cleanTodoLinkLabel(value: string): string {
+function cleanLinkLabel(value: string): string {
   return value
     .replace(RAW_URL_PATTERN, '')
     .replace(/^[\s:：\-–—|]+|[\s:：\-–—|]+$/g, '')
@@ -55,8 +55,8 @@ function cleanTodoLinkLabel(value: string): string {
     .trim();
 }
 
-function addTodoLink(
-  links: TodoLink[],
+function addLink(
+  links: LinkTarget[],
   seenUrls: Set<string>,
   value: string | undefined,
   label: string,
@@ -70,20 +70,20 @@ function addTodoLink(
   seenUrls.add(url);
   links.push({
     label:
-      cleanTodoLinkLabel(label) ||
+      cleanLinkLabel(label) ||
       todoLinkLabelFromUrl(url) ||
       `連結 ${links.length + 1}`,
     url,
   });
 }
 
-function todoLinks(cell: GridCell | undefined): TodoLink[] {
+function sheetLinks(cell: GridCell | undefined): LinkTarget[] {
   if (!cell) return [];
 
   const text = cellDisplayValue(cell);
-  const links: TodoLink[] = [];
+  const links: LinkTarget[] = [];
   const seenUrls = new Set<string>();
-  addTodoLink(links, seenUrls, cell.hyperlink, text);
+  addLink(links, seenUrls, cell.hyperlink, text);
 
   const runs = (cell.textFormatRuns ?? [])
     .map((run, index) => ({
@@ -95,12 +95,12 @@ function todoLinks(cell: GridCell | undefined): TodoLink[] {
   runs.forEach((run, index) => {
     const start = run.startIndex ?? 0;
     const end = runs[index + 1]?.startIndex ?? text.length;
-    addTodoLink(links, seenUrls, run.format?.link?.uri, text.slice(start, end));
+    addLink(links, seenUrls, run.format?.link?.uri, text.slice(start, end));
   });
 
   text.split(/\r?\n/).forEach((line) => {
     for (const match of line.matchAll(RAW_URL_PATTERN)) {
-      addTodoLink(links, seenUrls, match[0], line, true);
+      addLink(links, seenUrls, match[0], line, true);
     }
   });
 
@@ -167,18 +167,22 @@ export function parseItineraryGrid(
 ): ItineraryItem[] {
   return rows
     .filter(({ cells }) => cellDisplayValue(cell(cells, 0)))
-    .map(({ rowNumber, cells }) => ({
-      rowNumber,
-      day: cellDisplayValue(cell(cells, 0)),
-      date: cellDisplayValue(cell(cells, 1)),
-      weekday: cellDisplayValue(cell(cells, 2)),
-      city: cellDisplayValue(cell(cells, 3)),
-      content: gridCellToHtml(cell(cells, 4)),
-      transport: gridCellToHtml(cell(cells, 5)),
-      ticket: gridCellToHtml(cell(cells, 6)),
-      link: cellDisplayValue(cell(cells, 7)),
-      hotel: gridCellToHtml(cell(cells, 8)),
-    }));
+    .map(({ rowNumber, cells }) => {
+      const referenceLinkCell = cell(cells, 7);
+      return {
+        rowNumber,
+        day: cellDisplayValue(cell(cells, 0)),
+        date: cellDisplayValue(cell(cells, 1)),
+        weekday: cellDisplayValue(cell(cells, 2)),
+        city: cellDisplayValue(cell(cells, 3)),
+        content: gridCellToHtml(cell(cells, 4)),
+        transport: gridCellToHtml(cell(cells, 5)),
+        ticket: gridCellToHtml(cell(cells, 6)),
+        link: cellDisplayValue(referenceLinkCell),
+        referenceLinks: sheetLinks(referenceLinkCell),
+        hotel: gridCellToHtml(cell(cells, 8)),
+      };
+    });
 }
 
 export function parseTodosGrid(
@@ -207,7 +211,7 @@ export function parseTodosGrid(
       section,
       item: gridCellToHtml(cell(cells, 1)),
       detail: todoDetail(cell(cells, 2), cell(cells, schema.deadlineColumn ?? -1)),
-      links: todoLinks(linkCell),
+      links: sheetLinks(linkCell),
       done:
         doneCell?.effectiveValue?.boolValue === true ||
         cellDisplayValue(doneCell).toUpperCase() === 'TRUE',

@@ -14,6 +14,7 @@ export type {
   ExpenseOverviewData,
   ItineraryFormData,
   ItineraryItem,
+  ItineraryReferenceLink,
   JourneyContent,
   ReferenceLink,
   TicketItem,

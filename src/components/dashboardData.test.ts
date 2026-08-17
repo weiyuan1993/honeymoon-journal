@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ItineraryItem, TicketItem } from '@/types';
 import {
   buildTripTimeline,
-  getFocusTicketAction,
+  getFocusDayAction,
 } from './dashboardData';
 
 const itineraryItem = (
@@ -19,6 +19,7 @@ const itineraryItem = (
   transport: '',
   ticket: '',
   link: '',
+  referenceLinks: [],
   hotel: '',
 });
 
@@ -116,9 +117,9 @@ describe('dashboard trip timeline', () => {
   });
 });
 
-describe('dashboard focus ticket action', () => {
+describe('dashboard focus-day action', () => {
   it('returns only tickets matching the focused itinerary day', () => {
-    const action = getFocusTicketAction(itinerary[1], [
+    const action = getFocusDayAction(itinerary[1], [
       ticketItem('Day 1', 1),
       ticketItem('Day 2', 2),
       ticketItem('Day 2', 3),
@@ -130,21 +131,25 @@ describe('dashboard focus ticket action', () => {
     });
   });
 
-  it('falls back to the itinerary ticket link when no ticket is loaded', () => {
+  it('opens the itinerary reference-link list when no ticket is loaded', () => {
     const focusItem = {
       ...itinerary[0],
       link: 'https://example.com/booking',
+      referenceLinks: [
+        { label: '博物館', url: 'https://example.com/museum' },
+        { label: '遊船', url: 'https://example.com/cruise' },
+      ],
     };
 
-    expect(getFocusTicketAction(focusItem, [])).toEqual({
-      type: 'link',
-      href: 'https://example.com/booking',
+    expect(getFocusDayAction(focusItem, [])).toEqual({
+      type: 'reference-links',
+      count: 2,
     });
   });
 
-  it('does not show a ticket action without tickets or a fallback link', () => {
-    expect(getFocusTicketAction(itinerary[0], [])).toBeNull();
-    expect(getFocusTicketAction(undefined, [ticketItem('Day 1', 1)]))
+  it('does not show a focus action without tickets or reference links', () => {
+    expect(getFocusDayAction(itinerary[0], [])).toBeNull();
+    expect(getFocusDayAction(undefined, [ticketItem('Day 1', 1)]))
       .toBeNull();
   });
 });
