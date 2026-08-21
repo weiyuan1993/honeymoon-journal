@@ -228,10 +228,10 @@ export default function ItineraryCard({
       {/* Header */}
       <div className="bg-gradient-to-r from-gold/10 to-gold/5 px-4 py-3 border-b border-gold/10">
         <div className="flex items-center gap-2">
-          <span className="font-display font-bold text-gold text-sm">
+          <span className="font-display font-bold text-gold text-base">
             {item.day}
           </span>
-          <span className="font-serif text-xs text-ink/50">
+          <span className="font-serif text-sm text-ink/50">
             {item.date.replace(/^\d{4}[\/\-]/, '').replace(/[\/\-]\d{4}$/, '')} ({item.weekday})
           </span>
           <div className="ml-auto flex items-center gap-1">
@@ -246,7 +246,7 @@ export default function ItineraryCard({
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
                 </svg>
-                <span className="ml-1 font-serif text-[13px] leading-none">
+                <span className="ml-1 font-serif text-sm leading-none">
                   {dayTickets.length}
                 </span>
               </button>
@@ -262,7 +262,7 @@ export default function ItineraryCard({
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 016.364 6.364l-3.182 3.182a4.5 4.5 0 01-6.364 0m-1.198-2.884a4.5 4.5 0 01-6.364-6.364l3.182-3.182a4.5 4.5 0 016.364 0" />
                 </svg>
-                <span className="ml-1 font-serif text-[13px] leading-none">
+                <span className="ml-1 font-serif text-sm leading-none">
                   {referenceLinks.length}
                 </span>
               </button>
@@ -300,7 +300,7 @@ export default function ItineraryCard({
       <div className="p-4">
         {/* City + Content */}
         <div className="mb-4">
-          <div className="font-display text-deep-blue text-xs mb-2 flex items-center gap-1">
+          <div className="font-display text-deep-blue text-sm mb-2 flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
@@ -308,14 +308,14 @@ export default function ItineraryCard({
             {item.city}
           </div>
           <div
-            className="text-sm leading-relaxed text-ink/80 font-serif pl-1 border-l-2 border-gold/30"
+            className="text-base leading-relaxed text-ink/80 font-serif pl-1 border-l-2 border-gold/30"
             dangerouslySetInnerHTML={{ __html: item.content }}
           />
         </div>
 
         {/* Travel info */}
         {(item.transport || item.ticket || item.hotel) && (
-          <div className="space-y-1.5 text-xs mb-4">
+          <div className="space-y-1.5 text-sm leading-relaxed mb-4">
             {item.transport && (
               <div className="flex items-start gap-2 text-ink/60 bg-gray-50 px-3 py-2 rounded-lg">
                 <span>🚌</span>
@@ -346,7 +346,7 @@ export default function ItineraryCard({
         <div className="flex gap-2">
           <button
             onClick={() => setShowDetail(true)}
-            className="flex-1 py-2 px-3 bg-gold/10 hover:bg-gold/20 text-ink font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"
+            className="flex-1 py-2.5 px-3 bg-gold/10 hover:bg-gold/20 text-ink font-serif text-sm rounded-lg transition-all flex items-center justify-center gap-1.5"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-gold">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
@@ -356,7 +356,7 @@ export default function ItineraryCard({
           {hasNavigation && (
             <button
               onClick={() => setShowMap(true)}
-              className="flex-1 py-2 px-3 bg-deep-blue/10 hover:bg-deep-blue/20 text-deep-blue font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 px-3 bg-deep-blue/10 hover:bg-deep-blue/20 text-deep-blue font-serif text-sm rounded-lg transition-all flex items-center justify-center gap-1.5"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -367,7 +367,7 @@ export default function ItineraryCard({
           )}
           <button
             onClick={() => setShowFood(true)}
-            className="flex-1 py-2 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 font-serif text-xs rounded-lg transition-all flex items-center justify-center gap-1.5"
+            className="flex-1 py-2.5 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 font-serif text-sm rounded-lg transition-all flex items-center justify-center gap-1.5"
           >
             🍽️ 美食
           </button>
