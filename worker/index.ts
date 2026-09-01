@@ -1,6 +1,8 @@
 import {
   authenticateGoogleCredential,
   buildExpiredSessionCookie,
+  buildSessionCookie,
+  createSessionToken,
   readSession,
 } from './auth';
 import type { AuthBindings, SessionClaims } from './contracts';
@@ -67,7 +69,15 @@ export default {
           });
         }
         if (request.method !== 'GET') throw methodNotAllowed();
-        return privateJsonResponse(permissionFor(await readSession(request, env.SESSION_SECRET), env));
+        const session = await readSession(request, env.SESSION_SECRET);
+        const permission = permissionFor(session, env);
+        if (!session || !permission.canEdit) {
+          return privateJsonResponse(permission);
+        }
+        const refreshedToken = await createSessionToken(session, env.SESSION_SECRET);
+        return privateJsonResponse(permission, {
+          headers: { 'set-cookie': buildSessionCookie(refreshedToken) },
+        });
       }
       if (url.pathname === '/api/auth/google') {
         if (request.method !== 'POST') throw methodNotAllowed();
@@ -75,12 +85,7 @@ export default {
         const body = await readJson<{ credential?: string }>(request);
         if (!body.credential) throw new ApiError(400, 'INVALID_REQUEST', 'Google credential is required.');
         const authenticated = await authenticateGoogleCredential(body.credential, env);
-        return privateJsonResponse(permissionFor({
-          ...authenticated.identity,
-          version: 1,
-          issuedAt: Math.floor(Date.now() / 1000),
-          expiresAt: Math.floor(Date.now() / 1000) + 8 * 60 * 60,
-        }, env), {
+        return privateJsonResponse(permissionFor(authenticated.identity, env), {
           headers: { 'set-cookie': authenticated.cookie },
         });
       }
@@ -228,7 +233,7 @@ async function executeOperation(
   }
 }
 
-function permissionFor(session: SessionClaims | null, env: WorkerEnv) {
+function permissionFor(session: Pick<SessionClaims, 'email'> | null, env: WorkerEnv) {
   if (
     !session ||
     !isAuthorizedEditor(session.email, env.AUTHORIZED_EDITOR_EMAILS)

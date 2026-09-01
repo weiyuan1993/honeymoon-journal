@@ -15,7 +15,7 @@ import {
 } from './policy';
 
 export const SESSION_COOKIE_NAME = 'honeymoon_session';
-export const SESSION_TTL_SECONDS = 8 * 60 * 60;
+export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 interface SessionOptions {
   nowSeconds?: number;

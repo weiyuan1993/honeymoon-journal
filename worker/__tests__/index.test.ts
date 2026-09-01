@@ -57,6 +57,55 @@ describe('worker privacy boundary', () => {
     expect(JSON.stringify(payload)).not.toContain(env.SESSION_SECRET);
   });
 
+  it('refreshes a valid editor session when its permission is checked', async () => {
+    const token = await createSessionToken(
+      {
+        sub: 'google-user-1',
+        email: 'vic@example.com',
+        role: 'editor',
+      },
+      env.SESSION_SECRET,
+      { nowSeconds: Math.floor(Date.now() / 1000) - 60 },
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/auth/session', {
+        headers: { cookie: `honeymoon_session=${token}` },
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('set-cookie')).toContain('honeymoon_session=');
+    await expect(response.json()).resolves.toMatchObject({
+      data: { email: 'vic@example.com', canEdit: true },
+    });
+  });
+
+  it('does not refresh an expired session', async () => {
+    const token = await createSessionToken(
+      {
+        sub: 'google-user-1',
+        email: 'vic@example.com',
+        role: 'editor',
+      },
+      env.SESSION_SECRET,
+      { nowSeconds: 1, ttlSeconds: 60 },
+    );
+
+    const response = await worker.fetch(
+      new Request('https://trip.example/api/auth/session', {
+        headers: { cookie: `honeymoon_session=${token}` },
+      }),
+      env,
+    );
+
+    expect(response.headers.get('set-cookie')).toBeNull();
+    await expect(response.json()).resolves.toEqual({
+      data: { email: null, canEdit: false },
+    });
+  });
+
   it('returns practical reference links to anonymous callers', async () => {
     const links = [{
       category: '英國',
@@ -440,6 +489,7 @@ describe('worker privacy boundary', () => {
       }),
       revokedEnv
     );
+    expect(sessionResponse.headers.get('set-cookie')).toBeNull();
     await expect(sessionResponse.json()).resolves.toEqual({
       data: { email: null, canEdit: false },
     });
