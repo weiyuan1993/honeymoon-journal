@@ -27,6 +27,12 @@ interface ItineraryCardProps {
   canEdit: boolean;
 }
 
+const splitItineraryHtmlLines = (content: string) =>
+  content
+    .split(/<br\s*\/?\s*>/i)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
 export default function ItineraryCard({
   item,
   id,
@@ -67,6 +73,7 @@ export default function ItineraryCard({
   const hasTickets = dayTickets.length > 0;
   const referenceLinks: ItineraryReferenceLink[] = item.referenceLinks ?? [];
   const hasReferenceLinks = canEdit && referenceLinks.length > 0;
+  const itineraryLines = splitItineraryHtmlLines(item.content);
 
   useEffect(() => {
     setFormData({
@@ -307,10 +314,28 @@ export default function ItineraryCard({
             </svg>
             {item.city}
           </div>
-          <div
-            className="text-base leading-relaxed text-ink/80 font-serif pl-1 border-l-2 border-gold/30"
-            dangerouslySetInnerHTML={{ __html: item.content }}
-          />
+          <div className="text-base leading-relaxed text-ink/80 font-serif pl-3 border-l-2 border-gold/30">
+            {itineraryLines.length > 1 ? (
+              <ul className="space-y-0.5">
+                {itineraryLines.map((line, lineIndex) => (
+                  <li key={lineIndex} className="flex items-start gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="mt-2.5 shrink-0 text-[0.45rem] leading-none text-gold/60"
+                    >
+                      ●
+                    </span>
+                    <span
+                      className="min-w-0"
+                      dangerouslySetInnerHTML={{ __html: line }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span dangerouslySetInnerHTML={{ __html: item.content }} />
+            )}
+          </div>
         </div>
 
         {/* Travel info */}

@@ -34,6 +34,28 @@ const ticket: TicketItem = {
 };
 
 describe('ItineraryCard ticket and reference controls', () => {
+  it('renders multi-line itinerary content as a list without losing rich-text links', () => {
+    const html = renderToStaticMarkup(createElement(ItineraryCard, {
+      item: {
+        ...item,
+        content: '09:00 西敏寺<br><a href="https://example.com/big-ben">11:20 大笨鐘</a>',
+      },
+      id: 'day-Day 7',
+      onUpdate: () => undefined,
+      navigationData: {},
+      attractionDetails: {},
+      foodRecommendations: {},
+      dayTickets: [],
+      onFoodUpdate: () => undefined,
+      canEdit: false,
+    }));
+
+    expect(html).toContain('<ul');
+    expect(html).toContain('<li');
+    expect(html).toContain('09:00 西敏寺');
+    expect(html).toContain('href="https://example.com/big-ben"');
+  });
+
   it('renders separate ticket and reference-link buttons for the same day', () => {
     const html = renderToStaticMarkup(createElement(ItineraryCard, {
       item,

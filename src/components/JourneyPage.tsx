@@ -53,6 +53,17 @@ function extractMainCity(cityStr: string): { zh: string; en: string } {
 
 const getCitySectionId = (index: number) => `journey-city-${index}`;
 
+const itineraryContentToPlainText = (content: string) =>
+  content
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<[^>]*>/g, '');
+
+const itineraryContentToListItems = (content: string) =>
+  itineraryContentToPlainText(content)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
 const scrollToCitySection = (index: number) => {
   document
     .getElementById(getCitySectionId(index))
@@ -296,10 +307,22 @@ export default function JourneyPage({
                     {segment.days.map((day, dayIdx) => (
                       <div key={dayIdx} className="flex items-start gap-2">
                         <span className="text-gold text-xs mt-0.5 shrink-0">✦</span>
-                        <span className="font-serif text-ink/70 text-sm leading-relaxed">
-                          <span className="text-gold/80 font-medium mr-1">{day.day}</span>
-                          {day.content.replace(/<[^>]*>/g, '')}
-                        </span>
+                        <div className="font-serif text-ink/70 text-sm leading-relaxed">
+                          <span className="block text-gold/80 font-medium">{day.day}</span>
+                          <ul className="mt-0.5 space-y-0.5">
+                            {itineraryContentToListItems(day.content).map((item, itemIdx) => (
+                              <li key={itemIdx} className="flex gap-1.5">
+                                <span
+                                  aria-hidden="true"
+                                  className="mt-1.5 shrink-0 text-[0.45rem] leading-none text-gold/60"
+                                >
+                                  ●
+                                </span>
+                                <span className="min-w-0">{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     ))}
                   </div>
