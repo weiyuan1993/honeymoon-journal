@@ -1,33 +1,41 @@
 import { useMemo, useState } from 'react';
 import type { TicketItem } from '@/types';
+import { getDrivePreviewUrl, getGoogleAccountChooserUrl } from './ticketVaultData';
 
 interface TicketModalProps {
   day: string;
   city: string;
   tickets: TicketItem[];
   canViewTickets: boolean;
+  initialSelectedId?: number;
+  onSelectedTicketChange?: (rowNumber: number) => void;
+  title?: string;
   onClose: () => void;
 }
-
-const getDrivePreviewUrl = (url: string) => {
-  const match = url.match(/\/d\/([^/]+)/);
-  if (!match) return url;
-  return `https://drive.google.com/file/d/${match[1]}/preview`;
-};
 
 export default function TicketModal({
   day,
   city,
   tickets,
   canViewTickets,
+  initialSelectedId,
+  onSelectedTicketChange,
+  title = '當日票券',
   onClose,
 }: TicketModalProps) {
-  const [selectedId, setSelectedId] = useState(tickets[0]?.rowNumber);
+  const [selectedId, setSelectedId] = useState(initialSelectedId ?? tickets[0]?.rowNumber);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const selectedTicket = useMemo(
     () =>
       tickets.find((ticket) => ticket.rowNumber === selectedId) || tickets[0],
     [selectedId, tickets]
   );
+
+  const selectTicket = (rowNumber: number) => {
+    setSelectedId(rowNumber);
+    setPreviewVersion(0);
+    onSelectedTicketChange?.(rowNumber);
+  };
 
   if (!selectedTicket) return null;
 
@@ -39,98 +47,86 @@ export default function TicketModal({
         className="absolute inset-0 h-full w-full cursor-default"
         onClick={onClose}
       />
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">
-        <div className="border-b border-gold/20 px-4 py-3">
-          <div className="flex items-start justify-between gap-3">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ticket-preview-title"
+        className="relative z-10 flex h-[96dvh] max-h-[96dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:h-[90vh] sm:max-h-[90vh] sm:rounded-2xl"
+      >
+        <div className="border-b border-gold/20 px-3 py-2 sm:px-4">
+          <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-display text-[13px] uppercase tracking-[0.16em] text-gold">
+              <p title={`${day} · ${city}`} className="truncate font-display text-[11px] uppercase tracking-[0.16em] text-gold sm:text-[13px]">
                 {day} · {city}
               </p>
-              <h2 className="mt-1 font-display text-base text-ink">
-                當日票券
+              <h2 id="ticket-preview-title" className="mt-0.5 truncate font-display text-sm text-ink sm:text-base">
+                {title}
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full p-2 text-ink/45 transition-colors hover:bg-gray-100 hover:text-ink"
-              aria-label="關閉"
-            >
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            <div className="flex shrink-0 items-center gap-1">
+              {canViewTickets && (
+                <>
+                  <a
+                    href={getGoogleAccountChooserUrl(selectedTicket.fileUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="重新登入 Google"
+                    title="重新登入 Google"
+                    className="rounded-md border border-ink/15 bg-white px-2 py-1 font-serif text-[11px] text-ink transition-colors hover:border-gold hover:bg-gold/5"
+                  >
+                    登入
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewVersion((version) => version + 1)}
+                    aria-label="重新載入預覽"
+                    title="重新載入預覽"
+                    className="rounded-md border border-ink/15 bg-white px-2 py-1 font-serif text-[11px] text-ink transition-colors hover:border-gold hover:bg-gold/5"
+                  >
+                    重載
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full p-1.5 text-ink/45 transition-colors hover:bg-gray-100 hover:text-ink"
+                aria-label="關閉"
               >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)]">
-          <div className="flex gap-2 overflow-x-auto border-b border-gray-100 px-4 py-3">
-            {tickets.map((ticket) => (
-              <button
-                key={ticket.rowNumber}
-                type="button"
-                onClick={() => setSelectedId(ticket.rowNumber)}
-                className={`max-w-[220px] shrink-0 rounded-lg border px-3 py-2 text-left transition-colors ${
-                  ticket.rowNumber === selectedTicket.rowNumber
-                    ? 'border-gold bg-gold/10 text-ink'
-                    : 'border-gray-200 text-ink/60 hover:border-gold/50 hover:bg-gold/5'
-                }`}
-              >
-                <span className="block truncate font-serif text-xs">
-                  {ticket.item}
-                </span>
-                <span className="mt-1 block truncate font-serif text-[13px] text-ink/45">
-                  {ticket.provider}
-                  {ticket.notes ? ` · ${ticket.notes}` : ''}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="min-h-0 overflow-y-auto p-4">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="font-serif text-sm font-semibold text-ink">
-                  {selectedTicket.item}
-                </h3>
-                <p className="mt-1 font-serif text-xs text-ink/55">
-                  {selectedTicket.type} · {selectedTicket.provider}
-                  {selectedTicket.notes ? ` · ${selectedTicket.notes}` : ''}
-                </p>
-              </div>
-              {canViewTickets && (
-                <a
-                  href={selectedTicket.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 rounded-lg bg-ink px-3 py-2 font-serif text-xs text-white transition-colors hover:bg-ink/85"
-                >
-                  Drive 開啟
-                </a>
-              )}
-            </div>
-
-            {canViewTickets ? (
-              <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+        <div className="flex min-h-0 flex-1 flex-col">
+          {canViewTickets ? (
+            <div className="min-h-0 flex-1 p-2 sm:p-3">
+              <div className="h-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
                 <iframe
+                  key={`${selectedTicket.rowNumber}-${previewVersion}`}
                   title={`${selectedTicket.item} preview`}
                   src={getDrivePreviewUrl(selectedTicket.fileUrl)}
-                  className="h-[62vh] w-full bg-white"
+                  className="h-full w-full bg-white"
                   allow="autoplay"
                 />
               </div>
-            ) : (
-              <div className="flex min-h-[45vh] flex-col items-center justify-center rounded-lg border border-dashed border-gold/30 bg-gold/5 px-6 py-10 text-center">
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8 text-center">
+              <div className="w-full rounded-lg border border-dashed border-gold/30 bg-gold/5 px-6 py-10">
                 <svg
                   className="h-9 w-9 text-gold"
                   viewBox="0 0 24 24"
@@ -153,10 +149,28 @@ export default function TicketModal({
                   訪客可以確認當天有哪些票券，但不會載入 PDF 或顯示 Drive 檔案連結。
                 </p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          <nav aria-label="票券文件導覽" className="flex shrink-0 gap-1.5 overflow-x-auto border-t border-gray-100 px-2 py-2 sm:px-3">
+            {tickets.map((ticket) => (
+              <button
+                key={ticket.rowNumber}
+                type="button"
+                onClick={() => selectTicket(ticket.rowNumber)}
+                title={`${ticket.type} · ${ticket.provider}${ticket.notes ? ` · ${ticket.notes}` : ''}`}
+                className={`max-w-[156px] shrink-0 truncate rounded-full border px-3 py-1.5 text-left font-serif text-xs transition-colors ${
+                  ticket.rowNumber === selectedTicket.rowNumber
+                    ? 'border-gold bg-gold/10 text-ink'
+                    : 'border-gray-200 text-ink/60 hover:border-gold/50 hover:bg-gold/5'
+                }`}
+              >
+                {ticket.item}
+              </button>
+            ))}
+          </nav>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
