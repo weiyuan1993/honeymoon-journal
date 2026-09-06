@@ -217,6 +217,7 @@ export default function App() {
   const authEpochRef = useRef(0);
   const canEditRef = useRef(false);
   const bottomNavScrollAnchorRef = useRef(0);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync tab with URL hash and localStorage
   useEffect(() => {
@@ -247,6 +248,26 @@ export default function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const closeMenuWhenClickingOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !menuRef.current?.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+    const closeMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowMenu(false);
+    };
+
+    document.addEventListener('pointerdown', closeMenuWhenClickingOutside);
+    document.addEventListener('keydown', closeMenuOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeMenuWhenClickingOutside);
+      document.removeEventListener('keydown', closeMenuOnEscape);
+    };
+  }, [showMenu]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -696,24 +717,21 @@ export default function App() {
             </button>
 
             {/* Menu button */}
-            <button
-              type="button"
-              aria-label="開啟選單"
-              aria-expanded={showMenu}
-              onClick={() => setShowMenu(!showMenu)}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            </button>
-          </div>
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                aria-label="開啟選單"
+                aria-expanded={showMenu}
+                onClick={() => setShowMenu((isOpen) => !isOpen)}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink/80 [filter:drop-shadow(0_1px_1px_rgba(253,251,247,0.9))] transition-colors hover:bg-white/45 hover:text-ink"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+              </button>
 
-          {/* Dropdown menu */}
-          {showMenu && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-3 top-full mt-1 z-50 bg-white/95 backdrop-blur-sm border border-gold/20 rounded shadow-xl py-1.5 min-w-[180px]">
+              {showMenu && (
+                <div className="absolute right-0 top-full z-50 mt-1 w-60 rounded border border-gold/20 bg-white/95 py-1.5 shadow-xl backdrop-blur-sm">
                 {userPermission.privateLinks?.googleSheet && (
                   <a
                     href={userPermission.privateLinks.googleSheet}
@@ -774,8 +792,9 @@ export default function App() {
                   onChange={handlePermissionChange}
                 />
               </div>
-            </>
-          )}
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Navigation bar */}
@@ -814,6 +833,7 @@ export default function App() {
               referenceLinksLoading={loadingReferenceLinks}
               referenceLinksError={referenceLinksError}
               canViewTickets={userPermission.canEdit}
+              onPermissionChange={handlePermissionChange}
               onOpenItinerary={() => setTab(TAB_IDS.ITINERARY)}
               onOpenJourney={openJourney}
               onOpenTickets={() => setTab(TAB_IDS.TICKETS)}
@@ -843,13 +863,18 @@ export default function App() {
                   dayTickets={ticketsByDay[item.day] || []}
                   onFoodUpdate={fetchFoodRecommendations}
                   canEdit={userPermission.canEdit}
+                  onPermissionChange={handlePermissionChange}
                 />
               ))
             )}
           </div>
         )}
         {tab === TAB_IDS.TICKETS && (
-          <TicketVaultPage tickets={tickets} canViewTickets={userPermission.canEdit} />
+          <TicketVaultPage
+            tickets={tickets}
+            canViewTickets={userPermission.canEdit}
+            onPermissionChange={handlePermissionChange}
+          />
         )}
         {tab === TAB_IDS.LINKS && (
           <UsefulLinksPage

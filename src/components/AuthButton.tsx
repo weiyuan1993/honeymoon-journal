@@ -26,6 +26,12 @@ interface AuthButtonProps {
   onChange(permission: UserPermission): void;
 }
 
+interface GoogleSignInButtonProps {
+  onChange(permission: UserPermission): void;
+  className?: string;
+  buttonOptions?: Record<string, string | number>;
+}
+
 const loadGoogleIdentity = () =>
   new Promise<void>((resolve, reject) => {
     if (window.google?.accounts.id) {
@@ -51,13 +57,16 @@ const loadGoogleIdentity = () =>
     document.head.appendChild(script);
   });
 
-export default function AuthButton({ permission, onChange }: AuthButtonProps) {
+export function GoogleSignInButton({
+  onChange,
+  className,
+  buttonOptions,
+}: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (permission.canEdit) return;
     let cancelled = false;
     const setup = async () => {
       try {
@@ -68,14 +77,18 @@ export default function AuthButton({ permission, onChange }: AuthButtonProps) {
         window.google.accounts.id.initialize({
           client_id: config.clientId,
           callback: async ({ credential }) => {
+            if (cancelled) return;
             setBusy(true);
             setError('');
             try {
-              onChange(await authClient.login(credential));
+              const permission = await authClient.login(credential);
+              if (!cancelled) onChange(permission);
             } catch (loginError) {
-              setError(loginError instanceof Error ? loginError.message : '此帳號沒有權限');
+              if (!cancelled) {
+                setError(loginError instanceof Error ? loginError.message : '此帳號沒有權限');
+              }
             } finally {
-              setBusy(false);
+              if (!cancelled) setBusy(false);
             }
           },
         });
@@ -86,16 +99,30 @@ export default function AuthButton({ permission, onChange }: AuthButtonProps) {
           size: 'medium',
           text: 'signin_with',
           shape: 'pill',
+          ...buttonOptions,
         });
       } catch (setupError) {
-        setError(setupError instanceof Error ? setupError.message : 'Google 登入無法使用');
+        if (!cancelled) {
+          setError(setupError instanceof Error ? setupError.message : 'Google 登入無法使用');
+        }
       }
     };
     setup();
     return () => {
       cancelled = true;
     };
-  }, [permission.canEdit, onChange]);
+  }, [buttonOptions, onChange]);
+
+  return (
+    <div className={className}>
+      <div ref={buttonRef} className={busy ? 'pointer-events-none opacity-60' : ''} />
+      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
+    </div>
+  );
+}
+
+export default function AuthButton({ permission, onChange }: AuthButtonProps) {
+  const [busy, setBusy] = useState(false);
 
   if (permission.canEdit) {
     return (
@@ -117,10 +144,5 @@ export default function AuthButton({ permission, onChange }: AuthButtonProps) {
     );
   }
 
-  return (
-    <div className="px-3 py-2">
-      <div ref={buttonRef} className={busy ? 'pointer-events-none opacity-60' : ''} />
-      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
-    </div>
-  );
+  return <GoogleSignInButton onChange={onChange} className="px-3 py-2" />;
 }

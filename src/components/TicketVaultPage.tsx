@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react';
-import type { TicketItem } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
+import type { TicketItem, UserPermission } from '@/types';
 import {
   formatTicketDate,
   getDrivePreviewUrl,
-  getGoogleAccountChooserUrl,
-  getTicketCities,
+  TICKET_COUNTRIES,
+  ticketMatchesCountry,
+  type TicketCountry,
 } from './ticketVaultData';
 import TicketModal from './TicketModal';
+import TicketReauthentication from './TicketReauthentication';
+import { GoogleSignInButton } from './AuthButton';
 
 interface TicketVaultPageProps {
   tickets: TicketItem[];
   canViewTickets: boolean;
+  onPermissionChange?: (permission: UserPermission) => void;
 }
 
 const MOBILE_QUERY = '(max-width: 720px), (max-height: 520px) and (pointer: coarse)';
@@ -31,24 +35,29 @@ function useIsMobileTicketVault() {
   return isMobile;
 }
 
-export default function TicketVaultPage({ tickets, canViewTickets }: TicketVaultPageProps) {
+export default function TicketVaultPage({ tickets, canViewTickets, onPermissionChange }: TicketVaultPageProps) {
   const [selectedId, setSelectedId] = useState<number | null>(tickets[0]?.rowNumber ?? null);
   const [previewVersion, setPreviewVersion] = useState(0);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<TicketCountry | null>(null);
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
   const isMobile = useIsMobileTicketVault();
-  const cities = getTicketCities(tickets);
-  const filteredTickets = selectedCity
-    ? tickets.filter((ticket) => ticket.city.trim() === selectedCity)
+  const filteredTickets = selectedCountry
+    ? tickets.filter((ticket) => ticketMatchesCountry(ticket, selectedCountry))
     : tickets;
   const selectedTicket = filteredTickets.find((ticket) => ticket.rowNumber === selectedId) || filteredTickets[0];
+  const reloadPreview = useCallback(() => {
+    setPreviewVersion((version) => version + 1);
+  }, []);
+  const handlePermissionChange = useCallback((permission: UserPermission) => {
+    onPermissionChange?.(permission);
+  }, [onPermissionChange]);
 
-  const selectCity = (city: string | null) => {
-    setSelectedCity(city);
+  const selectCountry = (country: TicketCountry | null) => {
+    setSelectedCountry(country);
     setIsMobilePreviewOpen(false);
     setPreviewVersion(0);
     setSelectedId(
-      (city ? tickets.find((ticket) => ticket.city.trim() === city) : tickets[0])?.rowNumber ?? null
+      (country ? tickets.find((ticket) => ticketMatchesCountry(ticket, country)) : tickets[0])?.rowNumber ?? null
     );
   };
 
@@ -69,12 +78,16 @@ export default function TicketVaultPage({ tickets, canViewTickets }: TicketVault
           <div>
             <p className="eyebrow">TRAVEL DOCUMENTS</p>
             <h2>票券庫</h2>
-            <p>票券資訊只開放給授權帳號，請從右上角選單登入。</p>
+            <p>票券資訊只開放給授權帳號。</p>
           </div>
         </div>
         <div className="ticket-private">
           <strong>票券資料受到保護</strong>
           <p>登入 Vic 或 Dora 的授權 Google 帳號後，才能載入票券清單與 Drive 文件。</p>
+          <GoogleSignInButton
+            onChange={handlePermissionChange}
+            className="ticket-private-sign-in"
+          />
         </div>
       </div>
     );
@@ -83,39 +96,32 @@ export default function TicketVaultPage({ tickets, canViewTickets }: TicketVault
   return (
     <div className="ticket-vault animate-fade-in-up">
       <div className="ticket-vault-heading">
-        <div><p className="eyebrow">TRAVEL DOCUMENTS</p><h2>票券庫</h2><p>所有確認文件集中收納，出發當天不用再翻找訊息。</p></div>
+        <div><p className="eyebrow">TRAVEL DOCUMENTS</p><h2>票券庫</h2></div>
         <div className="ticket-vault-count"><strong>{tickets.length}</strong><span>documents</span></div>
       </div>
-      <div className="ticket-city-filters" aria-label="城市快速篩選">
-        <span className="ticket-city-filter-label">城市</span>
-        <div className="ticket-city-chip-list">
+      <div className="ticket-country-filters" aria-label="國家快速篩選">
+        <button
+          type="button"
+          className={`ticket-country-chip ${selectedCountry === null ? 'selected' : ''}`}
+          aria-pressed={selectedCountry === null}
+          onClick={() => selectCountry(null)}
+        >
+          全部
+        </button>
+        {TICKET_COUNTRIES.map((country) => (
           <button
+            key={country.label}
             type="button"
-            className={`ticket-city-chip ${selectedCity === null ? 'selected' : ''}`}
-            aria-pressed={selectedCity === null}
-            onClick={() => selectCity(null)}
+            className={`ticket-country-chip ${selectedCountry === country ? 'selected' : ''}`}
+            aria-pressed={selectedCountry === country}
+            onClick={() => selectCountry(country)}
           >
-            全部 <small>{tickets.length}</small>
+            {country.label}
           </button>
-          {cities.map((city) => {
-            const count = tickets.filter((ticket) => ticket.city.trim() === city).length;
-            return (
-              <button
-                key={city}
-                type="button"
-                className={`ticket-city-chip ${selectedCity === city ? 'selected' : ''}`}
-                aria-pressed={selectedCity === city}
-                onClick={() => selectCity(city)}
-              >
-                {city} <small>{count}</small>
-              </button>
-            );
-          })}
-        </div>
+        ))}
       </div>
       <div className="ticket-vault-layout">
         <div className="ticket-vault-list-wrapper">
-          {isMobile && <p className="ticket-mobile-hint">點選票券，即可全螢幕查看內嵌預覽。</p>}
           <div className="ticket-vault-list">
             {filteredTickets.map((ticket) => (
               <button key={ticket.rowNumber} type="button" onClick={() => selectTicket(ticket.rowNumber)} className={`vault-ticket ${selectedTicket?.rowNumber === ticket.rowNumber ? 'selected' : ''}`}>
@@ -132,8 +138,13 @@ export default function TicketVaultPage({ tickets, canViewTickets }: TicketVault
             <p className="ticket-provider">{selectedTicket.type} · {selectedTicket.provider}</p>
             {selectedTicket.notes && <p className="ticket-notes">{selectedTicket.notes}</p>}
             <div className="ticket-detail-actions">
-              <a href={getGoogleAccountChooserUrl(selectedTicket.fileUrl)} target="_blank" rel="noopener noreferrer" className="ticket-open-link ticket-sign-in-link">重新登入 Google</a>
-              <button type="button" onClick={() => setPreviewVersion((version) => version + 1)} className="ticket-open-link">重新載入預覽</button>
+              <TicketReauthentication
+                onReauthenticated={reloadPreview}
+                onPermissionChange={onPermissionChange}
+                buttonClassName="ticket-open-link"
+                googleButtonClassName="ticket-google-sign-in"
+              />
+              <a href={selectedTicket.fileUrl} target="_blank" rel="noopener noreferrer" className="ticket-open-link">在 Drive 開啟</a>
             </div>
             <iframe key={`${selectedTicket.rowNumber}-${previewVersion}`} title={`${selectedTicket.item} 預覽`} src={getDrivePreviewUrl(selectedTicket.fileUrl)} className="ticket-frame" allow="autoplay" />
           </> : <p className="empty-copy">選擇左側票券查看資訊。</p>}
@@ -147,7 +158,7 @@ export default function TicketVaultPage({ tickets, canViewTickets }: TicketVault
           canViewTickets={canViewTickets}
           initialSelectedId={selectedTicket.rowNumber}
           onSelectedTicketChange={setSelectedId}
-          title="票券預覽"
+          onPermissionChange={onPermissionChange}
           onClose={() => setIsMobilePreviewOpen(false)}
         />
       )}

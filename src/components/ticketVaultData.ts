@@ -10,8 +10,23 @@ export function getDrivePreviewUrl(url: string): string {
   return match ? `https://drive.google.com/file/d/${match[1]}/preview` : url;
 }
 
-export function getGoogleAccountChooserUrl(fileUrl: string): string {
-  return `https://accounts.google.com/AccountChooser?continue=${encodeURIComponent(fileUrl)}`;
+export const TICKET_COUNTRIES = [
+  { label: '英國', placeNames: ['英國', '倫敦'] },
+  { label: '法國', placeNames: ['法國', '巴黎'] },
+  {
+    label: '瑞士',
+    placeNames: ['瑞士', '琉森', 'Luzern', '格林德瓦', 'Grindelwald', '因特拉肯', '茵特拉肯', 'Interlaken', '策馬特', 'Zermatt'],
+  },
+  {
+    label: '義大利',
+    placeNames: ['義大利', '米蘭', 'Milano', '威尼斯', 'Venezia', '佛羅倫斯', 'Firenze', '羅馬', 'Roma', '梵蒂岡', 'Vatican'],
+  },
+] as const;
+
+export type TicketCountry = (typeof TICKET_COUNTRIES)[number];
+
+export function ticketMatchesCountry(ticket: TicketItem, country: TicketCountry): boolean {
+  return country.placeNames.some((placeName) => ticket.city.includes(placeName));
 }
 
 export function formatTicketDate(value: string): string {
@@ -36,12 +51,4 @@ export function formatTicketDate(value: string): string {
   }
 
   return `${Number(month)}/${Number(day)}（${WEEKDAYS[date.getUTCDay()]}）`;
-}
-
-export function getTicketCities(tickets: TicketItem[]): string[] {
-  return [...new Set(
-    tickets
-      .map((ticket) => ticket.city.trim())
-      .filter(Boolean)
-  )];
 }

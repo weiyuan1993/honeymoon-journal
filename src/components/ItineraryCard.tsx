@@ -7,6 +7,7 @@ import type {
   FoodRecommendations,
   ItineraryReferenceLink,
   TicketItem,
+  UserPermission,
 } from '@/types';
 import { tripClient } from '@/utils/tripClient';
 import DetailModal from './DetailModal';
@@ -25,6 +26,7 @@ interface ItineraryCardProps {
   dayTickets: TicketItem[];
   onFoodUpdate: () => void;
   canEdit: boolean;
+  onPermissionChange?: (permission: UserPermission) => void;
 }
 
 const splitItineraryHtmlLines = (content: string) =>
@@ -43,6 +45,7 @@ export default function ItineraryCard({
   dayTickets,
   onFoodUpdate,
   canEdit,
+  onPermissionChange,
 }: ItineraryCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<ItineraryFormData>({
@@ -436,6 +439,7 @@ export default function ItineraryCard({
           city={item.city}
           tickets={dayTickets}
           canViewTickets={canEdit}
+          onPermissionChange={onPermissionChange}
           onClose={() => setShowTickets(false)}
         />
       )}

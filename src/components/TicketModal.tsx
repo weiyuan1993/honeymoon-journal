@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
-import type { TicketItem } from '@/types';
-import { getDrivePreviewUrl, getGoogleAccountChooserUrl } from './ticketVaultData';
+import { useCallback, useMemo, useState } from 'react';
+import type { TicketItem, UserPermission } from '@/types';
+import { getDrivePreviewUrl } from './ticketVaultData';
+import TicketReauthentication from './TicketReauthentication';
 
 interface TicketModalProps {
   day: string;
@@ -9,7 +10,7 @@ interface TicketModalProps {
   canViewTickets: boolean;
   initialSelectedId?: number;
   onSelectedTicketChange?: (rowNumber: number) => void;
-  title?: string;
+  onPermissionChange?: (permission: UserPermission) => void;
   onClose: () => void;
 }
 
@@ -20,7 +21,7 @@ export default function TicketModal({
   canViewTickets,
   initialSelectedId,
   onSelectedTicketChange,
-  title = '當日票券',
+  onPermissionChange,
   onClose,
 }: TicketModalProps) {
   const [selectedId, setSelectedId] = useState(initialSelectedId ?? tickets[0]?.rowNumber);
@@ -36,6 +37,9 @@ export default function TicketModal({
     setPreviewVersion(0);
     onSelectedTicketChange?.(rowNumber);
   };
+  const reloadPreview = useCallback(() => {
+    setPreviewVersion((version) => version + 1);
+  }, []);
 
   if (!selectedTicket) return null;
 
@@ -56,35 +60,29 @@ export default function TicketModal({
         <div className="border-b border-gold/20 px-3 py-2 sm:px-4">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p title={`${day} · ${city}`} className="truncate font-display text-[11px] uppercase tracking-[0.16em] text-gold sm:text-[13px]">
+              <p id="ticket-preview-title" title={`${day} · ${city}`} className="truncate font-display text-[11px] uppercase tracking-[0.16em] text-gold sm:text-[13px]">
                 {day} · {city}
               </p>
-              <h2 id="ticket-preview-title" className="mt-0.5 truncate font-display text-sm text-ink sm:text-base">
-                {title}
-              </h2>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               {canViewTickets && (
                 <>
+                  <TicketReauthentication
+                    onReauthenticated={reloadPreview}
+                    onPermissionChange={onPermissionChange}
+                    buttonClassName="rounded-md border border-ink/15 bg-white px-2 py-1 font-serif text-[11px] text-ink transition-colors hover:border-gold hover:bg-gold/5"
+                    googleButtonClassName="ticket-google-sign-in flex h-7 shrink-0 items-center"
+                  />
                   <a
-                    href={getGoogleAccountChooserUrl(selectedTicket.fileUrl)}
+                    href={selectedTicket.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="重新登入 Google"
-                    title="重新登入 Google"
+                    aria-label={`在 Drive 開啟 ${selectedTicket.item}`}
+                    title="在 Drive 開啟"
                     className="rounded-md border border-ink/15 bg-white px-2 py-1 font-serif text-[11px] text-ink transition-colors hover:border-gold hover:bg-gold/5"
                   >
-                    登入
+                    Drive
                   </a>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewVersion((version) => version + 1)}
-                    aria-label="重新載入預覽"
-                    title="重新載入預覽"
-                    className="rounded-md border border-ink/15 bg-white px-2 py-1 font-serif text-[11px] text-ink transition-colors hover:border-gold hover:bg-gold/5"
-                  >
-                    重載
-                  </button>
                 </>
               )}
               <button

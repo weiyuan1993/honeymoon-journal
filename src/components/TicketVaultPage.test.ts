@@ -30,22 +30,33 @@ const tickets: TicketItem[] = [
 ];
 
 describe('TicketVaultPage', () => {
-  it('renders city quick filters and each ticket date with its weekday', () => {
+  it('renders a direct Google sign-in entry for unauthenticated users', () => {
+    const html = renderToStaticMarkup(createElement(TicketVaultPage, {
+      tickets,
+      canViewTickets: false,
+    }));
+
+    expect(html).toContain('票券資料受到保護');
+    expect(html).toContain('ticket-private-sign-in');
+  });
+
+  it('renders compact country filters and direct Drive fallback actions', () => {
     const html = renderToStaticMarkup(createElement(TicketVaultPage, {
       tickets,
       canViewTickets: true,
     }));
 
-    expect(html).toContain('城市快速篩選');
+    expect(html).toContain('國家快速篩選');
     expect(html).toContain('英國');
-    expect(html).toContain('倫敦');
+    expect(html).toContain('法國');
+    expect(html).toContain('瑞士');
+    expect(html).toContain('義大利');
     expect(html).toContain('Day 1 · 9/28（一） · 英國');
     expect(html).toContain('Day 2 · 9/29（二） · 倫敦');
-    expect(html).toContain('重新登入 Google');
-    expect(html).toContain('重新載入預覽');
-    expect(html).toContain(
-      'https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fdrive.google.com%2Ffile%2Fd%2Ffirst%2Fview'
-    );
-    expect(html).not.toContain('在 Drive 開啟');
+    expect(html).toContain('重新登入');
+    expect(html).toContain('在 Drive 開啟');
+    expect(html).toContain('href="https://drive.google.com/file/d/first/view"');
+    expect(html).not.toContain('AccountChooser');
+    expect(html).not.toContain('所有確認文件集中收納');
   });
 });

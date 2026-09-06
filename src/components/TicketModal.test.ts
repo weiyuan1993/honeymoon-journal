@@ -17,7 +17,7 @@ const tickets: TicketItem[] = [{
 }];
 
 describe('TicketModal', () => {
-  it('keeps the embedded Drive preview with compact sign-in and reload actions', () => {
+  it('offers web-app reauthentication and a direct Drive fallback', () => {
     const html = renderToStaticMarkup(createElement(TicketModal, {
       day: 'Day 1',
       city: '英國',
@@ -27,13 +27,12 @@ describe('TicketModal', () => {
     }));
 
     expect(html).toContain('https://drive.google.com/file/d/first/preview');
-    expect(html).toContain('重新登入 Google');
-    expect(html).toContain(
-      'https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fdrive.google.com%2Ffile%2Fd%2Ffirst%2Fview'
-    );
-    expect(html).toContain('重新載入預覽');
-    expect(html).not.toContain('>Drive 開啟<');
-    expect(html).not.toContain('預覽無法顯示？');
+    expect(html).toContain('重新登入');
+    expect(html).toContain('在 Drive 開啟');
+    expect(html).toContain('href="https://drive.google.com/file/d/first/view"');
+    expect(html).not.toContain('AccountChooser');
+    expect(html).not.toContain('重新載入預覽');
+    expect(html).not.toContain('<h2');
     expect(html).toContain('aria-label="票券文件導覽"');
     expect(html.indexOf('<nav')).toBeGreaterThan(html.indexOf('<iframe'));
   });

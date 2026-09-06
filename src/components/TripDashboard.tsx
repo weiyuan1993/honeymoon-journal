@@ -5,6 +5,7 @@ import type {
   ReferenceLink,
   TicketItem,
   TodoItem,
+  UserPermission,
 } from '@/types';
 import { htmlToText } from '@/utils/htmlToText';
 import {
@@ -39,6 +40,7 @@ interface TripDashboardProps {
   onOpenTodo: (rowNumber?: number) => void;
   onOpenLinks: () => void;
   canViewTickets: boolean;
+  onPermissionChange?: (permission: UserPermission) => void;
 }
 
 const formatDate = (value: string) => {
@@ -143,6 +145,7 @@ export default function TripDashboard({
   onOpenTodo,
   onOpenLinks,
   canViewTickets,
+  onPermissionChange,
 }: TripDashboardProps) {
   const [showFocusTickets, setShowFocusTickets] = useState(false);
   const timeline = buildTripTimeline(itinerary);
@@ -379,6 +382,7 @@ export default function TripDashboard({
           city={focusItem.city}
           tickets={focusDayAction.tickets}
           canViewTickets={canViewTickets}
+          onPermissionChange={onPermissionChange}
           onClose={() => setShowFocusTickets(false)}
         />
       )}
