@@ -16,6 +16,10 @@ import FoodModal from './FoodModal';
 import ReferenceLinksModal from './ReferenceLinksModal';
 import TicketModal from './TicketModal';
 
+const itineraryActionButtonClassName =
+  'flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gold/10 px-3 py-2.5 font-serif text-sm text-ink transition-all hover:bg-gold/20';
+const itineraryActionIconClassName = 'h-3.5 w-3.5 text-gold';
+
 interface ItineraryCardProps {
   item: ItineraryItem;
   id: string;
@@ -374,9 +378,9 @@ export default function ItineraryCard({
         <div className="flex gap-2">
           <button
             onClick={() => setShowDetail(true)}
-            className="flex-1 py-2.5 px-3 bg-gold/10 hover:bg-gold/20 text-ink font-serif text-sm rounded-lg transition-all flex items-center justify-center gap-1.5"
+            className={itineraryActionButtonClassName}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-gold">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={itineraryActionIconClassName}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
             </svg>
             規劃
@@ -384,9 +388,9 @@ export default function ItineraryCard({
           {hasNavigation && (
             <button
               onClick={() => setShowMap(true)}
-              className="flex-1 py-2.5 px-3 bg-deep-blue/10 hover:bg-deep-blue/20 text-deep-blue font-serif text-sm rounded-lg transition-all flex items-center justify-center gap-1.5"
+              className={itineraryActionButtonClassName}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={itineraryActionIconClassName}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
               </svg>
@@ -395,9 +399,12 @@ export default function ItineraryCard({
           )}
           <button
             onClick={() => setShowFood(true)}
-            className="flex-1 py-2.5 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 font-serif text-sm rounded-lg transition-all flex items-center justify-center gap-1.5"
+            className={itineraryActionButtonClassName}
           >
-            🍽️ 美食
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={itineraryActionIconClassName}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 2v7c0 1.1.9 2 2 2h0c1.1 0 2-.9 2-2V2m0 9v11m14-7V2m0 13a2 2 0 01-2 2h-1a2 2 0 01-2-2V2" />
+            </svg>
+            美食
           </button>
         </div>
       </div>
