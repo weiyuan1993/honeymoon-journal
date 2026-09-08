@@ -17,8 +17,8 @@ import ReferenceLinksModal from './ReferenceLinksModal';
 import TicketModal from './TicketModal';
 
 const itineraryActionButtonClassName =
-  'flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-gold/10 px-3 py-2.5 font-serif text-sm text-ink transition-all hover:bg-gold/20';
-const itineraryActionIconClassName = 'h-3.5 w-3.5 text-gold';
+  'inline-flex flex-1 min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm text-deep-blue transition-colors hover:bg-deep-blue/5 active:bg-deep-blue/10';
+const itineraryActionIconClassName = 'h-4 w-4';
 
 interface ItineraryCardProps {
   item: ItineraryItem;
@@ -237,11 +237,11 @@ export default function ItineraryCard({
   return (
     <div
       id={id}
-      className="scroll-target bg-white rounded-lg shadow-sm mb-4 overflow-hidden transition-all duration-300 hover:shadow-md"
+      className="scroll-target itinerary-card"
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-gold/10 to-gold/5 px-4 py-3 border-b border-gold/10">
-        <div className="flex items-center gap-2">
+      <div className="itinerary-card-header">
+        <div className="itinerary-date-row">
           <span className="font-display font-bold text-gold text-base">
             {item.day}
           </span>
@@ -282,14 +282,12 @@ export default function ItineraryCard({
               </button>
             ) : null}
             <button
+                type="button"
                 onClick={() => setIsEditing(true)}
                 disabled={!canEdit}
-                className={`transition-colors p-1 ${
-                  canEdit
-                    ? 'text-gold/40 hover:text-gold'
-                    : 'text-gray-300 cursor-not-allowed'
-                }`}
+                className="itinerary-edit-button"
                 title={canEdit ? '編輯' : '需編輯權限'}
+                aria-label={canEdit ? '編輯行程' : '編輯行程（需編輯權限）'}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -311,52 +309,32 @@ export default function ItineraryCard({
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        {/* City + Content */}
-        <div className="mb-4">
-          <div className="font-display text-deep-blue text-sm mb-2 flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-            {item.city}
-          </div>
-          <div className="text-base leading-relaxed text-ink/80 font-serif pl-3 border-l-2 border-gold/30">
-            {itineraryLines.length > 1 ? (
-              <ul className="space-y-0.5">
-                {itineraryLines.map((line, lineIndex) => (
-                  <li key={lineIndex} className="flex items-start gap-2">
-                    <span
-                      aria-hidden="true"
-                      className="mt-2.5 shrink-0 text-[0.45rem] leading-none text-gold/60"
-                    >
-                      ●
-                    </span>
-                    <span
-                      className="min-w-0"
-                      dangerouslySetInnerHTML={{ __html: line }}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <span dangerouslySetInnerHTML={{ __html: item.content }} />
-            )}
+      <div className="itinerary-card-body">
+        <h2 className="itinerary-city">{item.city}</h2>
+        <div className="itinerary-schedule">
+          <div className="itinerary-events">
+            <ul>
+              {itineraryLines.map((line, lineIndex) => (
+                <li key={lineIndex} className="itinerary-event">
+                  <span className="itinerary-event-copy" dangerouslySetInnerHTML={{ __html: line }} />
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
         {/* Travel info */}
         {(item.transport || item.ticket || item.hotel) && (
-          <div className="space-y-1.5 text-sm leading-relaxed mb-4">
+          <div className="itinerary-travel-info">
             {item.transport && (
-              <div className="flex items-start gap-2 text-ink/60 bg-gray-50 px-3 py-2 rounded-lg">
-                <span>🚌</span>
+              <div className="itinerary-info-row">
+                <span className="itinerary-info-label">交通</span>
                 <span className="font-serif" dangerouslySetInnerHTML={{ __html: item.transport }} />
               </div>
             )}
             {item.ticket && (
-              <div className="flex items-start gap-2 text-ink/60 bg-gray-50 px-3 py-2 rounded-lg">
-                <span>🎟️</span>
+              <div className="itinerary-info-row">
+                <span className="itinerary-info-label">票務</span>
                 <div className="min-w-0 flex-1">
                   <span
                     className="font-serif"
@@ -366,8 +344,8 @@ export default function ItineraryCard({
               </div>
             )}
             {item.hotel && (
-              <div className="flex items-start gap-2 text-ink/60 bg-gray-50 px-3 py-2 rounded-lg">
-                <span>🏨</span>
+              <div className="itinerary-info-row">
+                <span className="itinerary-info-label">住宿</span>
                 <span className="font-serif" dangerouslySetInnerHTML={{ __html: item.hotel }} />
               </div>
             )}
@@ -375,7 +353,7 @@ export default function ItineraryCard({
         )}
 
         {/* Action buttons */}
-        <div className="flex gap-2">
+        <div className="itinerary-card-actions">
           <button
             onClick={() => setShowDetail(true)}
             className={itineraryActionButtonClassName}

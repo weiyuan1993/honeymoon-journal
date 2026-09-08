@@ -197,6 +197,9 @@ export default function App() {
     canEdit: false,
   });
   const [showMenu, setShowMenu] = useState(false);
+  const [activeCity, setActiveCity] = useState('');
+  const headerRef = useRef<HTMLElement>(null);
+  const cityNavRef = useRef<HTMLDivElement>(null);
   const [isBottomNavCompact, setIsBottomNavCompact] = useState(false);
   const [journeyContent, setJourneyContent] = useState<JourneyContent | null>(null);
   const [journeyNavigation, setJourneyNavigation] = useState<{
@@ -545,6 +548,58 @@ export default function App() {
     return cities;
   }, [itinerary]);
 
+  useEffect(() => {
+    if (tab !== TAB_IDS.ITINERARY || loadingItin) return;
+    let frame = 0;
+    const updateCity = () => {
+      frame = 0;
+      const threshold = (headerRef.current?.getBoundingClientRect().bottom ?? 0) + 32;
+      let currentCity = cityList[0] ?? '';
+      for (const item of itinerary) {
+        const element = document.getElementById(`day-${item.day}`);
+        if (!element) continue;
+        if (element.getBoundingClientRect().top > threshold) break;
+        currentCity = item.city.trim().split(' ')[0];
+      }
+      setActiveCity(currentCity);
+    };
+    const scheduleUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateCity);
+    };
+    updateCity();
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    const observer = new ResizeObserver(scheduleUpdate);
+    if (headerRef.current) observer.observe(headerRef.current);
+    for (const item of itinerary) {
+      const element = document.getElementById(`day-${item.day}`);
+      if (element) observer.observe(element);
+    }
+    return () => {
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [tab, itinerary, cityList, loadingItin]);
+
+  useEffect(() => {
+    const nav = cityNavRef.current;
+    const selected = nav?.querySelector<HTMLElement>('[aria-current="location"]');
+    if (!nav || !selected) return;
+    const revealSelectedCity = () => {
+      const bounds = nav.getBoundingClientRect();
+      const target = selected.getBoundingClientRect();
+      if (target.left < bounds.left + 16 || target.right > bounds.right - 24) {
+        nav.scrollTo({ left: nav.scrollLeft + target.left - bounds.left - (bounds.width - target.width) / 2, behavior: 'instant' });
+      }
+    };
+    revealSelectedCity();
+    const observer = new ResizeObserver(revealSelectedCity);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [activeCity, tab]);
+
   const ticketsByDay = useMemo(() => {
     return tickets.reduce<Record<string, TicketItem[]>>((result, ticket) => {
       if (!result[ticket.day]) result[ticket.day] = [];
@@ -560,7 +615,10 @@ export default function App() {
     });
     if (targetItem) {
       const el = document.getElementById(`day-${targetItem.day}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      if (el) {
+        const offset = (headerRef.current?.getBoundingClientRect().height ?? 0) + 16;
+        window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - offset, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+      }
     }
   };
 
@@ -612,7 +670,7 @@ export default function App() {
   return (
     <div className="app-shell min-h-screen bg-paper">
       {/* Header */}
-      <header className="sticky top-0 z-50 liquid-shell-header border-b border-gold/25 backdrop-blur-sm">
+      <header ref={headerRef} className="sticky top-0 z-50 liquid-shell-header">
         <div className="liquid-main-header relative flex min-h-14 items-center justify-between gap-2 px-4 py-2 min-[721px]:px-6">
           <h1 className="min-w-0 flex-1">
             <button
@@ -638,7 +696,7 @@ export default function App() {
             </button>
           </h1>
 
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="header-tools flex shrink-0 items-center gap-1">
             {/* Trip Secretary shortcut */}
             {userPermission.canEdit && (
               <button
@@ -799,22 +857,21 @@ export default function App() {
 
         {/* Navigation bar */}
         {tab === TAB_IDS.ITINERARY && cityList.length > 0 && (
-          <div className="liquid-subnav overflow-x-auto no-scrollbar py-1.5 px-4">
-            <div className="flex gap-2 whitespace-nowrap min-w-max px-2">
-              <span className="font-display text-xs self-center text-gold mr-1">
-                JUMP TO:
-              </span>
+          <nav className="city-navigation" aria-label="行程城市">
+            <div ref={cityNavRef} className="city-navigation-scroll no-scrollbar">
               {cityList.map((cityShortName) => (
                 <button
                   key={cityShortName}
+                  type="button"
                   onClick={() => scrollToCity(cityShortName)}
-                  className="px-3 py-1 rounded-full border border-gold text-ink text-xs font-serif hover:bg-gold hover:text-white transition-colors"
+                  aria-current={activeCity === cityShortName ? 'location' : undefined}
+                  className="city-navigation-button"
                 >
                   {cityShortName}
                 </button>
               ))}
             </div>
-          </div>
+          </nav>
         )}
       </header>
 
@@ -959,6 +1016,7 @@ export default function App() {
               }`}
             >
               <TabIcon tab={item.id} />
+              <span className="bottom-nav-label">{item.label}</span>
             </button>
           ))}
         </div>

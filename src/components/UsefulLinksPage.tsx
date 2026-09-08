@@ -21,7 +21,6 @@ export default function UsefulLinksPage({
   onBack,
 }: UsefulLinksPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
   const linkGroups = useMemo(() => groupReferenceLinks(links), [links]);
   const categories = linkGroups.map((group) => group.category);
   const activeCategory =
@@ -29,8 +28,8 @@ export default function UsefulLinksPage({
       ? selectedCategory
       : null;
   const filteredLinks = useMemo(
-    () => filterReferenceLinks(links, activeCategory, query),
-    [activeCategory, links, query]
+    () => filterReferenceLinks(links, activeCategory, ''),
+    [activeCategory, links]
   );
   const visibleGroups = useMemo(
     () => groupReferenceLinks(filteredLinks),
@@ -48,22 +47,9 @@ export default function UsefulLinksPage({
           <h2>實用連結</h2>
           <p>依國家整理交通、景點、票券與旅遊攻略，內容同步自 Google Sheet。</p>
         </div>
-        <div className="links-page-count" aria-label={`${links.length} 個連結`}>
-          <strong>{links.length}</strong>
-          <span>useful links</span>
-        </div>
       </header>
 
       <div className="links-page-controls">
-        <label className="links-search">
-          <span className="sr-only">搜尋實用連結</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜尋景點、交通、備註或網站…"
-          />
-        </label>
         <div className="link-category-tabs" aria-label="連結國家分類">
           <button
             type="button"

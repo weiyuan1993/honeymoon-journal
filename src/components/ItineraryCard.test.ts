@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { ItineraryItem, TicketItem } from '@/types';
 import ItineraryCard from './ItineraryCard';
+import { htmlToText } from '@/utils/htmlToText';
 
 const item: ItineraryItem = {
   rowNumber: 2,
@@ -38,7 +39,7 @@ describe('ItineraryCard ticket and reference controls', () => {
     const html = renderToStaticMarkup(createElement(ItineraryCard, {
       item: {
         ...item,
-        content: '09:00 西敏寺<br><a href="https://example.com/big-ben">11:20 大笨鐘</a>',
+        content: '09:00 西敏寺<br>11:20–12:40 河岸散步<br>午餐與休息<br><a href="https://example.com/big-ben">11:20 大笨鐘</a>',
       },
       id: 'day-Day 7',
       onUpdate: () => undefined,
@@ -52,7 +53,10 @@ describe('ItineraryCard ticket and reference controls', () => {
 
     expect(html).toContain('<ul');
     expect(html).toContain('<li');
-    expect(html).toContain('09:00 西敏寺');
+    expect(htmlToText(html)).toContain('09:00 西敏寺');
+    expect(htmlToText(html)).toContain('11:20–12:40 河岸散步');
+    expect(htmlToText(html)).toContain('午餐與休息');
+    expect(html).toContain('>11:20 大笨鐘</a>');
     expect(html).toContain('href="https://example.com/big-ben"');
   });
 

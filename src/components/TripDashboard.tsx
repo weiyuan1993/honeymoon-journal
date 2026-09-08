@@ -156,22 +156,26 @@ export default function TripDashboard({
       eyebrow: 'DEPARTURE',
       value: timeline.daysToStart ?? '—',
       label: 'days to London',
+      heading: '距離出發',
     },
     during: {
       intro: '先看今天的安排、下一段交通與即將使用的票券，再放心享受當下。',
       eyebrow: 'TODAY',
       value: timeline.currentDayNumber ?? '—',
       label: `day of ${timeline.totalDays}`,
+      heading: '旅程第幾天',
     },
     after: {
       intro: '旅程已完成，回到旅程故事重溫一路上的城市與回憶。',
       eyebrow: 'MEMORIES',
       value: timeline.totalDays || '—',
       label: 'days together',
+      heading: '一起走過',
     },
   }[timeline.phase];
 
   const focusItem = timeline.focusItem;
+  const isTodayFocus = timeline.phase === 'during' && timeline.focusIsToday;
   const lastItem = timeline.lastDatedItem;
   const contextItem = focusItem ?? lastItem;
   const contextCity = getPrimaryTripCity(contextItem?.city ?? '');
@@ -221,21 +225,21 @@ export default function TripDashboard({
           </h2>
           <p className="dashboard-intro">{heroStory}</p>
           <div className="dashboard-actions">
-            <button type="button" onClick={onOpenItinerary}>查看完整行程</button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => onOpenJourney(contextCity || undefined)}
-            >
-              閱讀旅程故事
-            </button>
+            <button type="button" onClick={onOpenItinerary}>查看行程 <span aria-hidden="true">→</span></button>
             <button type="button" className="secondary" onClick={onOpenTickets}>
               開啟票券庫
+            </button>
+            <button
+              type="button"
+              className="story-action"
+              onClick={() => onOpenJourney(contextCity || undefined)}
+            >
+              旅程故事 <span aria-hidden="true">↗</span>
             </button>
           </div>
         </div>
         <div className="countdown-card" aria-label={heroCopy.eyebrow}>
-          <span>{heroCopy.eyebrow}</span>
+          <span>{heroCopy.heading}</span>
           <strong>{heroCopy.value}</strong>
           <small>{heroCopy.label}</small>
           <div>{countdownDetail}</div>
@@ -245,11 +249,10 @@ export default function TripDashboard({
       <section className="dashboard-grid">
         <article className="next-stop-card">
           <div className="section-heading">
-            <span>
-              {timeline.phase === 'during' && timeline.focusIsToday
-                ? 'TODAY'
-                : 'UP NEXT'}
-            </span>
+            <div>
+              <p className="eyebrow">{isTodayFocus ? 'TODAY' : 'UP NEXT'}</p>
+              <h3>{isTodayFocus ? '今天的安排' : '下一段行程'}</h3>
+            </div>
             <button type="button" onClick={onOpenItinerary}>所有行程 →</button>
           </div>
           {focusItem ? (
@@ -257,8 +260,12 @@ export default function TripDashboard({
               <p className="next-date">
                 {focusItem.day} · {formatDate(focusItem.date)}
               </p>
-              <h3>{focusItem.city}</h3>
-              <p>{htmlToText(focusItem.content)}</p>
+              <h4 className="next-city">{focusItem.city}</h4>
+              <p className="next-summary">{focusItem.content
+                .split(/<br\s*\/?>|<\/(?:p|div|li)>|\r?\n/gi)
+                .map(htmlToText)
+                .filter(Boolean)
+                .join('\n')}</p>
               {focusDayAction && (
                 <div className="focus-ticket-actions">
                   {focusDayAction.type === 'tickets' ? (
@@ -276,13 +283,13 @@ export default function TripDashboard({
                 </div>
               )}
               {focusItem.hotel && (
-                <div className="stay-line">🏨 {htmlToText(focusItem.hotel)}</div>
+                <div className="stay-line"><span>當晚住宿</span>{htmlToText(focusItem.hotel)}</div>
               )}
             </>
           ) : itineraryError ? (
             <>
               <p className="next-date">UNAVAILABLE</p>
-              <h3>行程暫時無法載入</h3>
+              <h4 className="next-city">行程暫時無法載入</h4>
               <p>請稍後重新整理，再查看最新行程。</p>
             </>
           ) : itinerary.length === 0 ? (
@@ -290,49 +297,51 @@ export default function TripDashboard({
           ) : (
             <>
               <p className="next-date">JOURNEY COMPLETE</p>
-              <h3>旅程已經完成</h3>
+              <h4 className="next-city">旅程已經完成</h4>
               <p>回到旅程故事，重新走過這三十天的城市與風景。</p>
             </>
           )}
         </article>
 
-      </section>
-
-      <section className="todo-preview">
-        <div className="section-heading">
-          <span>NEXT ACTIONS</span>
-          <button type="button" onClick={() => onOpenTodo()}>
-            {todosLoading || todosError
-              ? '查看全部 →'
-              : `查看全部 ${pendingTodos.length} 項 →`}
-          </button>
-        </div>
-        <div className="todo-preview-list">
-          {!todosLoading && !todosError && pendingTodos.slice(0, 3).map((todo) => (
-            <button
-              type="button"
-              key={todo.rowNumber}
-              onClick={() => onOpenTodo(todo.rowNumber)}
-            >
-              <span aria-hidden="true" />
-              <div>
-                <strong>{htmlToText(todo.item)}</strong>
-                <small>
-                  {htmlToText(todo.detail)}
-                </small>
-              </div>
+        <section className="todo-preview">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">NEXT ACTIONS</p>
+              <h3>接下來要處理</h3>
+            </div>
+            <button type="button" onClick={() => onOpenTodo()}>
+              {todosLoading || todosError
+                ? '查看全部 →'
+                : `查看全部 ${pendingTodos.length} 項 →`}
             </button>
-          ))}
-          {todosLoading && (
-            <p className="empty-copy">正在同步待辦…</p>
-          )}
-          {todosError && (
-            <p className="empty-copy">待辦暫時無法載入。</p>
-          )}
-          {!todosLoading && !todosError && pendingTodos.length === 0 && (
-            <p className="empty-copy">目前沒有未完成待辦。</p>
-          )}
-        </div>
+          </div>
+          <div className="todo-preview-list">
+            {!todosLoading && !todosError && pendingTodos.slice(0, 3).map((todo) => (
+              <button
+                type="button"
+                key={todo.rowNumber}
+                onClick={() => onOpenTodo(todo.rowNumber)}
+              >
+                <span aria-hidden="true">→</span>
+                <div>
+                  <strong>{htmlToText(todo.item)}</strong>
+                  <small>
+                    {htmlToText(todo.detail)}
+                  </small>
+                </div>
+              </button>
+            ))}
+            {todosLoading && (
+              <p className="empty-copy">正在同步待辦…</p>
+            )}
+            {todosError && (
+              <p className="empty-copy">待辦暫時無法載入。</p>
+            )}
+            {!todosLoading && !todosError && pendingTodos.length === 0 && (
+              <p className="empty-copy">目前沒有未完成待辦。</p>
+            )}
+          </div>
+        </section>
       </section>
 
       <section className="useful-links">
@@ -341,11 +350,9 @@ export default function TripDashboard({
             <p className="eyebrow">TRAVEL TOOLKIT</p>
             <h3>實用連結</h3>
           </div>
-          <div className="useful-links-meta">
-            <button type="button" onClick={onOpenLinks}>
-              查看全部 →
-            </button>
-          </div>
+          <button type="button" onClick={onOpenLinks}>
+            查看全部 →
+          </button>
         </div>
         <div className="useful-link-grid">
           {currentCountryLinks.map((link) => (
