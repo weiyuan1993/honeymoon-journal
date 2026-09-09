@@ -36,7 +36,7 @@ export function ExpenseLedgerState({
   if (status === 'loading' || status === 'idle') return <Loading />;
   if (status === 'error') {
     return (
-      <div className="rounded-lg bg-white p-6 text-center shadow-sm">
+      <div className="expense-surface p-8 text-center">
         <p className="font-serif text-sm text-red-600">
           花費記錄載入失敗，請稍後再試。
         </p>
@@ -45,8 +45,8 @@ export function ExpenseLedgerState({
   }
   if (isEmpty) {
     return (
-      <div className="rounded-lg bg-white p-6 text-center shadow-sm">
-        <p className="font-serif text-gray-400">{emptyText}</p>
+      <div className="expense-surface p-8 text-center">
+        <p className="text-sm text-ink/50">{emptyText}</p>
       </div>
     );
   }

@@ -12,10 +12,18 @@ interface TripSecretaryModalProps {
 const WELCOME_MESSAGE = '你好！我是你的旅程秘書，很高興能陪伴你規劃這趟蜜月之旅。你可以問我任何關於行程的問題，例如某天的安排、交通方式、住宿資訊，或是需要什麼建議都可以告訴我！';
 
 const QUICK_SUGGESTIONS = [
-  '今天的行程是什麼？',
-  '我們在巴黎住哪裡？',
-  '整趟旅程有幾天？',
-  '倫敦有什麼必看景點？',
+  {
+    label: '今日美食推薦',
+    question: '請根據今天的行程動線與住宿位置，推薦順路的在地美食與餐廳，包含大約價位、推薦餐點、營業時間與是否需要訂位。',
+  },
+  {
+    label: '今日景點歷史與看點',
+    question: '請依今天的行程順序，介紹各景點的歷史背景、值得留意的故事，以及現場必看的細節，整理成方便邊走邊看的導覽。',
+  },
+  {
+    label: '今明兩天準備事項',
+    question: '請根據今天與明天的行程及住宿，整理今天需要完成的準備清單：票券與預約、交通、天氣與穿著、隨身物品，以及今晚應先為明天準備的事項。請區分出門前、今天途中與今晚，並標示需再次確認的資訊。',
+  },
 ];
 
 export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryModalProps) {
@@ -23,7 +31,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
     { role: 'assistant', content: WELCOME_MESSAGE },
   ]);
   const [inputValue, setInputValue] = useState('');
-  const [useSearch, setUseSearch] = useState(false);
+  const [useSearch, setUseSearch] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -171,37 +179,38 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center p-3">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center p-3 sm:items-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-deep-blue/25 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg h-[min(85dvh,720px)] max-h-[calc(100dvh-1.5rem)] bg-paper rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+      <div className="relative w-full max-w-2xl h-[min(85dvh,760px)] max-h-[calc(100dvh-1.5rem)] border border-white/70 bg-[#fffefa] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gold/20 bg-gradient-to-r from-[#f8f5ed] to-[#f4f0e6]">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-deep-blue/10 px-5 py-4">
           <div className="flex items-center gap-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #c5a059, #d4b677)' }}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-deep-blue/5 text-deep-blue"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                fill="white"
+                fill="currentColor"
                 className="w-4 h-4"
               >
                 <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
               </svg>
             </div>
-            <h2 className="font-display text-ink text-sm tracking-wide">旅程秘書</h2>
+            <div><h2 className="text-base font-semibold text-deep-blue">旅程秘書</h2><p className="mt-0.5 text-xs text-ink/50">行程、交通與旅途中的大小事</p></div>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={handleClearHistory}
-              className="p-2 text-gray-400 hover:text-gold transition-colors"
+              aria-label="清除對話"
+              disabled={isLoading || isLoadingHistory}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-ink/45 hover:bg-deep-blue/5 disabled:opacity-40"
               title="清除對話"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -210,7 +219,8 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-ink transition-colors"
+              aria-label="關閉旅程秘書"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-deep-blue/5 text-deep-blue hover:bg-deep-blue/10"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -220,9 +230,9 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-5 custom-scrollbar">
           {isLoadingHistory ? (
-            <div className="flex h-full items-center justify-center text-gold animate-pulse font-display text-xs tracking-wide">
+            <div className="flex h-full items-center justify-center text-deep-blue/60 animate-pulse text-xs">
               載入對話中...
             </div>
           ) : (
@@ -234,13 +244,13 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
                 }`}
               >
                 <div
-                  className={`max-w-[85%] px-4 py-3 rounded-3xl shadow-sm ${
+                  className={`max-w-[92%] break-words px-4 py-3 rounded-2xl sm:max-w-[85%] ${
                     message.role === 'user'
-                      ? 'bg-gold text-white rounded-br-xl'
-                      : 'bg-white border border-subtle text-ink rounded-bl-xl'
+                      ? 'bg-deep-blue text-white rounded-br-md'
+                      : 'bg-white border border-deep-blue/10 text-ink rounded-bl-md'
                   }`}
                 >
-                  <p className="text-sm font-serif leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm leading-7 whitespace-pre-wrap">
                     {message.content}
                   </p>
                 </div>
@@ -253,9 +263,9 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
             <div className="flex justify-start animate-message-left">
               <div className="bg-white border border-subtle px-4 py-3 rounded-2xl rounded-bl-md">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-gold rounded-full typing-dot" />
-                  <span className="w-2 h-2 bg-gold rounded-full typing-dot" />
-                  <span className="w-2 h-2 bg-gold rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-deep-blue/50 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-deep-blue/50 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-deep-blue/50 rounded-full typing-dot" />
                 </div>
               </div>
             </div>
@@ -266,15 +276,15 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
 
         {/* Quick suggestions */}
         {messages.length <= 2 && !isLoading && !isLoadingHistory && (
-          <div className="px-4 pb-2">
+          <div className="shrink-0 px-5 pb-4">
             <div className="flex flex-wrap gap-2">
-              {QUICK_SUGGESTIONS.map((suggestion, index) => (
+              {QUICK_SUGGESTIONS.map((suggestion) => (
                 <button
-                  key={index}
-                  onClick={() => handleQuickSuggestion(suggestion)}
-                  className="px-3 py-1.5 text-xs font-serif text-gold border border-gold/40 rounded-full hover:bg-gold/10 transition-colors"
+                  key={suggestion.label}
+                  onClick={() => handleQuickSuggestion(suggestion.question)}
+                  className="min-h-9 px-3 py-2 text-xs text-deep-blue border border-deep-blue/10 bg-white rounded-xl hover:bg-deep-blue/5 transition-colors"
                 >
-                  {suggestion}
+                  {suggestion.label}
                 </button>
               ))}
             </div>
@@ -282,7 +292,7 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
         )}
 
         {/* Input area */}
-        <div className="p-4 border-t border-subtle bg-white">
+        <div className="shrink-0 p-4 border-t border-deep-blue/10 bg-white/70">
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -290,8 +300,9 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="請問有什麼可以幫助您的？"
-              className="min-w-0 flex-1 px-4 py-2 bg-gray-50 border border-subtle rounded-full text-[16px] leading-6 font-serif text-ink placeholder:text-gray-400 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30"
+              aria-label="訊息"
+              placeholder="想問什麼旅程問題？"
+              className="min-w-0 min-h-11 flex-1 px-4 py-2 bg-white border border-deep-blue/15 rounded-xl text-[16px] leading-6 text-ink placeholder:text-ink/40 focus:outline-none focus:border-deep-blue focus:ring-1 focus:ring-deep-blue/20"
               disabled={isLoading || isLoadingHistory}
             />
             <button
@@ -301,10 +312,10 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
               aria-label={useSearch ? '關閉網路搜尋' : '啟用網路搜尋'}
               aria-pressed={useSearch}
               title={useSearch ? '搜尋模式已啟用' : '啟用網路搜尋'}
-              className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-full border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`w-11 h-11 shrink-0 flex items-center justify-center rounded-full border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                 useSearch
-                  ? 'border-gold bg-gold/15 text-gold shadow-sm ring-2 ring-gold/20'
-                  : 'border-subtle bg-gray-50 text-gray-400 hover:border-gold/50 hover:text-gold'
+                  ? 'border-deep-blue/15 bg-deep-blue/5 text-deep-blue'
+                  : 'border-deep-blue/10 bg-white text-ink/45 hover:text-deep-blue'
               }`}
             >
               <svg
@@ -321,24 +332,21 @@ export default function TripSecretaryModal({ isOpen, onClose }: TripSecretaryMod
             </button>
             <button
               onClick={() => handleSend()}
+              aria-label="傳送訊息"
               disabled={!inputValue.trim() || isLoading || isLoadingHistory}
-              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: inputValue.trim() && !isLoading && !isLoadingHistory
-                  ? 'linear-gradient(135deg, #c5a059, #d4b677)'
-                  : '#e5e5e5',
-              }}
+              className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-deep-blue text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                fill={inputValue.trim() && !isLoading && !isLoadingHistory ? 'white' : '#9ca3af'}
+                fill="currentColor"
                 className="w-5 h-5"
               >
                 <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
               </svg>
             </button>
           </div>
+
         </div>
       </div>
     </div>

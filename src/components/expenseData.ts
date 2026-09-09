@@ -1,12 +1,10 @@
 import type { ExpenseItem, ExpenseOverviewData } from '@/types';
-import type { Category, Currency } from '@/config/trip.config';
+import type { Category } from '@/config/trip.config';
 
 export const ALL_EXPENSE_FILTER = 'all' as const;
 
 export interface ExpenseFilters {
-  searchTerm: string;
   category: Category | typeof ALL_EXPENSE_FILTER;
-  currency: Currency | typeof ALL_EXPENSE_FILTER;
 }
 
 export interface ExpenseDateGroup {
@@ -41,23 +39,26 @@ export const aggregateExpensesByCurrency = (
     return totals;
   }, {});
 
+export const convertExpenseTotalsToTwd = (
+  totals: Record<string, number>,
+  rates: ExpenseOverviewData['ratesTwdPerUnit'] | null
+): number | null => {
+  let result = 0;
+  for (const [currency, amount] of Object.entries(totals)) {
+    const rate = currency === 'TWD' ? 1 : rates?.[currency];
+    if (rate == null || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(amount)) return null;
+    result += amount * rate;
+  }
+  return Number.isFinite(result) ? result : null;
+};
+
 export const filterExpenses = (
   expenses: ExpenseItem[],
   filters: ExpenseFilters
 ): ExpenseItem[] => {
-  const normalizedSearch = filters.searchTerm.trim().toLocaleLowerCase();
-  return expenses.filter((expense) => {
-    const matchesSearch =
-      normalizedSearch.length === 0 ||
-      expense.item.toLocaleLowerCase().includes(normalizedSearch);
-    const matchesCategory =
-      filters.category === ALL_EXPENSE_FILTER ||
-      expense.category === filters.category;
-    const matchesCurrency =
-      filters.currency === ALL_EXPENSE_FILTER ||
-      expense.currency === filters.currency;
-    return matchesSearch && matchesCategory && matchesCurrency;
-  });
+  return expenses.filter((expense) =>
+    filters.category === ALL_EXPENSE_FILTER || expense.category === filters.category
+  );
 };
 
 export const groupExpensesByDate = (

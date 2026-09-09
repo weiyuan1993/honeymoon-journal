@@ -106,7 +106,7 @@ export default function ExpenseItem({
     return (
       <form
         onSubmit={handleEditSubmit}
-        className="bg-gold/5 px-3 py-2.5"
+        className="bg-deep-blue/3 px-4 py-4"
       >
         <div className="mb-2.5 flex items-center justify-between gap-3">
           <div>
@@ -119,7 +119,7 @@ export default function ExpenseItem({
             <div className="font-serif text-xs leading-none text-ink/45">
               {currencySymbol(String(editForm.currency))}
             </div>
-            <div className="mt-0.5 font-display text-sm font-bold text-gold">
+            <div className="mt-0.5 font-display text-sm font-semibold tabular-nums text-deep-blue">
               {editForm.amount || '0'}
             </div>
           </div>
@@ -127,39 +127,43 @@ export default function ExpenseItem({
         <div className="grid grid-cols-1 gap-2.5">
           <input
             type="text"
+            aria-label="編輯項目"
             name="item"
             value={editForm.item}
             onChange={handleEditChange}
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/30"
+            className="expense-field w-full"
             placeholder="項目"
           />
           <div className="grid grid-cols-5 gap-2">
             <input
               type="number"
+              aria-label="編輯金額"
               name="amount"
               value={editForm.amount}
               onChange={handleEditChange}
-              className="col-span-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/30"
+              className="expense-field col-span-3"
               placeholder="金額"
             />
             <select
+              aria-label="編輯貨幣"
               name="currency"
               value={editForm.currency}
               onChange={handleEditChange}
-              className="col-span-2 rounded-lg border border-gray-200 bg-white px-2 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none"
+              className="expense-field col-span-2"
             >
               {tripConfig.currencies.map((currency) => (
                 <option key={currency.code} value={currency.code}>
-                  {currency.symbol} {currency.label}
+                  {currency.code}
                 </option>
               ))}
             </select>
           </div>
           <select
+            aria-label="編輯類別"
             name="category"
             value={editForm.category}
             onChange={handleEditChange}
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 font-serif text-sm text-ink transition-colors focus:border-gold focus:outline-none"
+            className="expense-field w-full"
           >
             {tripConfig.categories.map((category) => (
               <option key={category.code} value={category.code}>
@@ -229,27 +233,27 @@ export default function ExpenseItem({
   }
 
   return (
-    <div className="px-3 py-2.5 flex justify-between items-center hover:bg-gray-50 transition-colors">
-      <div className="flex-1 min-w-0">
+    <div className="px-4 py-4 flex flex-wrap gap-3 justify-between items-center hover:bg-deep-blue/3 transition-colors">
+      <div className="flex-1 min-w-24">
         <div className="text-xs text-gray-400 font-serif flex items-center gap-1.5">
           <span>{timeStr}</span>
-          <span className="bg-gold/10 text-gold px-1.5 py-0.5 rounded text-xs">
+          <span className="bg-deep-blue/5 text-deep-blue px-1.5 py-0.5 rounded text-xs">
             {data.category}
           </span>
         </div>
-        <div className="font-serif text-sm text-ink truncate">{data.item}</div>
+        <div className="mt-1 text-sm font-medium text-ink break-words">{data.item}</div>
       </div>
       <div className="text-right flex items-center gap-1.5">
-        <div className="font-display text-sm font-bold text-gold whitespace-nowrap">
+        <div className="font-display text-sm font-semibold tabular-nums text-deep-blue whitespace-nowrap">
           {currencySymbol(data.currency)} {data.amount}
         </div>
         <div className="flex gap-0.5">
             <button
               onClick={handleStartEdit}
               disabled={!canEdit}
-              className={`transition-colors p-0.5 ${
+              className={`transition-colors rounded-lg p-2 ${
                 canEdit
-                  ? 'text-gray-300 hover:text-gold'
+                  ? 'text-deep-blue/50 hover:bg-deep-blue/5 hover:text-deep-blue'
                   : 'text-gray-200 cursor-not-allowed'
               }`}
               title={canEdit ? '編輯' : '需編輯權限'}
@@ -272,9 +276,9 @@ export default function ExpenseItem({
             <button
               onClick={handleDelete}
               disabled={!canEdit}
-              className={`transition-colors p-0.5 ${
+              className={`transition-colors rounded-lg p-2 ${
                 canEdit
-                  ? 'text-gray-300 hover:text-red-500'
+                  ? 'text-deep-blue/50 hover:bg-red-50 hover:text-red-500'
                   : 'text-gray-200 cursor-not-allowed'
               }`}
               title={canEdit ? '刪除' : '需編輯權限'}

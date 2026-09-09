@@ -151,12 +151,16 @@ export default function FoodModal({
                     href={part.value}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="food-link-button"
+                    className="food-link-button whitespace-nowrap"
                   >
                     {part.value.includes('google.com/maps') || part.value.includes('maps.google.com') ? '查看地圖' : '查看來源'}
                   </a>
                 ) : (
-                  part.value
+                  !part.value.trim() &&
+                  contentParts[index - 1]?.kind === 'link' &&
+                  contentParts[index + 1]?.kind === 'link'
+                    ? ' '
+                    : part.value
                 )
               )}
             </div>

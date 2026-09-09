@@ -43,9 +43,14 @@ export default function DetailModal({
       >
         {/* Header */}
         <div className="trip-modal-header">
-          <span className="trip-modal-title">
-            {dayKey} · {city} · 行程規劃
-          </span>
+          <div className="min-w-0">
+            <p className="mb-1 text-xs text-gray-500">
+              {dayKey} · {city} · 行程規劃
+            </p>
+            <h2 className="trip-modal-title break-words">
+              {detail?.title.trim() || '行程規劃'}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="trip-modal-close"

@@ -157,8 +157,6 @@ textarea {
   justify-content: center;
   min-width: 0;
   height: 54px;
-  flex-direction: column;
-  gap: 4px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -177,12 +175,6 @@ textarea {
   color: var(--color-deep-blue);
   background: #d5d2ce;
   box-shadow: none;
-}
-
-.bottom-nav-label {
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
 }
 
 .liquid-bottom-nav-button svg {
@@ -640,5 +632,14 @@ textarea {
 .food-preferences-options summary { padding: 4px 0; cursor: pointer; }
 .food-preferences-options[open] summary { margin-bottom: 8px; }
 
-.food-link-button { display: inline-flex; align-items: center; min-height: 40px; margin: 6px 0; padding: 7px 12px; border: 1px solid #dce2e5; border-radius: 10px; background: #f0f4f5; color: #425e73; font-size: 13px; font-weight: 500; text-decoration: none; vertical-align: middle; }
+.food-link-button { display: inline-flex; align-items: center; min-height: 40px; margin: 6px 8px 6px 0; padding: 7px 12px; border: 1px solid #dce2e5; border-radius: 10px; background: #f0f4f5; color: #425e73; font-size: 13px; font-weight: 500; text-decoration: none; vertical-align: middle; }
 .food-link-button:hover { background: #e4ecef; }
+
+/* Expense surfaces share the journal's quiet blue and warm paper palette. */
+.expense-surface { min-width: 0; border: 1px solid #e3e7e6; border-radius: 20px; background: #fffefa; box-shadow: 0 2px 8px #334e6804; }
+.expense-field { min-width: 0; min-height: 44px; border: 1px solid #dce2e3; border-radius: 12px; background: #fff; padding: 10px 12px; color: var(--color-ink); font-size: 16px; transition: border-color 150ms, box-shadow 150ms; }
+.expense-field:focus { outline: none; border-color: #7b939f; box-shadow: 0 0 0 3px #334e6810; }
+.expense-field:disabled { cursor: not-allowed; opacity: .55; background: #f3f4f2; }
+.expense-page button:focus-visible { outline: 2px solid #7b939f; outline-offset: 3px; }
+.expense-entry-dialog { position: fixed; inset: auto 0 0; margin: 0 auto; width: 100%; max-width: 520px; max-height: 90dvh; overflow-y: auto; border: 1px solid #e3e7e6; border-bottom: 0; border-radius: 24px 24px 0 0; background: #fffefa; color: var(--color-ink); padding: 0 0 env(safe-area-inset-bottom); box-shadow: 0 -12px 60px #334e6820; }
+.expense-entry-dialog::backdrop { background: #1c293452; backdrop-filter: blur(4px); }

@@ -176,37 +176,40 @@ export default function TodoPage({
   };
 
   return (
-    <div className="space-y-5">
-      <div className="bg-white rounded-lg shadow-sm p-3">
-        <div className="mb-2">
-          <h2 className="font-display text-sm text-ink/80">待辦事項</h2>
-        </div>
-        <div className="grid grid-cols-3 gap-1 rounded-lg bg-gray-50 p-1">
-          {filters.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={filter === option.value}
-              onClick={() => setFilter(option.value)}
-              className={`rounded-md py-2 text-center transition-colors ${
-                filter === option.value
-                  ? 'bg-ink text-white shadow-sm'
-                  : 'text-ink/55 hover:bg-gold/10 hover:text-ink'
-              }`}
-            >
-              <span className="block font-display text-[13px] tracking-wide">
-                {option.label}
-              </span>
-              <span className="mt-0.5 block font-serif text-[12px] leading-none">
-                {option.count}
-              </span>
-            </button>
-          ))}
-        </div>
+    <div className="todo-page mx-auto max-w-5xl space-y-5">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-deep-blue">待辦事項</h1>
+        {!loading && !error && stats.total > 0 ? (
+          <div className="flex items-center gap-3">
+            <span className="text-xs tabular-nums text-ink/55">已完成 {stats.done} / {stats.total}</span>
+            <div role="progressbar" aria-label="待辦完成進度" aria-valuemin={0}
+              aria-valuemax={stats.total} aria-valuenow={stats.done}
+              className="h-1.5 w-20 overflow-hidden rounded-full bg-deep-blue/10">
+              <div className="h-full rounded-full bg-deep-blue transition-all"
+                style={{ width: `${stats.done / stats.total * 100}%` }} />
+            </div>
+          </div>
+        ) : null}
+      </header>
+      <div role="group" aria-label="待辦狀態"
+        className="inline-flex max-w-full gap-1 rounded-2xl border border-deep-blue/10 bg-deep-blue/5 p-1">
+        {filters.map((option) => (
+          <button key={option.value} type="button"
+            aria-pressed={filter === option.value}
+            onClick={() => setFilter(option.value)}
+            className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm transition-colors sm:px-4 ${
+              filter === option.value
+                ? 'bg-white font-medium text-deep-blue shadow-sm'
+                : 'text-ink/55 hover:bg-white/60 hover:text-deep-blue'
+            }`}>
+            {option.label}
+            <span className="text-xs tabular-nums opacity-60">{option.count}</span>
+          </button>
+        ))}
       </div>
 
       {!canEdit && (
-        <p className="bg-white rounded-lg shadow-sm px-4 py-3 text-xs text-ink/50 font-serif">
+        <p className="text-xs leading-relaxed text-ink/50">
           目前為瀏覽模式，可查看待辦但無法勾選。
         </p>
       )}
@@ -214,11 +217,11 @@ export default function TodoPage({
       {loading ? (
         <Loading />
       ) : error ? (
-        <div className="text-center mt-10 p-6 border border-dashed border-gray-300">
+        <div className="rounded-2xl border border-deep-blue/10 bg-white/60 p-8 text-center">
           <p className="text-gray-500 font-serif">待辦暫時無法載入</p>
         </div>
       ) : todos.length === 0 ? (
-        <div className="text-center mt-10 p-6 border border-dashed border-gray-300">
+        <div className="rounded-2xl border border-deep-blue/10 bg-white/60 p-8 text-center">
           <p className="text-gray-500 font-serif">暫無待辦事項</p>
         </div>
       ) : groupedTodos.length === 0 ? (
@@ -228,14 +231,14 @@ export default function TodoPage({
           {groupedTodos.map(({ section, items }) => (
             <section
               key={section}
-              className="bg-white rounded-lg shadow-sm overflow-hidden"
+              className="overflow-hidden rounded-[20px] border border-deep-blue/10 bg-[#fffefa]"
             >
-              <div className="bg-gradient-to-r from-gold/5 to-transparent px-4 py-2.5 border-b border-gold/10">
+              <div className="border-b border-deep-blue/8 bg-deep-blue/3 px-4 py-3 sm:px-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-display text-sm text-ink/75">
+                  <h3 className="text-sm font-semibold text-deep-blue">
                     {section}
                   </h3>
-                  <span className="font-serif text-[13px] text-ink/45">
+                  <span className="text-xs tabular-nums text-ink/45">
                     {items.filter((todo) => todo.done).length}/{items.length}
                   </span>
                 </div>
@@ -250,22 +253,24 @@ export default function TodoPage({
                     <div
                       key={todo.rowNumber}
                       id={`todo-row-${todo.rowNumber}`}
-                      className={`flex gap-3 px-4 py-3 transition-colors ${
-                        todo.done ? 'bg-gray-50/60' : 'hover:bg-gray-50'
+                      className={`flex gap-2 px-3 py-4 transition-colors sm:gap-3 sm:px-4 ${
+                        todo.done ? 'bg-deep-blue/2' : 'hover:bg-deep-blue/2'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={todo.done}
-                        disabled={!canEdit || isUpdating}
-                        onChange={(e) => handleToggle(todo, e.target.checked)}
-                        aria-label={`${todo.done ? '取消完成' : '完成'} ${itemText}`}
-                        className="mt-1 h-4 w-4 shrink-0 accent-gold disabled:cursor-not-allowed disabled:opacity-40"
-                        title={canEdit ? undefined : '需編輯權限'}
-                      />
-                      <div className="min-w-0 flex-1">
+                      <label className="flex min-h-11 w-9 shrink-0 cursor-pointer items-start justify-center pt-1 has-[:disabled]:cursor-default">
+                        <input
+                          type="checkbox"
+                          checked={todo.done}
+                          disabled={!canEdit || isUpdating}
+                          onChange={(e) => handleToggle(todo, e.target.checked)}
+                          aria-label={`${todo.done ? '取消完成' : '完成'} ${itemText}`}
+                          className="h-5 w-5 cursor-pointer accent-deep-blue disabled:cursor-not-allowed disabled:opacity-40"
+                          title={canEdit ? undefined : '需編輯權限'}
+                        />
+                      </label>
+                      <div className="min-w-0 flex-1 pt-0.5">
                         <div
-                          className={`font-serif text-sm leading-relaxed ${
+                          className={`text-sm leading-relaxed break-words ${
                             todo.done
                               ? 'text-ink/45 line-through'
                               : 'text-ink'
@@ -274,21 +279,21 @@ export default function TodoPage({
                           {canEdit ? <HtmlText html={todo.item} /> : itemText}
                         </div>
                         {todo.detail && (
-                          <p className="mt-1 font-serif text-xs leading-relaxed text-ink/60 break-words">
+                          <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-ink/55 break-words">
                             {canEdit ? htmlToText(todo.detail) : redactedTodoText(todo.detail)}
                           </p>
                         )}
                         {canEdit && todo.links.length > 0 ? (
                           <div className="mt-3">
-                            <ul className="space-y-1.5">
+                            <ul className="flex flex-wrap gap-2">
                               {todo.links.map((link, index) => (
-                                <li key={`${link.url}-${index}`}>
+                                <li key={`${link.url}-${index}`} className="min-w-0 max-w-full">
                                   <a
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label={`開啟 ${itemText} 的 ${link.label}`}
-                                    className="inline-flex max-w-full items-center gap-1 font-serif text-xs text-gold underline decoration-gold/50 underline-offset-2 transition-colors hover:text-ink"
+                                    className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-lg border border-deep-blue/10 bg-white px-3 py-1.5 text-xs text-deep-blue transition-colors hover:bg-deep-blue/5"
                                   >
                                     <span className="break-all">{link.label}</span>
                                     <span aria-hidden="true">↗</span>

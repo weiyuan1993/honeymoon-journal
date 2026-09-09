@@ -31,7 +31,7 @@ const formatTwd = (amount: number | null, approximate = false): string => {
 
 const formatExchangeRate = (rate: number | null): string => {
   if (rate === null) return '暫無有效匯率';
-  return `${getCurrencySymbol('TWD')}${exchangeRateFormatter.format(rate)}`;
+  return exchangeRateFormatter.format(rate);
 };
 
 const formatFetchedAt = (value: string): string => {
@@ -76,70 +76,65 @@ export default function ExpenseOverview({
     {
       label: '目前預計總花費',
       amount: overview.totals.projectedTwd,
-      tone: 'from-gold/20 to-gold/5 text-gold',
+      tone: 'col-span-2 bg-[#f1f4f3] sm:col-span-1',
     },
     {
       label: '已實際支出',
       amount: overview.totals.paidTwd,
-      tone: 'from-deep-blue/15 to-deep-blue/5 text-deep-blue',
+      tone: 'bg-white',
     },
     {
       label: '剩餘待付款',
       amount: overview.totals.unpaidTwd,
-      tone: 'from-amber-100 to-amber-50 text-amber-700',
+      tone: 'bg-white',
     },
   ];
 
   return (
     <div className="space-y-4">
       {refreshWarning ? <ExpenseWarning>{refreshWarning}</ExpenseWarning> : null}
-      {displayMode === 'incomplete' ? (
-        <ExpenseWarning>
-          部分金額或匯率尚未完整，以下台幣數字為目前可換算的概況，不代表最終結算。
-        </ExpenseWarning>
-      ) : null}
       {overview.unconvertedCurrencies.length > 0 ? (
         <ExpenseWarning>
           {`${overview.unconvertedCurrencies.join('、')} 尚無有效匯率，未納入完整台幣總額。`}
         </ExpenseWarning>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {cards.map((card) => (
           <div
             key={card.label}
-            className={`rounded-2xl border border-white/70 bg-gradient-to-br p-4 shadow-sm ${card.tone}`}
+            className={`min-w-0 rounded-2xl border border-deep-blue/10 p-4 sm:p-5 ${card.tone}`}
           >
             <div className="font-serif text-xs text-ink/55">{card.label}</div>
-            <div className="mt-1 font-display text-xl font-bold">
-              {formatTwd(card.amount, approximate)}
+            <div className="mt-2 break-words text-lg font-semibold tabular-nums tracking-tight text-deep-blue sm:text-2xl">
+              {formatTwd(card.amount)}
             </div>
             <div className="mt-1 font-serif text-[11px] text-ink/40">
               兩人合計
+              {approximate && card.amount !== null ? ' · 概估' : ''}
               {card.amount === null ? ' · 尚待完整匯率' : ''}
             </div>
           </div>
         ))}
       </div>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
+      <section className="expense-surface p-5">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-sm text-ink/80">目前匯率</h2>
+            <h2 className="text-sm font-semibold text-deep-blue">目前匯率</h2>
             <p className="mt-0.5 font-serif text-[13px] text-ink/45">
               每 1 單位外幣兌台幣
             </p>
           </div>
-          <span className="font-serif text-xs text-ink/35">Google Sheet</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {exchangeRateCurrencies.map((currency) => (
             <div
               key={currency}
-              className="rounded-xl bg-gold/10 px-3 py-2"
+              className="rounded-xl bg-deep-blue/5 px-3 py-2"
             >
               <div className="font-serif text-xs text-ink/45">1 {currency}</div>
-              <div className="font-display text-sm font-bold text-gold">
+              <div className="break-words text-xs font-semibold tabular-nums text-deep-blue sm:text-sm">
                 {formatExchangeRate(overview.ratesTwdPerUnit[currency])}
               </div>
             </div>
@@ -147,15 +142,14 @@ export default function ExpenseOverview({
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
+      <section className="expense-surface p-5">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-sm text-ink/80">主要費用分類</h2>
+            <h2 className="text-sm font-semibold text-deep-blue">主要費用分類</h2>
             <p className="mt-0.5 font-serif text-[13px] text-ink/45">
               原幣與目前匯率換算 · 兩人合計
             </p>
           </div>
-          <span className="font-serif text-xs text-ink/35">Google Sheet</span>
         </div>
         <div className="space-y-3">
           {overview.categories.map((category) => {
@@ -172,11 +166,11 @@ export default function ExpenseOverview({
             return (
               <div
                 key={`${category.category}-${category.currency}`}
-                className="rounded-xl border border-gray-100 px-3 py-3"
+                className="border-b border-deep-blue/8 py-3 last:border-0"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <div className="font-display text-sm text-ink/80">
+                    <div className="text-sm font-semibold text-deep-blue">
                       {category.category}
                     </div>
                     <div className="mt-0.5 font-serif text-xs text-ink/45">
@@ -187,7 +181,7 @@ export default function ExpenseOverview({
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="font-display text-sm font-bold text-gold">
+                    <div className="font-display text-sm font-semibold tabular-nums text-deep-blue">
                       {getCurrencySymbol(category.currency)}{' '}
                       {expenseAmountFormatter.format(category.amount)}
                     </div>
@@ -208,8 +202,8 @@ export default function ExpenseOverview({
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="font-display text-sm text-ink/80">額外記帳</h2>
+      <section className="expense-surface p-5">
+        <h2 className="text-sm font-semibold text-deep-blue">額外記帳</h2>
         <p className="mt-0.5 font-serif text-[13px] text-ink/45">
           依原始幣別保留，不與費用項目互相抵扣
         </p>
@@ -218,12 +212,12 @@ export default function ExpenseOverview({
             overview.ledgerByCurrency.map((entry) => (
               <div
                 key={entry.currency}
-                className="rounded-xl bg-gold/10 px-3 py-2"
+                className="rounded-xl bg-deep-blue/5 px-3 py-2"
               >
                 <div className="font-serif text-xs text-ink/45">
                   {entry.currency}
                 </div>
-                <div className="font-display text-sm font-bold text-gold">
+                <div className="font-display text-sm font-semibold tabular-nums text-deep-blue">
                   {getCurrencySymbol(entry.currency)}{' '}
                   {expenseAmountFormatter.format(entry.amount)}
                 </div>
@@ -238,25 +232,10 @@ export default function ExpenseOverview({
         </div>
       </section>
 
-      {overview.warnings.length > 0 ? (
-        <details className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-          <summary className="cursor-pointer font-display text-sm text-amber-800">
-            資料提醒（{overview.warnings.length}）
-          </summary>
-          <ul className="mt-2 space-y-1 pl-4 font-serif text-xs text-amber-800">
-            {overview.warnings.map((warning, index) => (
-              <li key={`${warning}-${index}`} className="list-disc">
-                {warning}
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-
       <p className="text-center font-serif text-xs leading-relaxed text-ink/40">
         更新於 {formatFetchedAt(overview.fetchedAt)}
         <br />
-        Google Sheet 修改後，網站最多可能延遲約 45 秒顯示。
+        資料更新可能延遲約 45 秒。
       </p>
     </div>
   );

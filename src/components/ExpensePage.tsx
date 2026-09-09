@@ -48,11 +48,9 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
   const [overviewStatus, setOverviewStatus] = useState<LoadStatus>('idle');
   const [overviewWarning, setOverviewWarning] = useState<string | null>(null);
   const [filters, setFilters] = useState<ExpenseFilters>({
-    searchTerm: '',
     category: ALL_EXPENSE_FILTER,
-    currency: ALL_EXPENSE_FILTER,
   });
-  const [showAll, setShowAll] = useState(false);
+  const [entryOpen, setEntryOpen] = useState(false);
 
   const hasLoadedLedgerRef = useRef(false);
   const hasLoadedOverviewRef = useRef(false);
@@ -146,7 +144,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
     status: ledgerStatus,
     warning: ledgerWarning,
     filters,
-    showAll,
+    ratesTwdPerUnit: overview?.ratesTwdPerUnit ?? null,
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -162,6 +160,7 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
       }
       invalidatePendingReads();
       setSubmitStatus('success');
+      setEntryOpen(false);
       setFormData((current) => ({ ...current, item: '', amount: '' }));
       refreshAll();
       if (successTimerRef.current !== null) {
@@ -226,30 +225,36 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
   };
 
   return (
-    <div className="space-y-5">
-      <div
-        role="tablist"
-        aria-label="花費檢視"
-        className="grid grid-cols-2 rounded-2xl border border-gold/20 bg-white p-1 shadow-sm"
-      >
-        {EXPENSE_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`expense-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id}
-            aria-controls={`expense-panel-${tab.id}`}
-            onClick={() => setActiveTab(tab.id)}
-            className={`rounded-xl px-3 py-2 font-display text-sm transition-colors ${
-              activeTab === tab.id
-                ? 'bg-ink text-white shadow-sm'
-                : 'text-ink/50 hover:bg-gold/5 hover:text-ink/75'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="expense-page mx-auto max-w-5xl space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-deep-blue">旅途花費</h1>
+          <p className="mt-1 text-xs text-ink/55">日常記帳與旅程預算</p>
+        </div>
+        <div
+          role="tablist"
+          aria-label="花費檢視"
+          className="inline-grid grid-cols-2 gap-1 rounded-2xl border border-deep-blue/10 bg-deep-blue/5 p-1"
+        >
+          {EXPENSE_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              id={`expense-tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`expense-panel-${tab.id}`}
+              onClick={() => setActiveTab(tab.id)}
+              className={`min-h-10 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-white text-deep-blue shadow-sm'
+                  : 'text-ink/55 hover:bg-white/60 hover:text-deep-blue'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div
@@ -265,7 +270,15 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
           />
         ) : (
           <div className="space-y-4">
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setEntryOpen(true)} disabled={!canEdit}
+                className="min-h-11 shrink-0 rounded-xl bg-deep-blue px-4 text-sm font-medium text-white disabled:opacity-50">
+                ＋ 記一筆
+              </button>
+            </div>
             <ExpenseQuickEntry
+              isOpen={entryOpen && isActive}
+              onClose={() => setEntryOpen(false)}
               canEdit={canEdit}
               formData={formData}
               status={submitStatus}
@@ -280,7 +293,6 @@ export default function ExpensePage({ canEdit, isActive }: ExpensePageProps) {
               onFiltersChange={(patch) =>
                 setFilters((current) => ({ ...current, ...patch }))
               }
-              onToggleShowAll={() => setShowAll((current) => !current)}
               onItemUpdate={handleItemUpdate}
               onItemDelete={handleItemDelete}
             />

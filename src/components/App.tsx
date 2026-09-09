@@ -1016,7 +1016,6 @@ export default function App() {
               }`}
             >
               <TabIcon tab={item.id} />
-              <span className="bottom-nav-label">{item.label}</span>
             </button>
           ))}
         </div>

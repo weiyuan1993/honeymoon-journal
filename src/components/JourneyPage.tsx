@@ -162,56 +162,60 @@ export default function JourneyPage({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-paper">
       {/* Hero Section */}
-      <div className="relative h-[80vh] md:h-[85vh] min-h-[450px] max-h-[700px] overflow-hidden">
+      <div className="relative mx-auto h-[48dvh] min-h-[380px] max-h-[480px] max-w-6xl overflow-hidden sm:rounded-b-[28px]">
         <picture>
           <source media="(max-width: 767px)" srcSet={coverMobileImage} />
           <img
             src={cityHeroImages['封面']}
-            alt="Journey Hero"
+            alt="歐洲蜜月旅程封面"
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
         </picture>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-deep-blue/75 via-black/10 to-transparent" />
 
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <div className="max-w-5xl mx-auto text-center px-4 [text-shadow:_0_2px_8px_rgba(0,0,0,0.8)]">
-            <p className="text-gold text-xs tracking-[0.3em] uppercase mb-2 drop-shadow-lg">
+          <div className="max-w-5xl mx-auto text-left sm:px-4">
+            <p className="text-white/75 text-xs tracking-[0.2em] uppercase mb-3">
               {tripConfig.tripSubtitle}
             </p>
-            <h1 className="font-display text-2xl md:text-3xl mb-3 drop-shadow-lg">
+            <h1 className="font-display text-3xl md:text-4xl mb-3">
               {tripConfig.tripName}
             </h1>
-            <p className="text-white/90 text-sm font-serif mb-4">
+            <p className="text-white/80 text-sm tabular-nums">
               {itinerary.length} Days · {citySegments.length} Cities
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
+      <nav aria-label="旅程故事城市" className="mt-4">
+            <div className="flex flex-wrap gap-2">
               {citySegments.map((seg, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => scrollToCitySection(idx)}
-                  className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white/90 border border-white/20 transition-colors hover:bg-white/20 focus:outline-none focus:ring-1 focus:ring-white/70"
+                  className="min-h-9 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white border border-white/25 transition-colors hover:bg-white/20 focus-visible:outline-white"
                 >
                   {seg.city}
                 </button>
               ))}
             </div>
+      </nav>
+
           </div>
         </div>
       </div>
 
+
       <div className="bg-paper px-4 py-3 md:px-8">
-        <div className="mx-auto flex max-w-5xl justify-center">
+        <div className="mx-auto flex max-w-5xl justify-end">
           <button
             type="button"
             onClick={handleGenerate}
             disabled={!canEdit || generating || itinerary.length === 0}
-            className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 font-display text-sm shadow-sm transition-all ${
+            className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-xs transition-colors ${
               !canEdit
-                ? 'cursor-not-allowed bg-gray-300 text-white'
-                : 'border border-gold/30 bg-white text-gold hover:bg-gold/5 hover:shadow-md'
+                ? 'cursor-not-allowed text-ink/40'
+                : 'border border-deep-blue/10 bg-white text-deep-blue hover:bg-deep-blue/5'
             } disabled:opacity-50`}
             title={!canEdit ? '需編輯權限' : undefined}
           >
@@ -238,16 +242,16 @@ export default function JourneyPage({
       </div>
 
       {/* Intro Section */}
-      <div className="bg-paper px-4 md:px-8 py-10">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-3 text-gold/60 mb-4">
-            <span className="w-12 h-px bg-gold/40" />
+      <div className="bg-paper px-6 md:px-8 pt-4 pb-10">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="inline-flex items-center gap-3 text-deep-blue/45 mb-4">
+            <span className="w-12 h-px bg-deep-blue/15" />
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
-            <span className="w-12 h-px bg-gold/40" />
+            <span className="w-12 h-px bg-deep-blue/15" />
           </div>
-          <p className="font-serif text-ink/80 text-base leading-loose italic">
+          <p className="font-serif text-ink/75 text-base leading-loose">
             {journeyContent?.intro ||
               '一場穿越歐陸的浪漫蜜月之旅。從倫敦的皇家風範啟程，沉浸於巴黎的浪漫風情，翻越阿爾卑斯山的壯麗峰巒，最終在義大利的陽光下，寫下屬於我們的永恆篇章。'}
           </p>
@@ -266,14 +270,14 @@ export default function JourneyPage({
           <section
             key={idx}
             id={getCitySectionId(idx)}
-            className="scroll-target relative bg-paper"
+            className="scroll-target relative mx-auto max-w-5xl bg-paper"
           >
             {/* City Header */}
-            <div className="max-w-5xl mx-auto px-4 md:px-8 pt-8 pb-4">
-              <p className="text-gold text-xs tracking-[0.2em] uppercase mb-1">
+            <div className="mx-auto px-4 md:px-8 pt-8 pb-5">
+              <p className="text-deep-blue/55 text-xs tracking-[0.15em] uppercase mb-2">
                 Day {segment.startDay}{segment.startDay !== segment.endDay ? ` — ${segment.endDay}` : ''}
               </p>
-              <h2 className="text-ink font-display text-xl md:text-2xl">
+              <h2 className="text-deep-blue font-display text-2xl md:text-3xl">
                 {segment.city}
                 {segment.cityEn && <span className="text-ink/40 text-base ml-2 font-serif">{segment.cityEn}</span>}
               </h2>
@@ -281,8 +285,9 @@ export default function JourneyPage({
 
             {/* City Image - 保持圖片比例 */}
             <div className="max-w-5xl mx-auto px-4 md:px-8">
-              <div className="relative rounded-xl overflow-hidden shadow-lg">
+              <div className="relative rounded-[20px] overflow-hidden border border-deep-blue/10">
                 <img
+                  loading="lazy"
                   src={heroImage}
                   alt={segment.city}
                   className="w-full h-auto object-contain"
@@ -295,26 +300,25 @@ export default function JourneyPage({
               <div className="max-w-5xl mx-auto">
                 {/* Description */}
                 <div className="mb-6">
-                  <p className="font-serif text-ink/80 text-[15px] leading-relaxed">
+                  <p className="max-w-3xl whitespace-pre-line font-serif text-ink/75 text-[15px] leading-8">
                     {cityContent || `在${segment.city}的${segment.endDay - segment.startDay + 1}天裡，我們將探索這座城市最迷人的風景，體驗當地獨特的文化氛圍，留下難忘的蜜月回憶。`}
                   </p>
                 </div>
 
                 {/* Highlights */}
-                <div className="border-t border-gold/20 pt-4">
-                  <p className="text-xs text-gold uppercase tracking-wider mb-3 font-display">行程亮點</p>
-                  <div className="space-y-2">
+                <div className="border-t border-deep-blue/10 pt-5">
+                  <p className="text-sm font-semibold text-deep-blue mb-4">行程亮點</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
                     {segment.days.map((day, dayIdx) => (
-                      <div key={dayIdx} className="flex items-start gap-2">
-                        <span className="text-gold text-xs mt-0.5 shrink-0">✦</span>
-                        <div className="font-serif text-ink/70 text-sm leading-relaxed">
-                          <span className="block text-gold/80 font-medium">{day.day}</span>
-                          <ul className="mt-0.5 space-y-0.5">
+                      <div key={dayIdx} className="rounded-2xl border border-deep-blue/10 bg-[#fffefa] p-4">
+                        <div className="text-ink/70 text-sm leading-relaxed">
+                          <span className="block text-deep-blue font-medium mb-2">{day.day}</span>
+                          <ul className="mt-0.5 space-y-1.5">
                             {itineraryContentToListItems(day.content).map((item, itemIdx) => (
                               <li key={itemIdx} className="flex gap-1.5">
                                 <span
                                   aria-hidden="true"
-                                  className="mt-1.5 shrink-0 text-[0.45rem] leading-none text-gold/60"
+                                  className="mt-1.5 shrink-0 text-[0.45rem] leading-none text-deep-blue/45"
                                 >
                                   ●
                                 </span>
@@ -330,39 +334,29 @@ export default function JourneyPage({
 
                 {/* Hotel */}
                 {segment.hotels.length > 0 && (
-                  <div className="mt-4 flex items-center gap-2 text-xs text-ink/50">
-                    <span>🏨</span>
+                  <div className="mt-5 flex items-start gap-2 text-xs leading-relaxed text-ink/50">
+                    <span className="shrink-0">住宿</span>
                     <span className="font-serif">{segment.hotels[0]}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Divider */}
-            {idx < citySegments.length - 1 && (
-              <div className="flex justify-center py-4 bg-paper">
-                <div className="flex items-center gap-2 text-gold/30">
-                  <span className="w-8 h-px bg-gold/30" />
-                  <span className="text-lg">✈</span>
-                  <span className="w-8 h-px bg-gold/30" />
-                </div>
-              </div>
-            )}
           </section>
         );
       })}
 
       {/* Closing Section */}
-      <div className="bg-gradient-to-b from-paper to-[#f0ebe0] px-4 md:px-8 py-12">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-block px-8 py-6 border border-gold/30 rounded-lg bg-white/50">
+      <div className="bg-paper px-4 md:px-8 py-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="inline-block px-8 py-8 border border-deep-blue/10 rounded-3xl bg-white/60">
             <div className="flex justify-center mb-4">
-              <div className="flex items-center gap-2 text-gold/60">
-                <span className="w-6 h-px bg-gold/40" />
+              <div className="flex items-center gap-2 text-deep-blue/45">
+                <span className="w-6 h-px bg-deep-blue/15" />
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                 </svg>
-                <span className="w-6 h-px bg-gold/40" />
+                <span className="w-6 h-px bg-deep-blue/15" />
               </div>
             </div>
             <p className="font-serif text-ink/80 italic text-sm leading-relaxed">
