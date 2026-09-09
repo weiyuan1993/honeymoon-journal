@@ -6,13 +6,14 @@
 
 ## 功能
 
-- 行程總覽、每日詳情與城市快速跳轉
-- 多幣別花費統計與記帳
-- 待辦事項同步 Google Sheets
-- Google Maps 導航
-- Gemini 景點故事、美食推薦、行程建議與旅遊助理
-- 授權帳號專用的票券、Sheet 連結、編輯與 AI 功能
-- 公開訪客只能讀取非敏感行程資料
+- 旅程總覽：出發倒數、當日重點、未完成待辦與常用連結
+- 旅程故事與每日行程：整合交通、票務、住宿、景點規劃與城市跳轉，授權帳號可直接編輯
+- 地圖與資料：Google Maps 導航，以及可依國家篩選的實用連結
+- 票券庫：依國家篩選，並預覽或直接開啟 Google Drive 文件
+- 花費管理：多幣別預算、已付／待付總覽、匯率與可編輯記帳
+- 待辦管理：分類、完成狀態、Google Sheets 同步與私密預約連結
+- Gemini AI：景點故事、美食推薦、行程建議、旅程介紹與旅遊助理
+- 公開訪客可讀取非敏感資料；票券、私密連結、編輯與 AI 限授權帳號使用
 
 ## Production
 
@@ -47,6 +48,7 @@ The Worker enforces the access boundary:
 ## Project structure
 
 ```text
+.codex/skills/              project-local honeymoon planning workflows
 src/                       React application
   components/              pages, modals and controls
   config/                  trip-specific frontend settings
@@ -61,7 +63,7 @@ wrangler.jsonc             Worker and Static Assets configuration
 
 ## Local development
 
-Requirements: Node.js 20+ and npm.
+Requirements: Node.js 20.19+ (20.x) or 22.12+, and npm.
 
 ```bash
 npm install
@@ -113,22 +115,25 @@ Runtime credentials are encrypted Worker secrets. See [docs/deployment.md](docs/
 
 ## Google Sheets tabs
 
-| Tab | Columns |
-|-----|---------|
-| 行程 | Day, Date, Weekday, City, Content, Transport, Ticket, Link, Hotel |
-| 費用 | Two-person budget summary plus accommodation, transport, dining and ticket tables with adjacent `已付款` checkboxes |
-| 記帳 | Timestamp, Item, Amount, Currency, Category |
-| 待辦 | Section, Item, Detail, Done, Links（過渡期間也支援舊版 Section, Item, Detail, Deadline, Done, Links） |
-| 票券 | Day, Date, City, Item, Type, Provider, File URL, Notes |
-| 景點規劃 | Day, Title, Content |
-| 導航 | Day, Name, Google Maps Query |
-| 美食推薦 | Day, City, PriceLevel, Content, UpdatedAt |
-| 旅程介紹 | Type, Content, UpdatedAt |
-| AI秘書對話 | Timestamp, Question, Answer |
+| Tab | Purpose | Main fields |
+|-----|---------|-------------|
+| 行程 | Web 的每日行程主資料，包含時間線與行前提醒 | Day, Date, Weekday, City, Content, Transport, Ticket, Reference Link, Hotel |
+| 住宿 | 集中管理飯店訂單、設施、取消與付款資訊 | Dates, City, Hotel, Platform, Amenities, Nights, Payment/Cancel, Amount/Tax/Card, Notes |
+| 費用 | 旅費預算、分類明細、已付狀態與匯率，供花費總覽讀取 | Category summaries, accommodation/transport/dining/ticket details, Paid, Exchange rates |
+| 票券 | 索引已購票券與 Drive 文件，供授權帳號在票券庫查看 | Day, Date, City, Item, Type, Provider, File URL, Notes |
+| 待辦 | 管理行前預約與準備任務，Web 可篩選並同步完成狀態 | Section, Item, Detail, Done, Links |
+| 攜帶 | 分類管理行李數量、必要性與準備狀態 | Category, Item, Quantity, Notes, Necessity, Done |
+| 記帳 | 儲存旅途中的實際與額外支出，Web 可新增、修改與刪除 | Timestamp, Item, Amount, Currency, Category |
+| 參考資料 | 依國家整理交通、景點、票券與攻略連結，供實用連結頁使用 | Country sections, Item, Link, Notes |
+| 旅程介紹 | 儲存序章、各城市故事與結語，供旅程頁顯示 | Type (`intro`, `city:*`, `closing`), Content, UpdatedAt |
+| 美食推薦 | 儲存各日、各價位的 Gemini 美食建議 | Day, City, PriceLevel, Content, UpdatedAt |
+| 導航 | 提供每日景點的 Google Maps 搜尋目標 | Day, Name, Google Maps Query |
+| 景點規劃 | 儲存每日的景點故事、動線、備案與現場提醒 | Day, Title, Content |
+| AI秘書對話 | 保留授權使用者與旅遊助理的對話紀錄 | Timestamp, Question, Answer |
 
-The live Sheet is the source of truth. `費用` stores each planned item's current best-known amount and payment state; the Web reads it but does not edit it. Accommodation detail totals are already for two people, while transport, dining and ticket detail amounts are per person and are normalized by the Worker. The rate table supplies current CHF, EUR and GBP equivalents in TWD. `記帳` remains the additive ledger for meals and other trip spending.
+The live Sheet is the source of truth. `費用` is the read-only plan and payment view; `記帳` is the editable spending ledger. The Worker normalizes currencies and per-person or two-person totals for the Web. `住宿` and `攜帶` remain Sheet-only management tabs.
 
-Ticket files remain protected by their Google Drive permissions in addition to the website login.
+Ticket and private booking URLs require an authorized website session. Google Drive permissions independently protect the underlying files.
 
 ## Create another trip
 
