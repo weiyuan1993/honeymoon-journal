@@ -47,8 +47,7 @@ export interface AttractionDetail {
 export type AttractionDetails = Record<string, AttractionDetail>;
 
 // Food recommendations types
-export type PriceLevel = 'budget' | 'mid' | 'high';
-export type FoodRecommendations = Record<string, Partial<Record<PriceLevel, string>>>;
+export type { FoodRecommendation, FoodRecommendations } from '../../shared/apiTypes';
 
 // AI response types
 export interface AIGenerateResponse {

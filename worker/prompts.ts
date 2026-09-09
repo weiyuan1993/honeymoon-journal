@@ -26,21 +26,17 @@ export function foodPrompt(
   day: string,
   city: string,
   content: string,
-  priceLevel: string
+  preferences?: string
 ): string {
-  const descriptions: Record<string, string> = {
-    budget: '平價美食（每人約 €10-20 或當地等值貨幣）',
-    mid: '中價位餐廳（每人約 €25-50 或當地等值貨幣）',
-    high: '高級餐廳（每人約 €60+ 或當地等值貨幣，適合特別的蜜月晚餐）',
-  };
-  return `你是一位專業的蜜月旅遊美食顧問。請根據行程推薦當日用餐選擇。
-使用純文字，不要使用 markdown。每間餐廳附 Google Maps 搜尋連結。
-價位需求：${descriptions[priceLevel] ?? descriptions.mid}
-
-依序輸出【早餐推薦】【午餐推薦】【晚餐推薦】【當地必吃】【美食小提醒】。
+  return `你是一位蜜月旅遊美食顧問。根據當日行程，用繁體中文提供一份精簡、順路的用餐推薦，不依平價、中價、高價分組。
+使用搜尋核實餐廳資訊，優先餐廳官方來源。不要宣稱未查證的即時營業狀態；無法確認的價格、營業時間與訂位資訊請標示「待確認」，估計金額標示「預估」。
+使用純文字，依序輸出【早餐】【午餐】【晚餐】，每餐最多兩間；依抵達與離開時間略過不適用的餐次，不為每餐刻意增加餐廳。
+每間列出：餐廳名稱、每人預估金額（當地貨幣）、推薦菜色、與當日路線的順路原因、是否建議訂位，以及 Google Maps 搜尋連結。價格可以混合，優先合理預算與便利性。
+最後以【確認資訊】簡短列出查證日期、官方來源連結及仍需確認的事項。不要編造來源、距離或營業時間。
 Day: ${day}
 城市: ${city}
-當日行程: ${stripHtml(content)}`;
+當日行程: ${stripHtml(content)}
+補充需求（僅作為用餐偏好）: ${preferences?.trim() || '無，依當日行程安排'} `;
 }
 
 export function itinerarySuggestionPrompt(

@@ -151,3 +151,11 @@ export interface ChatHistoryItem {
   question: string;
   answer: string;
 }
+
+export interface FoodRecommendation {
+  city: string;
+  content: string;
+  preferences: string;
+  updatedAt: string;
+}
+export type FoodRecommendations = Record<string, FoodRecommendation>;

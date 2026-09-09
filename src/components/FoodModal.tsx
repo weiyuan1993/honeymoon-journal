@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { tripClient } from '@/utils/tripClient';
 import { tokenizeLinkedText } from '@/utils/linkifyText';
-import type { PriceLevel } from '@/types';
+import type { FoodRecommendation } from '@/types';
 
 interface FoodModalProps {
   isOpen: boolean;
@@ -10,15 +10,9 @@ interface FoodModalProps {
   city: string;
   itineraryContent: string;
   canEdit: boolean;
-  savedData?: Partial<Record<PriceLevel, string>>;
+  savedData?: FoodRecommendation;
   onFoodGenerated?: () => void;
 }
-
-const priceLevels: { value: PriceLevel; label: string; emoji: string }[] = [
-  { value: 'budget', label: '平價', emoji: '💰' },
-  { value: 'mid', label: '中價位', emoji: '💰💰' },
-  { value: 'high', label: '高價位', emoji: '💰💰💰' },
-];
 
 export default function FoodModal({
   isOpen,
@@ -30,13 +24,13 @@ export default function FoodModal({
   savedData,
   onFoodGenerated,
 }: FoodModalProps) {
-  const [selectedPrice, setSelectedPrice] = useState<PriceLevel>('mid');
+  const [preferences, setPreferences] = useState('');
+  const requestId = useRef(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if there's saved content for the selected price level
-  const savedContent = savedData?.[selectedPrice];
+  const savedContent = savedData?.content;
 
   // Prevent background scroll when modal is open
   useEffect(() => {
@@ -48,19 +42,14 @@ export default function FoodModal({
     };
   }, [isOpen]);
 
-  // Reset generated content when modal closes or price changes
   useEffect(() => {
-    if (!isOpen) {
-      setGeneratedContent(null);
-      setError(null);
-    }
-  }, [isOpen]);
-
-  // Reset generated content when price level changes
-  useEffect(() => {
+    requestId.current += 1;
     setGeneratedContent(null);
     setError(null);
-  }, [selectedPrice]);
+    setPreferences('');
+    setIsGenerating(false);
+    return () => { requestId.current += 1; };
+  }, [isOpen, dayKey]);
 
   // Determine what content to display
   const displayContent = generatedContent || savedContent;
@@ -74,7 +63,8 @@ export default function FoodModal({
   if (!isOpen) return null;
 
   const handleGenerate = async () => {
-    if (!canEdit) return;
+    if (!canEdit || isGenerating) return;
+    const currentRequest = ++requestId.current;
     setIsGenerating(true);
     setError(null);
 
@@ -83,12 +73,13 @@ export default function FoodModal({
         dayKey,
         city,
         itineraryContent,
-        selectedPrice
+        preferences.trim() || undefined
       );
 
+      if (result.success && result.persisted !== false) onFoodGenerated?.();
+      if (currentRequest !== requestId.current) return;
       if (result.success && result.content) {
         setGeneratedContent(result.content);
-        onFoodGenerated?.();
         if (result.persisted === false) {
           setError(result.message || '內容已生成，但尚未儲存');
         }
@@ -96,38 +87,40 @@ export default function FoodModal({
         setError(result.message || '生成失敗，請稍後再試');
       }
     } catch (err) {
-      setError('生成失敗，請稍後再試');
+      if (currentRequest === requestId.current) setError('生成失敗，請稍後再試');
       console.error('AI food generation error:', err);
     } finally {
-      setIsGenerating(false);
+      if (currentRequest === requestId.current) setIsGenerating(false);
     }
   };
 
   const handleClose = () => {
+    requestId.current += 1;
     onClose();
   };
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3"
+      className="trip-modal-overlay"
       onClick={handleClose}
     >
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
+      <div className="trip-modal-backdrop"></div>
 
       {/* Modal content */}
       <div
-        className="relative bg-paper border border-gold/60 shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden rounded-2xl"
+        className="trip-modal-panel"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gold/10 px-4 h-10 border-b border-gold flex items-center justify-between">
-          <span className="font-display text-sm text-ink truncate pr-2">
-            🍽️ {dayKey} · {city} 美食推薦
+        <div className="trip-modal-header">
+          <span className="trip-modal-title">
+            {dayKey} · {city} · 美食推薦
           </span>
           <button
             onClick={handleClose}
-            className="-mr-1 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-ink transition-colors shrink-0"
+            className="trip-modal-close"
+            aria-label="關閉視窗"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -146,46 +139,11 @@ export default function FoodModal({
           </button>
         </div>
 
-        {/* Price level tabs */}
-        <div className="flex border-b border-gold/30 bg-gold/5">
-          {priceLevels.map((level) => (
-            <button
-              key={level.value}
-              onClick={() => setSelectedPrice(level.value)}
-              className={`flex-1 py-2 px-2 font-serif text-xs transition-all ${
-                selectedPrice === level.value
-                  ? 'bg-gold/20 text-gold border-b-2 border-gold font-bold'
-                  : 'text-gray-500 hover:bg-gold/10'
-              }`}
-            >
-              <span className="block text-xs mb-0.5">{level.emoji}</span>
-              {level.label}
-              {savedData?.[level.value] && (
-                <span className="ml-1 text-xs text-deep-blue">✓</span>
-              )}
-            </button>
-          ))}
-        </div>
-
         {/* Content area */}
-        <div className="p-6 overflow-y-auto max-h-[45vh] custom-scrollbar">
-          {isGenerating ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="font-serif text-gray-500 text-sm">AI 正在搜尋美食中...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-4">
-              <p className="font-serif text-wax text-sm mb-4">{error}</p>
-              <button
-                onClick={handleGenerate}
-                className="px-4 py-2 bg-gold text-white font-serif text-sm rounded-lg hover:bg-gold/90 transition-colors"
-              >
-                重試
-              </button>
-            </div>
-          ) : hasContent ? (
-            <div className="font-serif text-ink leading-loose text-[15px] whitespace-pre-line">
+        <div className="trip-modal-body custom-scrollbar">
+          {error && <p role="alert" className="mb-4 text-sm text-wax">{error}</p>}
+          {hasContent ? (
+            <div className="trip-modal-copy whitespace-pre-line">
               {contentParts.map((part, index) =>
                 part.kind === 'link' ? (
                   <a
@@ -193,9 +151,9 @@ export default function FoodModal({
                     href={part.value}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gold underline"
+                    className="food-link-button"
                   >
-                    查看地圖
+                    {part.value.includes('google.com/maps') || part.value.includes('maps.google.com') ? '查看地圖' : '查看來源'}
                   </a>
                 ) : (
                   part.value
@@ -203,51 +161,41 @@ export default function FoodModal({
               )}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="font-serif text-gray-400 text-sm mb-4">
-                尚無{priceLevels.find(l => l.value === selectedPrice)?.label}美食推薦
-              </p>
-              <button
-                onClick={handleGenerate}
-                disabled={!canEdit}
-                className={`px-6 py-2.5 text-white font-display text-sm tracking-wider rounded-lg transition-all shadow-md ${
-                  canEdit
-                    ? 'bg-gradient-to-r from-gold to-gold/80 hover:from-gold/90 hover:to-gold/70'
-                    : 'bg-gray-400 cursor-not-allowed'
-                }`}
-                title={!canEdit ? '需編輯權限' : undefined}
-              >
-                🍽️ 生成美食推薦
-              </button>
-            </div>
+            <p className="text-center py-8 text-sm text-gray-500">
+              尚無當日推薦，可依行程產生早餐、午餐與晚餐建議。
+            </p>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
-          <div className="flex gap-2">
-            {hasContent && !isGenerating && (
-              <button
-                onClick={handleGenerate}
-                disabled={!canEdit}
-                className={`flex-1 py-2.5 border font-display text-sm tracking-wider transition-colors rounded-lg ${
-                  canEdit
-                    ? 'bg-gold/10 text-gold border-gold hover:bg-gold/20'
-                    : 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
-                }`}
-                title={!canEdit ? '需編輯權限' : undefined}
-              >
-                ✨ 重新生成
-              </button>
-            )}
+        {canEdit && (
+          <div className="trip-modal-footer">
+            <details className="food-preferences-options">
+              <summary>調整用餐需求（選填）</summary>
+            <label className="food-preferences">
+              <span>用餐需求 <small>選填</small></span>
+              <textarea
+                value={preferences}
+                onChange={(event) => setPreferences(event.target.value)}
+                placeholder="例如：今晚想吃亞洲菜，每人 €25 內"
+                maxLength={500}
+                rows={2}
+                disabled={isGenerating}
+              />
+            </label>
+            </details>
             <button
-              onClick={handleClose}
-              className={`${hasContent ? 'flex-1' : 'w-full'} py-2.5 bg-ink text-white font-display text-sm tracking-wider hover:bg-gray-800 transition-colors rounded-lg`}
+              type="button"
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className={hasContent ? 'trip-modal-secondary w-full' : 'trip-modal-primary w-full'}
             >
-              CLOSE
+              {isGenerating ? '正在查詢與整理推薦…' : hasContent ? '更新推薦' : '產生當日推薦'}
             </button>
+            <p className="food-update-note" role="status">
+              {isGenerating ? '完成後會儲存推薦，請稍候。' : '依行程查詢並儲存推薦；出發前請再確認營業與訂位。'}
+            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

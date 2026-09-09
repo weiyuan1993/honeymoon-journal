@@ -825,3 +825,27 @@ describe('trip repository parsers', () => {
     ]);
   });
 });
+
+describe('daily food storage', () => {
+  it('reads content and preferences from the new five-column schema', async () => {
+    const sheets = { getValues: vi.fn().mockResolvedValue([
+      ['Day 1', 'London', 'Lunch\nhttps://www.google.com/maps/search/London', 'Vegetarian', '2026-09-09'],
+      ['Day 2', 'Paris', '', '', ''],
+    ]) };
+    const repository = new TripRepository(sheets as never);
+    expect(await repository.getFoodRecommendations()).toEqual({
+      'Day 1': { city: 'London', content: 'Lunch\nhttps://www.google.com/maps/search/London', preferences: 'Vegetarian', updatedAt: '2026-09-09' },
+    });
+  });
+
+  it('updates the existing day instead of creating price variants', async () => {
+    const sheets = {
+      getValues: vi.fn().mockResolvedValue([['Day 1'], ['Day 2']]),
+      updateValues: vi.fn(), appendValues: vi.fn(),
+    };
+    const repository = new TripRepository(sheets as never);
+    await repository.saveFood('Day 2', 'Paris', 'New meals', '€25');
+    expect(sheets.updateValues).toHaveBeenCalledWith('美食推薦!B3:E3', [['Paris', 'New meals', '€25', expect.any(String)]]);
+    expect(sheets.appendValues).not.toHaveBeenCalled();
+  });
+});

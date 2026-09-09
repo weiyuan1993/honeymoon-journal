@@ -12,7 +12,7 @@
 - 票券庫：依國家篩選，並預覽或直接開啟 Google Drive 文件
 - 花費管理：多幣別預算、已付／待付總覽、匯率與可編輯記帳
 - 待辦管理：分類、完成狀態、Google Sheets 同步與私密預約連結
-- Gemini AI：景點故事、美食推薦、行程建議、旅程介紹與旅遊助理
+- Gemini AI：當日美食推薦（搜尋查證、可附用餐需求）、行程建議、旅程介紹與旅遊助理
 - 公開訪客可讀取非敏感資料；票券、私密連結、編輯與 AI 限授權帳號使用
 
 ## Production
@@ -126,9 +126,9 @@ Runtime credentials are encrypted Worker secrets. See [docs/deployment.md](docs/
 | 記帳 | 儲存旅途中的實際與額外支出，Web 可新增、修改與刪除 | Timestamp, Item, Amount, Currency, Category |
 | 參考資料 | 依國家整理交通、景點、票券與攻略連結，供實用連結頁使用 | Country sections, Item, Link, Notes |
 | 旅程介紹 | 儲存序章、各城市故事與結語，供旅程頁顯示 | Type (`intro`, `city:*`, `closing`), Content, UpdatedAt |
-| 美食推薦 | 儲存各日、各價位的 Gemini 美食建議 | Day, City, PriceLevel, Content, UpdatedAt |
+| 美食推薦 | 每天一筆整合推薦，以 Day 更新；內容包含各餐選擇、價位與地圖連結 | Day, City, Content, Preferences, UpdatedAt |
 | 導航 | 提供每日景點的 Google Maps 搜尋目標 | Day, Name, Google Maps Query |
-| 景點規劃 | 儲存每日的景點故事、動線、備案與現場提醒 | Day, Title, Content |
+| 景點規劃 | 由 Sheet 維護每日故事、動線與提醒；網站只提供閱讀 | Day, Title, Content |
 | AI秘書對話 | 保留授權使用者與旅遊助理的對話紀錄 | Timestamp, Question, Answer |
 
 The live Sheet is the source of truth. `費用` is the read-only plan and payment view; `記帳` is the editable spending ledger. The Worker normalizes currencies and per-person or two-person totals for the Web. `住宿` and `攜帶` remain Sheet-only management tabs.
@@ -138,3 +138,12 @@ Ticket and private booking URLs require an authorized website session. Google Dr
 ## Create another trip
 
 See [SETUP.md](SETUP.md) for the Cloudflare, Google Cloud, Sheet and OAuth setup.
+
+### Food recommendation data
+
+`美食推薦` uses exactly five columns: `Day`, `City`, `Content`, `Preferences`, `UpdatedAt`.
+Each non-empty `Day` must be unique. `Preferences` is optional dining guidance from the last update;
+`UpdatedAt` is an ISO timestamp. Empty days display the generation entry point for editors.
+The API returns a map keyed by day with `{ city, content, preferences, updatedAt }` values.
+`generateFoodRecommendations` accepts `[day, city, itineraryContent, preferences?]` and replaces that day's recommendation.
+Map URLs render as buttons; other source URLs remain separately labelled.

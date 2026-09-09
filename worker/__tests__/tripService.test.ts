@@ -87,3 +87,29 @@ describe('TripService expense overview', () => {
     expect(repository.getExpenseOverview).toHaveBeenCalledOnce();
   });
 });
+
+describe('TripService daily food recommendations', () => {
+  it('searches with dining preferences and saves a separate daily version', async () => {
+    const repository = { saveFood: vi.fn().mockResolvedValue(undefined) };
+    const gemini = { generate: vi.fn().mockResolvedValue('Daily meal suggestions') };
+    const service = new TripService(repository as unknown as TripRepository, gemini as unknown as GeminiClient);
+
+    const result = await service.generateFoodRecommendations('Day 2', 'London', 'Westminster', 'Vegetarian, £25 per person');
+
+    expect(gemini.generate).toHaveBeenCalledWith(expect.objectContaining({
+      search: true,
+      prompt: expect.stringContaining('Vegetarian, £25 per person'),
+    }));
+    expect(repository.saveFood).toHaveBeenCalledWith('Day 2', 'London', 'Daily meal suggestions', 'Vegetarian, £25 per person');
+    expect(result).toEqual({ success: true, content: 'Daily meal suggestions', persisted: true });
+  });
+
+  it('retains generated content when saving fails', async () => {
+    const repository = { saveFood: vi.fn().mockRejectedValue(new Error('Unavailable')) };
+    const gemini = { generate: vi.fn().mockResolvedValue('Unsaved recommendations') };
+    const service = new TripService(repository as unknown as TripRepository, gemini as unknown as GeminiClient);
+    await expect(service.generateFoodRecommendations('Day 2', 'London', 'Westminster')).resolves.toMatchObject({
+      success: true, persisted: false, content: 'Unsaved recommendations',
+    });
+  });
+});

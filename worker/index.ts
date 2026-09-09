@@ -208,7 +208,7 @@ async function executeOperation(
         requireString(args[0]),
         requireString(args[1]),
         requireString(args[2]),
-        requireString(args[3])
+        optionalString(args[3])
       );
     case 'suggestItinerary':
       return service.suggestItinerary(

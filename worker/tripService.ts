@@ -75,14 +75,15 @@ export class TripService {
     day: string,
     city: string,
     itineraryContent: string,
-    priceLevel: string
+    preferences?: string
   ): Promise<PersistedGenerateResponse> {
     const content = await this.gemini.generate({
-      prompt: foodPrompt(day, city, itineraryContent, priceLevel),
+      prompt: foodPrompt(day, city, itineraryContent, preferences),
+      search: true,
       temperature: 0.8,
     });
     try {
-      await this.repository.saveFood(day, city, priceLevel, content);
+      await this.repository.saveFood(day, city, content, preferences?.trim() || '');
       return { success: true, content, persisted: true };
     } catch {
       return { success: true, content, persisted: false, message: '內容已生成，但尚未儲存' };

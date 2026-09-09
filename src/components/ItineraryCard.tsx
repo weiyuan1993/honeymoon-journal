@@ -394,8 +394,6 @@ export default function ItineraryCard({
         dayKey={item.day}
         city={item.city}
         detail={detailData}
-        itineraryContent={item.content}
-        canEdit={canEdit}
       />
 
       {/* Map Modal */}

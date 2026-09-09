@@ -38,29 +38,29 @@ export default function MapModal({
   const selectedAttr = navigationData.attractions[selectedIndex];
   const encodedQuery = encodeURIComponent(selectedAttr.query);
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodedQuery}&z=16&output=embed`;
-  const placeUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-3 lg:p-6"
+      className="trip-modal-overlay"
       onClick={onClose}
     >
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
+      <div className="trip-modal-backdrop"></div>
 
       {/* Modal content */}
       <div
-        className="relative flex h-[92dvh] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-2xl flex-col overflow-hidden rounded-xl border border-gold/60 bg-paper shadow-2xl sm:h-[88vh] sm:max-h-[88vh] sm:w-full sm:rounded-2xl lg:h-[92vh] lg:w-[96vw] lg:max-w-none lg:max-h-none"
+        className="trip-modal-panel trip-modal-map"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - compact version */}
-        <div className="bg-gold/10 px-4 h-10 border-b border-gold flex items-center justify-between">
-          <span className="font-display text-sm text-ink truncate pr-2">
-            {dayKey} · {city}
+        <div className="trip-modal-header">
+          <span className="trip-modal-title">
+            {dayKey} · {city} · 地圖
           </span>
           <button
             onClick={onClose}
-            className="-mr-1 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-ink transition-colors shrink-0"
+            className="trip-modal-close"
+            aria-label="關閉視窗"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -80,9 +80,10 @@ export default function MapModal({
         </div>
 
         {/* Google Maps Embed area */}
-        <div className="flex-1 relative min-h-[340px] lg:min-h-0">
+        <div className="flex-1 relative min-h-0">
           <iframe
             src={mapEmbedUrl}
+            title={`${city}：${selectedAttr.name}地圖`}
             className="absolute inset-0 w-full h-full border-0"
             allowFullScreen
             loading="lazy"
@@ -99,15 +100,15 @@ export default function MapModal({
                 onClick={() => setSelectedIndex(index)}
                 className={`inline-flex items-center gap-2 px-3 py-2 border rounded-full text-sm font-serif transition-colors ${
                   selectedIndex === index
-                    ? 'bg-gold text-white border-gold shadow-sm'
+                    ? 'bg-deep-blue text-white border-deep-blue'
                     : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-ink'
                 }`}
               >
                 <span
                   className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold shrink-0 ${
                     selectedIndex === index
-                      ? 'bg-white text-gold'
-                      : 'bg-gold text-white'
+                      ? 'bg-white text-deep-blue'
+                      : 'bg-deep-blue/10 text-deep-blue'
                   }`}
                 >
                   {index + 1}
@@ -118,31 +119,6 @@ export default function MapModal({
           </div>
         </div>
 
-        {/* Bottom Google Maps button */}
-        <div className="px-3 py-2 border-t border-gold-light bg-gradient-to-t from-gold-light/20 to-transparent">
-          <a
-            href={placeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-2 bg-deep-blue text-white font-display text-sm tracking-wider hover:bg-deep-blue/90 transition-colors rounded-lg"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-              className="w-4 h-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"
-              />
-            </svg>
-            在 Google Maps 查看
-          </a>
-        </div>
       </div>
     </div>
   );

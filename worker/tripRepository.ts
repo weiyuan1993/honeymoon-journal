@@ -1,3 +1,4 @@
+import type { FoodRecommendations } from '../shared/apiTypes';
 import {
   cellDisplayValue,
   gridCellToHtml,
@@ -823,16 +824,17 @@ export class TripRepository {
     return result;
   }
 
-  async getFoodRecommendations(): Promise<Record<string, Record<string, string>>> {
-    const rows = await this.sheets.getValues(`${SHEET_NAMES.food}!A2:D`);
-    const result: Record<string, Record<string, string>> = {};
+  async getFoodRecommendations(): Promise<FoodRecommendations> {
+    const rows = await this.sheets.getValues(`${SHEET_NAMES.food}!A2:E`);
+    const result: FoodRecommendations = {};
     for (const row of rows) {
       const day = value(row, 0);
-      const priceLevel = value(row, 2);
-      const content = value(row, 3);
-      if (!day || !priceLevel || !content) continue;
-      result[day] ??= {};
-      result[day][priceLevel] = content;
+      const content = value(row, 2);
+      if (!day || !content) continue;
+      result[day] = {
+        city: value(row, 1), content,
+        preferences: value(row, 3), updatedAt: value(row, 4),
+      };
     }
     return result;
   }
@@ -851,23 +853,23 @@ export class TripRepository {
     await this.sheets.appendValues(`${SHEET_NAMES.attractions}!A:C`, [[day, title, content]]);
   }
 
-  async saveFood(day: string, city: string, priceLevel: string, content: string): Promise<void> {
-    const rows = await this.sheets.getValues(`${SHEET_NAMES.food}!A2:C`);
+  async saveFood(day: string, city: string, content: string, preferences: string): Promise<void> {
+    const rows = await this.sheets.getValues(`${SHEET_NAMES.food}!A2:A`);
     const index = rows.findIndex(
-      (row) => value(row, 0) === day && value(row, 2) === priceLevel
+      (row) => value(row, 0) === day
     );
     const now = new Date().toISOString();
     if (index >= 0) {
       const rowNumber = index + 2;
       await this.sheets.updateValues(
         `${SHEET_NAMES.food}!B${rowNumber}:E${rowNumber}`,
-        [[city, priceLevel, content, now]]
+        [[city, content, preferences, now]]
       );
       return;
     }
     await this.sheets.appendValues(
       `${SHEET_NAMES.food}!A:E`,
-      [[day, city, priceLevel, content, now]]
+      [[day, city, content, preferences, now]]
     );
   }
 

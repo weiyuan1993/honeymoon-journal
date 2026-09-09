@@ -14,7 +14,6 @@ import type {
   JourneyContent,
   JourneyGenerateResponse,
   NavigationData,
-  PriceLevel,
   ReferenceLink,
   TicketItem,
   TodoLink,
@@ -167,13 +166,13 @@ export const tripClient = {
     dayKey: string,
     city: string,
     itineraryContent: string,
-    priceLevel: PriceLevel,
+    preferences?: string,
   ): Promise<AIGenerateResponse> =>
     callWorker('generateFoodRecommendations', [
       dayKey,
       city,
       itineraryContent,
-      priceLevel,
+      preferences,
     ]),
 
   getJourneyContent: (): Promise<JourneyContent | null> =>
