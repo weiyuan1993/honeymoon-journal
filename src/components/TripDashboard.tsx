@@ -7,6 +7,7 @@ import type {
   TodoItem,
   UserPermission,
 } from '@/types';
+import { getDashboardCityIllustration } from '@/config/dashboard.images';
 import { htmlToText } from '@/utils/htmlToText';
 import {
   buildTripTimeline,
@@ -189,11 +190,12 @@ export default function TripDashboard({
   const heroCountry = currentCountry ?? '歐盟';
   const heroFlag = COUNTRY_FLAGS[heroCountry] ?? '🇪🇺';
   const currentCountryLinks = currentCountry
-    ? filterReferenceLinks(referenceLinks, currentCountry, '').slice(0, 4)
+    ? filterReferenceLinks(referenceLinks, currentCountry, '')
     : [];
   const focusDayAction = getFocusDayAction(focusItem, tickets);
   const heroStory =
     getJourneyCityContent(journeyContent?.cities, contextCity) || heroCopy.intro;
+  const heroIllustration = getDashboardCityIllustration(contextCity);
   let countdownDetail = '等待行程資料';
   if (itineraryError) {
     countdownDetail = '行程暫時無法載入';
@@ -207,36 +209,48 @@ export default function TripDashboard({
     <div className="dashboard-shell animate-fade-in-up">
       <section className="dashboard-hero">
         <div className="dashboard-hero-copy">
-          <p className="eyebrow dashboard-location">
-            <span
-              className="dashboard-location-flag"
-              role="img"
-              aria-label={`${heroCountry}國旗`}
-            >
-              {heroFlag}
-            </span>
-            {heroCity}
-            {heroEnglishName && ` · ${heroEnglishName}`}
-          </p>
-          <h2>
-            {cityHero.title}
-            <br />
-            <em>留給當下。</em>
-          </h2>
-          <p className="dashboard-intro">{heroStory}</p>
-          <div className="dashboard-actions">
-            <button type="button" onClick={onOpenItinerary}>查看行程 <span aria-hidden="true">→</span></button>
-            <button type="button" className="secondary" onClick={onOpenTickets}>
-              開啟票券庫
-            </button>
-            <button
-              type="button"
-              className="story-action"
-              onClick={() => onOpenJourney(contextCity || undefined)}
-            >
-              旅程故事 <span aria-hidden="true">↗</span>
-            </button>
+          <div className="dashboard-hero-text">
+            <p className="eyebrow dashboard-location">
+              <span
+                className="dashboard-location-flag"
+                role="img"
+                aria-label={`${heroCountry}國旗`}
+              >
+                {heroFlag}
+              </span>
+              {heroCity}
+              {heroEnglishName && ` · ${heroEnglishName}`}
+            </p>
+            <h2>
+              {cityHero.title}
+              <br />
+              <em>留給當下。</em>
+            </h2>
+            <p className="dashboard-intro">{heroStory}</p>
+            <div className="dashboard-actions">
+              <button type="button" onClick={onOpenItinerary}>查看行程 <span aria-hidden="true">→</span></button>
+              <button type="button" className="secondary" onClick={onOpenTickets}>
+                開啟票券庫
+              </button>
+              <button
+                type="button"
+                className="story-action"
+                onClick={() => onOpenJourney(contextCity || undefined)}
+              >
+                旅程故事 <span aria-hidden="true">↗</span>
+              </button>
+            </div>
           </div>
+          {heroIllustration && (
+            <img
+              src={heroIllustration}
+              alt={`${heroCity} 手繪風景`}
+              width={176}
+              height={176}
+              decoding="async"
+              className="dashboard-city-illustration"
+            />
+          )}
         </div>
         <div className="countdown-card" aria-label={heroCopy.eyebrow}>
           <span>{heroCopy.heading}</span>

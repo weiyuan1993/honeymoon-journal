@@ -681,7 +681,7 @@ export default function App() {
               className="flex h-10 min-w-0 items-center justify-start gap-1.5 sm:gap-2"
             >
               <img
-                src="/vic-dora-mark.svg"
+                src="/pwa-192.png?v=4"
                 alt=""
                 className="h-6 w-6 shrink-0 min-[360px]:h-8 min-[360px]:w-8 sm:h-9 sm:w-9"
               />

@@ -3,14 +3,17 @@
  * Images hosted via GitHub raw URLs to keep the bundle small.
  */
 
+import coverEditorialDesktopImage from '../../assets/images/cover-editorial-desktop.png';
+import coverEditorialMobileImage from '../../assets/images/cover-editorial.png';
+
 const BASE_URL =
   'https://raw.githubusercontent.com/weiyuan1993/honeymoon-journal/main/assets/images';
 
 // City hero images
-export const coverMobileImage = `${BASE_URL}/cover-mobile.png`;
+export const coverMobileImage = coverEditorialMobileImage;
 
 export const cityHeroImages: Record<string, string> = {
-  '封面': `${BASE_URL}/cover.png`,
+  '封面': coverEditorialDesktopImage,
   '倫敦': `${BASE_URL}/london.jpg`,
   '巴黎': `${BASE_URL}/paris.jpg`,
   '琉森': `${BASE_URL}/lucerne.jpg`,
