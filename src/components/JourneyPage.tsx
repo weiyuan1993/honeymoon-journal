@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ItineraryItem, JourneyContent } from '@/types';
 import { tripConfig } from '@/config/trip.config';
+import { getCityIllustration } from '@/config/dashboard.images';
 import { cityHeroImages, coverMobileImage } from '@/config/journey.images';
 import { tripClient } from '@/utils/tripClient';
 import {
@@ -261,6 +262,7 @@ export default function JourneyPage({
           segment.city
         );
         const heroImage = cityHeroImages[segment.city] || cityHeroImages['倫敦'];
+        const cityIllustration = getCityIllustration(segment.city);
 
         return (
           <section
@@ -269,14 +271,27 @@ export default function JourneyPage({
             className="scroll-target relative mx-auto max-w-5xl bg-paper"
           >
             {/* City Header */}
-            <div className="mx-auto px-4 md:px-8 pt-8 pb-5">
-              <p className="text-deep-blue/55 text-xs tracking-[0.15em] uppercase mb-2">
-                Day {segment.startDay}{segment.startDay !== segment.endDay ? ` — ${segment.endDay}` : ''}
-              </p>
-              <h2 className="text-deep-blue font-display text-2xl md:text-3xl">
-                {segment.city}
-                {segment.cityEn && <span className="text-ink/40 text-base ml-2 font-serif">{segment.cityEn}</span>}
-              </h2>
+            <div className="mx-auto flex items-center justify-between gap-4 px-4 pt-8 pb-5 md:px-8">
+              <div className="min-w-0">
+                <p className="mb-2 text-xs tracking-[0.15em] text-deep-blue/55 uppercase">
+                  Day {segment.startDay}{segment.startDay !== segment.endDay ? ` — ${segment.endDay}` : ''}
+                </p>
+                <h2 className="font-display text-2xl text-deep-blue md:text-3xl">
+                  {segment.city}
+                  {segment.cityEn && <span className="ml-2 font-serif text-base text-ink/40">{segment.cityEn}</span>}
+                </h2>
+              </div>
+              {cityIllustration && (
+                <img
+                  loading="lazy"
+                  decoding="async"
+                  src={cityIllustration}
+                  alt={`${segment.city}手繪插圖`}
+                  width={112}
+                  height={112}
+                  className="h-20 w-20 shrink-0 rounded-[18px] border border-deep-blue/10 object-cover shadow-sm md:h-28 md:w-28 md:rounded-[22px]"
+                />
+              )}
             </div>
 
             {/* City Image - 保持圖片比例 */}

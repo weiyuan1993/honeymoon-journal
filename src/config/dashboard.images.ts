@@ -20,5 +20,7 @@ const cityIllustrations: Record<string, string> = {
   羅馬: romeImage,
 };
 
-export const getDashboardCityIllustration = (city: string): string | undefined =>
+export const getCityIllustration = (city: string): string | undefined =>
   cityIllustrations[city];
+
+export const getDashboardCityIllustration = getCityIllustration;
