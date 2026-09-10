@@ -44,7 +44,7 @@ export class GeminiClient {
     if (!this.env.GEMINI_API_KEY) throw new GeminiError('Gemini API Key 未設定', 503, false);
     const model = options.search
       ? this.env.GEMINI_SEARCH_MODEL || 'gemini-2.5-flash-lite'
-      : this.env.GEMINI_TEXT_MODEL || 'gemini-3.1-flash-lite';
+      : this.env.GEMINI_TEXT_MODEL || 'gemini-3.5-flash-lite';
     const contents = options.history?.map((message) => ({
       role: message.role,
       parts: [{ text: message.text }],
