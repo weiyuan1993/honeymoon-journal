@@ -1,6 +1,6 @@
 # Vic & Dora in Europe
 
-![Cover](assets/images/cover-editorial.png)
+![Cover](assets/images/cover-editorial-desktop.png)
 
 以 Google Sheets 為資料來源的歐洲蜜月旅行日誌。React 前端與 API 由同一個 Cloudflare Worker 提供，支援桌面與手機瀏覽。
 
